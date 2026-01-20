@@ -1,0 +1,96 @@
+# 0 - load the documents and benchmark
+data_loader = DataLoader(
+    dataset_id=self.dataset_id,
+    cache_dir=self.cache_dir,
+    observability_path=self.observability_path,
+)
+rag_corpus: RagCorpus
+rag_benchmark: RagBenchmark
+rag_corpus, rag_benchmark = data_loader.load_data()
+benchmark_dict: dict = DataLoader.rag_benchmark_as_dict(rag_benchmark)
+if len(benchmark_dict) == 0:
+    raise RuntimeError(
+        f"No questions found in benchmark loaded with dataset params '{self.dataset_id}'."
+    )
+
+data_pipeline_output = self.data_pipeline.process(
+    rag_corpus, data_loader.dataset_id
+)
+
+if self.observability_path is not None:
+    data_store_path: Path = self.observability_path / "data_store_description"
+    vsd_path: Path = data_store_path / "vector_store"
+    dbd_path: Path = data_store_path / "database"
+    vsd_path.mkdir(parents=True, exist_ok=True)
+    dbd_path.mkdir(parents=True, exist_ok=True)
+    vsd_count: int = 0
+    dbd_count: int = 0
+    for dsd in data_pipeline_output.data_store_descriptions:
+        if isinstance(dsd, VectorStoreCollection):
+            with open(vsd_path / f"vs{vsd_count:03d}.json", "w") as f:
+                f.write(pydumps(dsd, indent=4))
+            vsd_count += 1
+        else:  # DB description
+            with open(dbd_path / f"db{dbd_count:03d}.json", "w") as f:
+                f.write(pydumps(dsd, indent=4))
+            dbd_count += 1
+
+inference_output: InferencePipelineOutput = self.inference_pipeline.process(
+    rag_benchmark, data_pipeline_output
+)
+
+question_to_generator_results = inference_output.generation_results
+benchmark_with_answers: dict[str, dict[str, Any]] = deepcopy(benchmark_dict)
+for question_id in rag_benchmark.get_question_ids():
+    benchmark_item = benchmark_with_answers[question_id]
+    question_id = benchmark_item["question"]
+    generator_results = question_to_generator_results[question_id]
+    benchmark_item.update(asdict(generator_results))
+
+# 4 - evaluation
+# outer loop is over the metric, so in case it uses a local model
+# we can load it once and use it for all branches
+all_metric_stats = dict()
+for eval_metric_name in self.evaluation_params.metrics:
+    logger.info(f"Metric: {eval_metric_name}")
+    metric_definition = self.metric_defs[eval_metric_name]
+    metric_access_control = metric_definition["access_control"]
+
+    if self.dataset_id.access_control and metric_access_control:
+        logger.warning(
+            f"skipping metric: {eval_metric_name} due to access control limitations"
+        )
+        continue
+
+    evaluator = Evaluator(
+        metric_definition, rag_benchmark, rag_corpus, cache_dir=self.cache_dir
+    )
+    question_id_to_metric_scores = evaluator.run_metrics(
+        list(benchmark_with_answers.values())
+    )
+
+    metric_stats = evaluator.compute_stats_from_per_question_results(
+        question_id_to_metric_scores
+    )
+    all_metric_stats.update(metric_stats)
+
+    for question_id in rag_benchmark.get_question_ids():
+        question_scores = question_id_to_metric_scores[question_id]
+        benchmark_item = benchmark_with_answers[question_id]
+        benchmark_item.update(question_scores)
+
+all_metric_stats["counts"] = {
+    "num_instances": len(rag_benchmark.get_question_ids())
+}
+
+pattern_parameters_dict = {
+    "data_pipeline": self.data_pipeline.get_description(),
+    "inference_pipeline": self.inference_pipeline.get_description(),
+}
+pattern_parameters = PatternParameters.from_dict(pattern_parameters_dict)
+
+return PatternResults.create(
+    pattern_parameters,
+    list(benchmark_with_answers.values()),
+    all_metric_stats,
+)

@@ -1,0 +1,826 @@
+from __future__ import annotations
+
+from enum import StrEnum, auto
+from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional, Tuple, TypeAlias, Union
+
+from docling_core.types.doc.document import DoclingDocument
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    PrivateAttr,
+    SerializeAsAny,
+    ValidationError,
+    model_validator,
+)
+from rag_unitxt_cards.data_models.document_object import DocumentObject
+from rag_unitxt_cards.data_models.rag_benchmark import RagBenchmark
+from rag_unitxt_cards.data_models.rag_corpus import RagCorpusMetadata
+from typing_extensions import Annotated
+
+from rageval.components import DATABASE_DIR
+from rageval.components.generation.generation_result import GeneratorResult
+from rageval.resources.model_defs import ModelDefs
+from rageval.resources.provider_defs import ProviderId
+
+
+class StrictBaseModel(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        protected_namespaces=(),  # avoid warnings about fields with names that start with "model_"
+    )
+
+#
+# class DataLoading(StrictBaseModel):
+#     dataset_id: str
+#     split: Literal["dev", "test"]
+#     sampling: Sampling
+#
+#
+# class Sampling(StrictBaseModel):
+#     seed: int = 42
+#     pass
+#
+#
+# class RuntimeParams(StrictBaseModel):
+#     model_defs: dict
+#     cache_dir: Path | None = None
+#     observability_path: Path | None = None
+#
+#     def model_post_init(self, __context) -> None:
+#         if self.cache_dir:
+#             self.cache_dir.mkdir(parents=True, exist_ok=True)
+#         if self.observability_path:
+#             self.observability_path.mkdir(parents=True, exist_ok=True)
+#
+#     @staticmethod
+#     def from_defaults(
+#         output_path: Path, model_defs: dict | None = None
+#     ) -> RuntimeParams:
+#         if not model_defs:
+#             model_defs = ModelDefs.get_defaults()
+#         return RuntimeParams(
+#             model_defs=model_defs,
+#             cache_dir=output_path / "cache",
+#             observability_path=output_path / "observability",
+#         )
+#
+#
+class DataStoreDescription(StrictBaseModel):
+    pass
+
+#
+# class OpenRAGDataStore(DataStoreDescription):
+#     data_store_hash: str
+#
+#
+# class EmbeddingRepresentation(StrEnum):
+#     SPARSE = auto()
+#     DENSE = auto()
+#
+#
+# class HybridEmbeddingModelInput(StrictBaseModel):
+#     models: dict[EmbeddingReprasentation, ModelInput]
+#
+#     def model_post_init(self, __context) -> None:
+#         for repr_type, model in self.models.items():
+#             if isinstance(model, str):
+#                 self.models[repr_type] = ModelProvider.from_string(model)
+#
+#
+# class VectorStoreCollection(DataStoreDescription):
+#     collection_hash: str
+#     embedding_model: ModelInput | HybridEmbeddingModelInput
+#     vendor: VectorStoreVendor
+#     data_schema: dict = {}
+#     uri: str | None = None
+#
+#     @staticmethod
+#     def from_vector_space(
+#         collection_hash: str, vector_space: VectorSpace, data_schema=None
+#     ) -> VectorStoreCollection:
+#         if data_schema is None:
+#             data_schema = {}
+#         return VectorStoreCollection(
+#             collection_hash=collection_hash,
+#             embedding_model=vector_space.embedding_model,
+#             vendor=vector_space.vendor,
+#             data_schema=data_schema,
+#             uri=vector_space.uri,
+#         )
+#
+#     def model_post_init(self, __context) -> None:
+#         if isinstance(self.embedding_model, str):
+#             self.embedding_model = ModelProvider.from_string(self.embedding_model)
+#         elif isinstance(self.embedding_model, HybridEmbeddingModelInput):
+#             # Ensure all models in the hybrid input are ModelProvider instances
+#             for repr_type, model in self.embedding_model.models.items():
+#                 if isinstance(model, str):
+#                     self.embedding_model.models[repr_type] = ModelProvider.from_string(
+#                         model
+#                     )
+#
+#
+# class ConnectionDetails(StrictBaseModel):
+#     pass
+#
+#
+# class DuckDBConnectionDetails(ConnectionDetails):
+#     path: str = DATABASE_DIR + "/duckdb.db"
+#     db_namespace: Optional[str] = None
+#
+#
+# class PrestoConnectionDetails(ConnectionDetails):
+#     username: str
+#     password: str
+#     hostname: str
+#     port: str
+#     catalog: str
+#     presto_schema: str
+#     storage_location: str | None = None
+#
+#
+# class PostgresConnectionDetails(ConnectionDetails):
+#     username: str
+#     password: str
+#     hostname: str
+#     port: str
+#     dbname: str
+#
+#
+# class DatabaseDescription(DataStoreDescription):
+#     vendor: DatabaseVendor
+#     table_name: str | list[str]
+#     data_schema: dict
+#     connection_details: SerializeAsAny[ConnectionDetails]
+#
+#     @model_validator(mode="before")
+#     @classmethod
+#     def _coerce_database_description(cls, data):
+#         return _coerce_conn_details(data)
+
+
+class DataPipelineOutput(StrictBaseModel):
+    data_store_descriptions: List[SerializeAsAny[DataStoreDescription]]
+    dataset_id: str
+    # TODO : we should avoid ConvertedDocument
+    document_mappings: dict[str, ConvertedDocument] | None = None
+    corpus_metadata: RagCorpusMetadata | None = None
+
+
+# class ConvertedDocument(StrictBaseModel):
+#     corpus_doc: DocumentObject
+#     converted_doc: DoclingDocument | None
+#     converted_doc_hash: str | None = None
+#
+#     def get_document_id(self):
+#         return self.corpus_doc.metadata["document_id"]
+#
+#
+# class VectorStoreVendor(StrEnum):
+#     CHROMA_DB = auto()
+#     MILVUS = auto()
+#
+#
+# class DocumentConverterType(StrEnum):
+#     DOCLING = auto()
+#     WDU = auto()
+#
+#
+# class DatabaseVendor(StrEnum):
+#     DUCK_DB = auto()
+#     PRESTO = auto()
+#     POSTGRES = auto()
+#
+#
+# class ChunkUnit(StrEnum):
+#     CHARACTER = auto()
+#     TOKEN = auto()
+#     LINE = auto()
+#     TABLE = auto()
+#
+#
+# class TextChunkingBase(StrictBaseModel):
+#     chunk_size: int = 256
+#     chunk_overlap: int = 0
+#
+#
+# class TextChunkingParams(TextChunkingBase):
+#     chunk_unit: ChunkUnit = ChunkUnit.TOKEN
+#
+#
+# class TableSerializationType(StrEnum):
+#     MARKDOWN = auto()
+#     TRIPLETS = auto()
+#     EMPTY = auto()
+#
+#
+# class DoclingChunkingMethod(StrEnum):
+#     TABLE = "table"
+#     HIERARCHICAL = "hierarchical"
+#     HYBRID = "hybrid"
+#     # Our new chunker should also be added here
+#
+#
+# class DoclingChunkerParams(TextChunkingParams):
+#     table_serializer: TableSerializationType = TableSerializationType.MARKDOWN
+#     chunking_method: DoclingChunkingMethod = DoclingChunkingMethod.HYBRID
+#     # More params to be added here
+#
+#     def model_post_init(self, __context) -> None:
+#         if (
+#             self.chunking_method == DoclingChunkingMethod.TABLE
+#             and self.table_serializer != TableSerializationType.MARKDOWN
+#         ):
+#             raise NotImplementedError(
+#                 f"Table chunker with table format: {self.table_serializer} is not supported yet."
+#             )
+#
+#
+# class BasicDataPipelineParams(StrictBaseModel):
+#     # None: do not produce an index, useful for experiments based on ground truth retrieval
+#     indexing: IndexingParams | None
+#
+#
+# class VectorSpace(StrictBaseModel):
+#     embedding_model: ModelInput | HybridEmbeddingModelInput
+#     vendor: VectorStoreVendor
+#     uri: str | None = None
+#     id: str | None = None
+#
+#     def model_post_init(self, __context) -> None:
+#         if isinstance(self.embedding_model, str):
+#             self.embedding_model = ModelProvider.from_string(self.embedding_model)
+#         elif isinstance(self.embedding_model, HybridEmbeddingModelInput):
+#             # Ensure all models in the hybrid input are ModelProvider instances
+#             for repr_type, model in self.embedding_model.models.items():
+#                 if isinstance(model, str):
+#                     self.embedding_model.models[repr_type] = ModelProvider.from_string(
+#                         model
+#                     )
+#
+#
+# class OperatorParams(StrictBaseModel):
+#     generation: GenerationParams
+#     prompt: str = Field(..., min_length=1, description="Prompt can not be empty")
+#
+#
+# class VerbalizationParams(OperatorParams):
+#     chunking: TextChunkingParams = TextChunkingParams()
+#     vector_space_id: str
+#
+#
+# class TextParams(StrictBaseModel):
+#     vector_space_id: str
+#     chunking: DoclingChunkerParams = DoclingChunkerParams()
+#     raptor_params: RaptorChunkEnrichmentParams | None = None
+#
+#
+# class TableParams(StrictBaseModel):
+#     verbalization: VerbalizationParams | None = None
+#
+#
+# class VisionParams(StrictBaseModel):
+#     vector_space_id: str
+#
+#
+# class ImageParams(StrictBaseModel):
+#     vision: VisionParams | None = None
+#     verbalization: VerbalizationParams | None = None
+#     filter: OperatorParams | None = None
+#
+#     @model_validator(mode="after")
+#     def check_not_both_none(self):
+#         if self.vision is None and self.verbalization is None:
+#             raise ValueError(
+#                 "At least one of 'vision' or 'verbalization' must be provided."
+#             )
+#         return self
+#
+#
+# class DocumentConversionParams(StrictBaseModel):
+#     document_converter_type: DocumentConverterType = DocumentConverterType.DOCLING
+#     generate_picture_images: bool | None = Field(
+#         default=None, exclude=True, repr=False
+#     )  # it is set by the UnstructuredDataPipelineParams - should not be set by user!
+#
+#
+# class MetadataEnrichmentConfig(StrictBaseModel):
+#     enabled: bool = False
+#     config_path: Optional[Path] = None
+#
+#
+# class DocumentParams(StrictBaseModel):
+#     conversion_params: DocumentConversionParams = DocumentConversionParams()
+#     text: TextParams | None = None
+#     title: VerbalizationParams | None = None
+#
+#
+# class SpecialItemsParams(StrictBaseModel):
+#     table: TableParams | None = None
+#     image: ImageParams | None = None
+#
+#
+# class UnstructuredDataPipelineParams(StrictBaseModel):
+#     document_level: DocumentParams
+#     page_vector_space_id: str | None = None
+#     special_items: SpecialItemsParams | None = None
+#     metadata_enrichment: MetadataEnrichmentConfig | None = None
+#     vector_spaces: Dict[str, VectorSpace] | None = (
+#         None  # vector_spaces can be None in case of GT retrieval
+#     )
+#
+#     @model_validator(mode="after")
+#     def set_field_generate_picture_images(self):
+#         if self.document_level.conversion_params.generate_picture_images is None:
+#             self.document_level.conversion_params.generate_picture_images = (
+#                 self.special_items is not None and self.special_items.image is not None
+#             )
+#         else:
+#             raise ValidationError(
+#                 "self.document_level.conversion_params.generate_picture_images should not be set by user"
+#             )
+#         return self
+#
+#     @model_validator(mode="after")
+#     def check_vector_space_in_vector_spaces(self):
+#         # First we list all the vector_space_ids defined in the model
+#         vector_space_ids: list[Tuple] = list()
+#
+#         if self.page_vector_space_id is not None:
+#             vector_space_ids.append((self.page_vector_space_id, "page_vector_space_id"))
+#
+#         if self.document_level.text is not None:
+#             vector_space_ids.append(
+#                 (
+#                     self.document_level.text.vector_space_id,
+#                     "text_params.vector_space_id",
+#                 )
+#             )
+#
+#         if self.special_items is not None:
+#             if self.special_items.table is not None:
+#                 if self.special_items.table.verbalization is not None:
+#                     vector_space_ids.append(
+#                         (
+#                             self.special_items.table.verbalization.vector_space_id,
+#                             "special_items.table.verbalization.vector_space_id",
+#                         )
+#                     )
+#             if (
+#                 self.special_items.image is not None
+#                 and self.special_items.image.vision is not None
+#             ):
+#                 vector_space_ids.append(
+#                     (
+#                         self.special_items.image.vision.vector_space_id,
+#                         "special_items.image.vision.vector_space_id",
+#                     )
+#                 )
+#
+#         for vect_space_id, vect_name in vector_space_ids:
+#             if self.vector_spaces is None:
+#                 raise ValueError(
+#                     f"{vect_name} can not be set if vector_space_id is None."
+#                 )
+#             elif vect_space_id not in self.vector_spaces:
+#                 raise ValueError(
+#                     f"{vect_name} must be part of the vector_spaces dictionary"
+#                 )
+#         return self
+#
+
+class InferencePipelineInput(StrictBaseModel):
+    benchmark: RagBenchmark
+    data_store_descriptions: List[DataStoreDescription]
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
+
+
+class InferencePipelineOutput(StrictBaseModel):
+    generation_results: Dict[str, GeneratorResult]
+
+
+class HyDEParams(StrictBaseModel):
+    generation: GenerationParams
+    hyde_prompt: str = "write 3 possible answers for this query: {}"
+    include_original_query: bool = False
+
+
+class QueryEnrichmentParams(StrictBaseModel):
+    """Parameters for taxonomy-based query enrichment."""
+
+    config_path: Path
+
+
+class RetrievalParams(StrictBaseModel):
+    top_k: int
+    window_size: int = 0
+    ranker: dict[str, Any] | None = None
+    query_rewrite: HyDEParams | QueryEnrichmentParams | None = None
+
+
+class ContextType(StrEnum):
+    TEXT = auto()
+    IMAGE = auto()
+    FILE = auto()
+
+
+class ObjectResolution(StrEnum):
+    ITEM = auto()
+    SECTION = auto()
+    PAGE = auto()
+    DOCUMENT = auto()
+    CORPUS = auto()
+
+
+class DocOutputType(StrEnum):
+    MD = auto()
+    IMAGE = auto()
+    STREAM = auto()
+
+
+class GroundTruthRetrievalParams(StrictBaseModel):
+    object_resolution: ObjectResolution
+    doc_output_type: DocOutputType
+
+    @model_validator(mode="after")
+    def validate_combo(self) -> "GroundTruthRetrievalParams":
+        valid_combinations = [
+            (DocOutputType.MD, ObjectResolution.CORPUS),
+            (DocOutputType.MD, ObjectResolution.DOCUMENT),
+            (DocOutputType.MD, ObjectResolution.PAGE),
+            (DocOutputType.STREAM, ObjectResolution.DOCUMENT),
+            (DocOutputType.IMAGE, ObjectResolution.PAGE),
+        ]
+        if (self.doc_output_type, self.object_resolution) not in valid_combinations:
+            raise NotImplementedError(
+                f"Retrieval with object_resolution={self.object_resolution} and doc_output_type={self.doc_output_type} is not supported yet."
+            )
+
+        return self
+
+
+class ModelProvider(StrictBaseModel):
+    """
+    Examples:
+        1. "watsonx/granite" ->
+            provider_id="watsonx", model_id="granite", host="watsonx", model_def_name="granite"
+        2. "litellm/watsonx/llama_3_2" ->
+            provider_id="litellm", model_id="watsonx/llama_3_2", host="watsonx", model_def_name="llama_3_2"
+        3. "litellm/gpt-4o" ->
+            provider_id="litellm", model_id="gpt-4o", host=None, model_def_name="gpt-4o"
+        4. "unknown_host/gpt-4o" ->
+            provider_id="litellm", model_id="unknown_host/gpt-4o", host="unknown_host", model_def_name="gpt-4o"
+    """
+
+    model_id: str
+    provider_id: ProviderId
+
+    _host: Optional[str] = PrivateAttr()
+    _model_def_name: Optional[str] = PrivateAttr()
+
+    @classmethod
+    def from_string(cls, provider: str) -> "ModelProvider":
+        if "/" not in provider:
+            raise ValueError(
+                f"Provider must contain '/' separating provider_id and model_id. Got `{provider}`."
+            )
+
+        provider_id_str, model_id = provider.split("/", maxsplit=1)
+
+        try:
+            provider_id = ProviderId(provider_id_str)
+        except ValueError:
+            # Any unknown providers are assumed to be handled by litellm
+            # In such a case the entire input 'provider' string is used as the model_id
+            provider_id = ProviderId.LITE_LLM
+            model_id = provider
+
+        return cls(model_id=model_id, provider_id=provider_id)
+
+    def to_litellm_provider(self) -> ModelProvider:
+        if self.provider_id == ProviderId.LITE_LLM:
+            return self
+        else:
+            return ModelProvider(
+                provider_id=ProviderId.LITE_LLM,
+                model_id=f"{self.host}/{self.model_id}",
+            )
+
+    def model_post_init(self, context: Any, /) -> None:
+        if self.provider_id != ProviderId.LITE_LLM:
+            # Without litellm, the model_def_name is simply the model_id
+            self._host = self.provider_id
+            self._model_def_name = self.model_id
+        else:
+            # litellm:
+            if "/" in self.model_id:
+                self._host, self._model_def_name = self.model_id.split("/", maxsplit=1)
+                if not self._host or not self._model_def_name:
+                    raise ValueError(
+                        f"For litellm, the host and the model_def_name must be non-empty. "
+                        f"host: '{self._host}', model_def_name: '{self._model_def_name}'."
+                    )
+            else:
+                # No specific host defined
+                self._host = None
+                self._model_def_name = self.model_id
+
+    @property
+    def host(self) -> str | None:
+        return self._host
+
+    @property
+    def model_def_name(self) -> str:
+        return self._model_def_name
+
+    @property
+    def use_message_format(self) -> bool:
+        # import here to avoid a circular import
+        from rageval.components.generation.generator_factory import GeneratorFactory
+
+        return self.provider_id not in GeneratorFactory.provider_ids_without_litellm()
+
+    def resolve_model_id(self, model_definition: dict | None) -> str:
+        model_id = self.model_id
+        if model_definition:
+            model_id_from_model_def = model_definition.get("model_id")
+            # If using a model def, check the model_id field is there.
+            if not model_id_from_model_def:
+                raise ValueError(
+                    f"Missing value for 'model_id' in model definition: {model_definition}."
+                )
+
+            per_host_config = model_definition.get("per_host_configs", {})
+            if per_host_config:
+                host_specific_config = per_host_config.get(self.host, {})
+                if host_specific_config:
+                    model_id_from_model_def = host_specific_config.get(
+                        "model_id", model_id_from_model_def
+                    )
+
+            model_id = model_id.replace(self.model_def_name, model_id_from_model_def)
+        return model_id
+
+
+ModelInput: TypeAlias = Union[ModelProvider, str]
+
+
+def none_to(default):
+    # returns a BeforeValidator that replaces None with `default`
+    return BeforeValidator(lambda v: default if v is None else v)
+
+
+class GenerationParams(StrictBaseModel):
+    num_contexts: int | None = None
+    temperature: Annotated[float, none_to(0.0)] = 0.0
+    min_new_tokens: Annotated[int, none_to(1)] = 1
+    max_new_tokens: Annotated[int, none_to(500)] = 500
+
+    generative_model: ModelInput
+
+    # The name of the prompt to be used, in the form of task/prompt_id/model_type, where the model_type is optional.
+    # A 'None' value indicated that a default prompt should be used.
+    # Examples: "response_generation/no_context", "response_generation/default", "response_generation/granite".
+    prompt_name: str | None = None
+
+    def model_post_init(self, __context) -> None:
+        if isinstance(self.generative_model, str):
+            self.generative_model = ModelProvider.from_string(self.generative_model)
+
+
+class ExpansionUnit(StrEnum):
+    OBJECT = auto()
+    PAGE = auto()
+    DOCUMENT = auto()
+
+
+class ExpansionModality(StrEnum):
+    TEXT = auto()
+    IMAGE = auto()
+
+
+class ExpansionParams(StrictBaseModel):
+    unit: ExpansionUnit
+    modality: ExpansionModality
+
+
+class RerankingMethod(StrEnum):
+    FILTER = auto()
+    LLM_SCORE = auto()
+    CROSS_ENCODER_SCORE = auto()
+
+
+class RerankingParams(StrictBaseModel):
+    reranking_method: RerankingMethod
+    generation: GenerationParams
+    top_k: int | None = None
+
+
+class BasicInferencePipelineParams(StrictBaseModel):
+    retrieval: RetrievalParams | GroundTruthRetrievalParams
+    expansion: ExpansionParams | None = None
+    reranking: RerankingParams | None = None
+    merge_reranking: RerankingParams | RRFParams | None = None
+    generation: GenerationParams | None = None
+
+
+class BasicInferencePipelineInput(InferencePipelineInput):
+    params: BasicInferencePipelineParams
+
+
+class DocumentScope(StrEnum):
+    DOC = auto()
+    PAGE = auto()
+    ITEM = auto()
+
+
+class RRFParams(StrictBaseModel):
+    # A lower k gives more weight to high-ranking items. 60 is a common default.
+    k: int = 60
+    # When using hierarchical ranking, the level in which the ranking is computed.
+    # A value of None means no hierarchical ranking.
+    level: DocumentScope | None = None
+
+
+class IndexingParams(StrictBaseModel):
+    chunk_unit: ChunkUnit
+    chunk_size: int
+    chunk_overlap: int | float = 0
+    vector_space: VectorSpace
+    raptor_params: RaptorChunkEnrichmentParams | None = None
+
+
+class CachingParams(StrictBaseModel):
+    use_cache: bool
+    cache_type: Optional[str] = None
+    cache_dir: Optional[str] = None
+
+
+class OpenRagInferenceParams(StrictBaseModel):
+    url: str = "http://localhost:8000"
+    generative_model: ModelProvider
+    batch_size: int = 1
+
+
+class AgenticPipelineParams(StrictBaseModel):
+    system_prompt: str
+    graph_type: str
+    use_langfuse: bool
+    generation_params: GenerationParams
+    caching_params: CachingParams
+    n_max_docs_retrieval_per_query: int
+    max_n_times_searched: int
+    task_prompt: str = ""
+    strategy: str = "ReAct"  # "Dag"
+    cpd: bool = True
+    external_tools_jsons: Optional[list[str]] = None
+    tool_definitions: Optional[dict[str, dict]] = None
+
+
+class NodeParams(StrictBaseModel):
+    default_retriever: str
+    filter_docs: bool
+    max_context_len: int
+    disable_clarification: bool
+    n_max_search_queries: int
+    max_n_times_answered: int
+
+
+class RagFirstPipelineParams(AgenticPipelineParams):
+    node_params: NodeParams
+
+
+class PlannerFirstPipelineParams(AgenticPipelineParams):
+    node_params: NodeParams
+
+
+class ReactPipelineParams(AgenticPipelineParams):
+    tools_to_use: list[str]
+    use_hybrid_codeact: bool = False
+
+
+class DatabaseParams(StrictBaseModel):
+    vendor: DatabaseVendor
+
+    connection_details: SerializeAsAny[ConnectionDetails]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_database_params(cls, data):
+        return _coerce_conn_details(data)
+
+
+# A support function for resolving the correct type for connection_details based on vendor. It is used as validator in classes that use
+# vendor+connection_details combo, such as DatabaseParams and DatabaseDescription
+def _coerce_conn_details(data):
+
+    # if not a dict (already an instance, etc.), just return it
+    if not isinstance(data, dict):
+        return data
+
+    # If connection_details is not a dict (e.g., an instance), just return data
+    cd = data.get("connection_details")
+    if not isinstance(cd, dict):
+        return data
+
+    # Select connection_details type according to vendor
+    vendor = data.get("vendor")
+
+    # accept both enum or string values for vendor during parse
+    try:
+        if not isinstance(vendor, DatabaseVendor):
+            # Try by value first, then by name
+            try:
+                vendor = DatabaseVendor(vendor)
+            except Exception:
+                vendor = DatabaseVendor[vendor]  # e.g. "DUCK_DB"
+    except Exception:
+        vendor = None
+
+    if vendor == DatabaseVendor.DUCK_DB:
+        data["connection_details"] = DuckDBConnectionDetails(**cd)
+    elif vendor == DatabaseVendor.PRESTO:
+        data["connection_details"] = PrestoConnectionDetails(**cd)
+    # else: leave as-is and let validation error surface (unknown vendor)
+
+    return data
+
+
+# ------------------------
+
+
+class StructuredDataPipelineParams(StrictBaseModel):
+    vs_params: IndexingParams | None
+    db_params: DatabaseParams
+    vs_text_fields: list[str] | None  # fields to chunk and embed
+    vs_with_column_header: bool = False
+    vs_meta_fields: list[str] | None  # extra metadata fields to filter by
+    db_table_name: str
+    db_omit_fields: list[str] | None
+    db_embed_fields: list[str] | None = None
+    db_embedding_model: ModelInput | None = None
+
+
+class ExistingDataStoresParams(StrictBaseModel):
+    data_store_descriptions: list[DataStoreDescription]
+
+
+class OpenRagChunking(TextChunkingBase):
+    chunker_type: str = "TableAwareTextSplitter"
+
+
+class OpenRagDataPipelineParams(StrictBaseModel):
+    url: str = "http://localhost:8000"
+    # Taken from default in OpenRAG's KnowledgeConfig
+    chunking: OpenRagChunking = OpenRagChunking(
+        chunk_size=1000,
+        chunk_overlap=200,
+    )
+    # Default based on OpenRAG default EMBED_MODEL
+    embedding_model: ModelProvider = ModelProvider(
+        provider_id=ProviderId.OPEN_AI, model_id="text-embedding-3-small"
+    )
+    # The number of documents to send in a single batch to OpenRAG
+    # for ingestion
+    ingestion_batch_size: int = 4
+
+
+class EvaluationParams(StrictBaseModel):
+    metrics: list[str]
+
+
+class RaptorClusteringScope(StrEnum):
+    CROSS_DOCUMENT = auto()
+    WITHIN_DOCUMENT = auto()
+
+
+class RaptorChunkEnrichmentParams(StrictBaseModel):
+    generation: GenerationParams
+    n_levels: int = 5
+    reduction_dim: int = 10
+    threshold: float = 0.1
+    seed: int = 42
+    summarization_prompt: str = """You are a Summarizing Text Portal.
+            Write a summary of the following, including as many key details as possible: {context}:"""
+    clustering_scope: RaptorClusteringScope = RaptorClusteringScope.WITHIN_DOCUMENT
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+class SemiStructuredDataPipelineParams(StrictBaseModel):
+    vs_params: IndexingParams
+    db_params: DatabaseParams
+    experiment_path: Path
+    vs_text_fields: list[str] | None  # fields to chunk and embed
+    vs_with_column_header: bool = False
+    vs_meta_fields: list[str] | None  # extra metadata fields to filter by
+    db_table_name: str
+    db_omit_fields: list[str] | None
+
+
+class SemiStructuredJSONDataPipelineParams(SemiStructuredDataPipelineParams):
+    workflow_path: Path  # path to JSON workflow
