@@ -205,17 +205,3 @@ class TestBioasqDataLoaderIntegration:
         gt_doc_ids = RagBenchmark.get_doc_ids_set(benchmark.benchmark_entries)
         corpus_doc_ids = {doc.name for doc in corpus.documents}
         assert gt_doc_ids.issubset(corpus_doc_ids)
-
-    def test_placeholder_warning_logged(self, caplog):
-        """Test that placeholder implementation logs warnings."""
-        import logging
-
-        caplog.set_level(logging.WARNING)
-
-        # loader = BioasqDataLoader()
-
-        # Check that warnings were logged about placeholder implementation
-        assert any(
-            "not fully implemented" in record.message for record in caplog.records
-        )
-        assert any("placeholder" in record.message.lower() for record in caplog.records)
