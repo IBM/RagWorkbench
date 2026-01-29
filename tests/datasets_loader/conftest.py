@@ -6,19 +6,19 @@ making them available to all test modules via pytest's fixture discovery.
 """
 
 # Import all fixtures to make them available to pytest
-from tests.datasets.fixtures.benchmark_fixtures import (
+from tests.datasets_loader.fixtures.benchmark_fixtures import (
     large_benchmark_entries,
     sample_benchmark_entries,
     sample_ground_truth_context_ids,
     sample_rag_benchmark,
 )
-from tests.datasets.fixtures.corpus_fixtures import (
+from tests.datasets_loader.fixtures.corpus_fixtures import (
     large_document_set,
     sample_document_objects,
     sample_rag_corpus,
     temp_export_dir,
 )
-from tests.datasets.fixtures.sampling_fixtures import (
+from tests.datasets_loader.fixtures.sampling_fixtures import (
     sample_data_sampling_params,
     sample_data_sampling_params_with_limits,
 )

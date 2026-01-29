@@ -5,9 +5,9 @@ This module tests the initialization behavior of the RagDataLoader abstract
 base class, including split handling and corpus/benchmark creation.
 """
 
-from ragbench.datasets.data_models.rag_benchmark import RagBenchmark
-from ragbench.datasets.data_models.rag_corpus import RagCorpus
-from tests.datasets.helpers.mock_data_loader import MockRagDataLoader
+from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
+from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from tests.datasets_loader.helpers.mock_data_loader import MockRagDataLoader
 
 
 class TestRagDataLoaderInitialization:
@@ -61,10 +61,10 @@ class TestRagDataLoaderInitialization:
 
     def test_initialization_with_all_parameters(self):
         """Test initialization with all parameters specified."""
-        from ragbench.datasets.data_models.data_sampling_params import (
+        from ragbench.datasets_loader.data_models.data_sampling_params import (
             DataSamplingParams,
         )
-        from ragbench.datasets.data_models.dataset_names import DatasetName
+        from ragbench.datasets_loader.data_models.dataset_names import DatasetName
 
         sampling_params = DataSamplingParams(
             question_limit=5, document_factor=2, seed=42
