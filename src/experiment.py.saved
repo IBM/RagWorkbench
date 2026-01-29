@@ -13,9 +13,7 @@ if len(benchmark_dict) == 0:
         f"No questions found in benchmark loaded with dataset params '{self.dataset_id}'."
     )
 
-data_pipeline_output = self.data_pipeline.process(
-    rag_corpus, data_loader.dataset_id
-)
+data_pipeline_output = self.data_pipeline.process(rag_corpus, data_loader.dataset_id)
 
 if self.observability_path is not None:
     data_store_path: Path = self.observability_path / "data_store_description"
@@ -79,9 +77,7 @@ for eval_metric_name in self.evaluation_params.metrics:
         benchmark_item = benchmark_with_answers[question_id]
         benchmark_item.update(question_scores)
 
-all_metric_stats["counts"] = {
-    "num_instances": len(rag_benchmark.get_question_ids())
-}
+all_metric_stats["counts"] = {"num_instances": len(rag_benchmark.get_question_ids())}
 
 pattern_parameters_dict = {
     "data_pipeline": self.data_pipeline.get_description(),
