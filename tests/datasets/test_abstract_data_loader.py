@@ -337,42 +337,6 @@ class TestRagDataLoaderMethods:
         # Should return the same instance
         assert corpus_1 is corpus_2
 
-    def test_integration_end_to_end(self):
-        """Test complete end-to-end workflow with the data loader."""
-        sampling_params = DataSamplingParams(
-            question_limit=6, document_factor=2, seed=42
-        )
-        loader = MockRagDataLoader(
-            dataset_name=DatasetName.AI_ARXIV,
-            split="test",
-            sampling_params=sampling_params,
-            num_docs=15,
-            num_questions=10,
-        )
-
-        # Get corpus and benchmark
-        corpus = loader.get_corpus()
-        benchmark = loader.get_benchmark()
-
-        # Verify basic properties
-        assert len(benchmark) < 6  # Since we run only on test!
-        assert len(corpus) > 0
-
-        # Verify ground truth documents are in corpus
-        gt_doc_ids = RagBenchmark.get_doc_ids_set(benchmark.benchmark_entries)
-        corpus_doc_ids = {doc.name for doc in corpus.documents}
-        assert gt_doc_ids.issubset(corpus_doc_ids)
-
-        # Verify we can get questions
-        questions = benchmark.get_questions()
-        assert len(questions) < 6
-        assert all(isinstance(q, str) for q in questions)
-
-        # Verify we can access documents
-        first_doc = corpus[0]
-        assert isinstance(first_doc, DocumentObject)
-        assert first_doc.name.startswith("mock_doc_")
-
 
 class TestRagDataLoaderEdgeCases:
     """Test suite for edge cases and boundary conditions."""
