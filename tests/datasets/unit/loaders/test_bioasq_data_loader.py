@@ -212,7 +212,7 @@ class TestBioasqDataLoaderIntegration:
 
         caplog.set_level(logging.WARNING)
 
-        loader = BioasqDataLoader()
+        # loader = BioasqDataLoader()
 
         # Check that warnings were logged about placeholder implementation
         assert any(
