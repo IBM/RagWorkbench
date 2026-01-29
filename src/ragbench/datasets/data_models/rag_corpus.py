@@ -3,7 +3,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from datasets.data_models.document_object import DocumentObject
+from ragbench.datasets.data_models.document_object import DocumentObject
 
 
 class RagCorpus(BaseModel):
