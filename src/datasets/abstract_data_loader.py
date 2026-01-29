@@ -3,57 +3,159 @@ import random
 from abc import ABC, abstractmethod
 from typing import Literal
 
-from rag_unitxt_cards.data_models.data_sampling_params import DataSamplingParams
-from rag_unitxt_cards.data_models.dataset_names import DatasetName
-from rag_unitxt_cards.data_models.document_object import DocumentObject
-from rag_unitxt_cards.data_models.rag_benchmark import RagBenchmark, RagBenchmarkEntry
-from rag_unitxt_cards.data_models.rag_corpus import RagCorpus, RagCorpusMetadata
+from datasets.data_models.data_sampling_params import DataSamplingParams
+from datasets.data_models.dataset_names import DatasetName
+from datasets.data_models.document_object import DocumentObject
+from datasets.data_models.rag_benchmark import RagBenchmark, RagBenchmarkEntry
+from datasets.data_models.rag_corpus import RagCorpus
 
-logger = logging.getLogger("rag_unitxt_cards")
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 class RagDataLoader(ABC):
+    """
+    Abstract base class for loading RAG benchmark datasets.
+
+    This class provides a framework for loading document corpora and benchmark
+    question-answer pairs from various dataset sources. It handles sampling,
+    filtering, and initialization of both the corpus and benchmark components.
+
+    Subclasses must implement methods to retrieve documents and benchmark entries
+    specific to their dataset format.
+
+    Attributes:
+        dataset_name: Identifier for the dataset being loaded.
+        split: Dataset split ('train' or 'test'), or None for full dataset.
+        all_docs: Complete list of documents before sampling.
+        all_benchmark_entries: Complete list of benchmark entries before sampling.
+        benchmark: The sampled RagBenchmark instance.
+        rag_corpus: The sampled RagCorpus instance.
+
+    Example:
+        >>> class MyDataLoader(RagDataLoader):
+        ...     def _get_documents(self):
+        ...         return [...]
+        ...     def _get_benchmark_entries(self, split):
+        ...         return [...]
+        >>> loader = MyDataLoader(
+        ...     dataset_name=DatasetName.AI_ARXIV,
+        ...     split="test",
+        ...     sampling_params=DataSamplingParams(question_limit=100)
+        ... )
+        >>> corpus = loader.get_corpus()
+        >>> benchmark = loader.get_benchmark()
+    """
+
     def __init__(
         self,
         dataset_name: DatasetName,
         split: Literal["train", "test"] | None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
     ):
-        self.dataset_name = dataset_name
-        self.split = split
-        self.all_docs: list[DocumentObject] = self._get_documents()
-        self.all_benchmark_entries = self._get_benchmark_entries(split=split)
+        """
+        Initialize the RAG data loader.
 
+        Args:
+            dataset_name: Identifier for the dataset to load.
+            split: Dataset split to load ('train', 'test', or None for all).
+            sampling_params: Parameters controlling question and document sampling.
+                           Defaults to no sampling (all data included).
+
+        Note:
+            The initialization process:
+            1. Loads all documents and benchmark entries
+            2. Applies sampling based on sampling_params
+            3. Creates RagBenchmark and RagCorpus instances
+            4. Logs the final dataset size
+        """
+        self.dataset_name: DatasetName = dataset_name
+        self.split: Literal["train", "test"] | None = split
+        self.all_docs: list[DocumentObject] = self._get_documents()
+        self.all_benchmark_entries: list[RagBenchmarkEntry] = (
+            self._get_benchmark_entries(split=split)
+        )
+
+        # Apply sampling to both benchmark entries and documents
+        sampled_benchmark_entries: list[RagBenchmarkEntry]
+        sampled_docs: list[DocumentObject]
         sampled_benchmark_entries, sampled_docs = self._load_sample(
             self.all_benchmark_entries, self.all_docs, sampling_params
         )
-        self.benchmark = RagBenchmark(benchmark_entries=sampled_benchmark_entries)
-        rag_corpus_metadata: RagCorpusMetadata = self._get_corpus_metadata()
-        self.rag_corpus = RagCorpus(
-            documents=sampled_docs, corpus_metadata=rag_corpus_metadata
+
+        # Create benchmark and corpus instances
+        self.benchmark: RagBenchmark = RagBenchmark(
+            benchmark_entries=sampled_benchmark_entries
         )
+        self.rag_corpus: RagCorpus = RagCorpus(documents=sampled_docs)
+
         logger.debug(
-            f"Loaded {len(self.rag_corpus)} documents and {len(self.benchmark)} labeled examples '{dataset_name}', split '{split}'."
+            f"Loaded {len(self.rag_corpus)} documents and {len(self.benchmark)} "
+            f"labeled examples from '{dataset_name}', split '{split}'."
         )
 
     @abstractmethod
     def _get_documents(self) -> list[DocumentObject]:
+        """
+        Retrieve all documents from the dataset.
+
+        This method must be implemented by subclasses to load documents
+        specific to their dataset format.
+
+        Returns:
+            List of DocumentObject instances representing the corpus.
+
+        Note:
+            This method is called during initialization before sampling is applied.
+        """
         pass
 
     @abstractmethod
     def _get_benchmark_entries(
         self, split: Literal["train", "test"] | None
     ) -> list[RagBenchmarkEntry]:
-        pass
+        """
+        Retrieve all benchmark entries from the dataset.
 
-    @abstractmethod
-    def _get_corpus_metadata(self) -> RagCorpusMetadata:
+        This method must be implemented by subclasses to load question-answer
+        pairs specific to their dataset format.
+
+        Args:
+            split: Dataset split to load ('train', 'test', or None for all).
+
+        Returns:
+            List of RagBenchmarkEntry instances.
+
+        Note:
+            This method is called during initialization before sampling is applied.
+        """
         pass
 
     def get_benchmark(self) -> RagBenchmark:
+        """
+        Get the loaded and sampled benchmark.
+
+        Returns:
+            RagBenchmark instance containing question-answer pairs.
+
+        Example:
+            >>> loader = MyDataLoader(...)
+            >>> benchmark = loader.get_benchmark()
+            >>> questions = benchmark.get_questions()
+        """
         return self.benchmark
 
     def get_corpus(self) -> RagCorpus:
+        """
+        Get the loaded and sampled document corpus.
+
+        Returns:
+            RagCorpus instance containing documents.
+
+        Example:
+            >>> loader = MyDataLoader(...)
+            >>> corpus = loader.get_corpus()
+            >>> print(f"Corpus has {len(corpus)} documents")
+        """
         return self.rag_corpus
 
     @staticmethod
@@ -62,42 +164,77 @@ class RagDataLoader(ABC):
         full_docs: list[DocumentObject],
         sampling_params: DataSamplingParams,
     ) -> tuple[list[RagBenchmarkEntry], list[DocumentObject]]:
-        docs = full_docs.copy()
-        benchmark_entries = benchmark_entries.copy()
+        """
+        Sample benchmark entries and documents based on sampling parameters.
+
+        This method applies two types of sampling:
+        1. Question sampling: Limits the number of benchmark entries
+        2. Document sampling: Limits documents to relevant ones plus a factor of non-relevant ones
+
+        Args:
+            benchmark_entries: Complete list of benchmark entries to sample from.
+            full_docs: Complete list of documents to sample from.
+            sampling_params: Parameters controlling the sampling behavior.
+
+        Returns:
+            Tuple of (sampled_benchmark_entries, sampled_documents).
+
+        Note:
+            Sampling is deterministic based on sampling_params.seed for reproducibility.
+            Document sampling ensures all ground truth documents are included, then adds
+            additional non-relevant documents based on document_factor.
+
+        Example:
+            >>> entries, docs = RagDataLoader._load_sample(
+            ...     all_entries,
+            ...     all_docs,
+            ...     DataSamplingParams(question_limit=50, document_factor=2, seed=42)
+            ... )
+            >>> print(f"Sampled {len(entries)} questions and {len(docs)} documents")
+        """
+        # Create copies to avoid modifying original lists
+        docs: list[DocumentObject] = full_docs.copy()
+        benchmark_entries_copy: list[RagBenchmarkEntry] = benchmark_entries.copy()
         random.seed(sampling_params.seed)
 
+        # Apply question sampling if specified
         if sampling_params.question_limit:
-            # We select a subset of the df:
-            if sampling_params.question_limit < len(benchmark_entries):
-                benchmark_entries = random.sample(
-                    benchmark_entries, sampling_params.question_limit
+            if sampling_params.question_limit < len(benchmark_entries_copy):
+                benchmark_entries_copy = random.sample(
+                    benchmark_entries_copy, sampling_params.question_limit
                 )
 
+        # Apply document sampling if specified
         if sampling_params.document_factor is not None:
-            # Now we must limit the documents!
-            # 1 - We get all the gt_doc_ids:
-            benchmark_doc_ids = RagBenchmark.get_doc_ids_set(benchmark_entries)
+            # Step 1: Get all ground truth document IDs from benchmark entries
+            benchmark_doc_ids: set[str] = RagBenchmark.get_doc_ids_set(
+                benchmark_entries_copy
+            )
 
-            # 2 - We get all the label doc_ids:
-            total_doc_ids = [d.name for d in docs]
-            # 2a - We remove duplicates and we remove the benchmark_doc_ids
-            total_doc_ids = list(set(total_doc_ids) - benchmark_doc_ids)
-            # 2b - We shuffle them according to the seed
-            # 2b1 - First we sort
-            total_doc_ids.sort()
-            # 2b2 : we shuffle
-            random.shuffle(total_doc_ids)
+            # Step 2: Get all document IDs from the corpus
+            total_doc_ids: list[str] = [d.name for d in docs]
 
-            # 3 - We take the number of doc_ids
-            other_docs_ids_size = sampling_params.document_factor * len(
+            # Step 3: Remove duplicates and ground truth documents to get non-relevant docs
+            non_relevant_doc_ids: list[str] = list(
+                set(total_doc_ids) - benchmark_doc_ids
+            )
+
+            # Step 4: Sort and shuffle non-relevant documents for reproducibility
+            non_relevant_doc_ids.sort()
+            random.shuffle(non_relevant_doc_ids)
+
+            # Step 5: Calculate how many non-relevant documents to include
+            num_non_relevant: int = sampling_params.document_factor * len(
                 benchmark_doc_ids
             )
-            other_doc_ids = total_doc_ids[:other_docs_ids_size]
+            selected_non_relevant: list[str] = non_relevant_doc_ids[:num_non_relevant]
 
-            # 4 - we merge the two sets:
-            all_docs_ids = benchmark_doc_ids | set(other_doc_ids)
+            # Step 6: Combine ground truth and non-relevant document IDs
+            all_selected_doc_ids: set[str] = benchmark_doc_ids | set(
+                selected_non_relevant
+            )
 
-            # 5 - we select the documents:
-            docs = [d for d in docs if d.name in all_docs_ids]
+            # Step 7: Filter documents to only include selected IDs
+            docs = [d for d in docs if d.name in all_selected_doc_ids]
 
-        return benchmark_entries, docs
+        return benchmark_entries_copy, docs
