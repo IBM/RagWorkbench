@@ -10,14 +10,14 @@ from pathlib import Path
 
 import pytest
 
-from datasets.data_models.data_sampling_params import DataSamplingParams
-from datasets.data_models.document_object import DocumentObject
-from datasets.data_models.rag_benchmark import (
+from ragbench.datasets.data_models.data_sampling_params import DataSamplingParams
+from ragbench.datasets.data_models.document_object import DocumentObject
+from ragbench.datasets.data_models.rag_benchmark import (
     GroundTruthContextId,
     RagBenchmark,
     RagBenchmarkEntry,
 )
-from datasets.data_models.rag_corpus import RagCorpus
+from ragbench.datasets.data_models.rag_corpus import RagCorpus
 
 
 @pytest.fixture

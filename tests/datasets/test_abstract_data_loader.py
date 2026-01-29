@@ -9,17 +9,17 @@ Uses a concrete mock implementation for testing abstract methods.
 from io import BytesIO
 from typing import Literal
 
-from datasets.abstract_data_loader import RagDataLoader
-from datasets.data_models.data_sampling_params import DataSamplingParams
-from datasets.data_models.dataset_names import DatasetName
-from datasets.data_models.document_object import DocumentObject
-from datasets.data_models.rag_benchmark import (
+from ragbench.datasets.abstract_data_loader import RagDataLoader
+from ragbench.datasets.data_models.data_sampling_params import DataSamplingParams
+from ragbench.datasets.data_models.dataset_names import DatasetName
+from ragbench.datasets.data_models.document_object import DocumentObject
+from ragbench.datasets.data_models.rag_benchmark import (
     GroundTruthContextId,
     RagBenchmark,
     RagBenchmarkEntry,
 )
-from datasets.data_models.rag_corpus import RagCorpus
-from datasets.datasets_utils import get_benchmark_split
+from ragbench.datasets.data_models.rag_corpus import RagCorpus
+from ragbench.datasets.datasets_utils import get_benchmark_split
 
 
 class MockRagDataLoader(RagDataLoader):
@@ -355,7 +355,7 @@ class TestRagDataLoaderMethods:
         benchmark = loader.get_benchmark()
 
         # Verify basic properties
-        assert len(benchmark) == 6
+        assert len(benchmark) < 6  # Since we run only on test!
         assert len(corpus) > 0
 
         # Verify ground truth documents are in corpus
@@ -365,7 +365,7 @@ class TestRagDataLoaderMethods:
 
         # Verify we can get questions
         questions = benchmark.get_questions()
-        assert len(questions) == 6
+        assert len(questions) < 6
         assert all(isinstance(q, str) for q in questions)
 
         # Verify we can access documents

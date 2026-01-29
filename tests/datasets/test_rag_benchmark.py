@@ -8,7 +8,7 @@ classes, including validation, immutability, filtering, and utility methods.
 import pytest
 from pydantic import ValidationError
 
-from src.datasets.data_models.rag_benchmark import (
+from ragbench.datasets.data_models.rag_benchmark import (
     GroundTruthContextId,
     RagBenchmark,
     RagBenchmarkEntry,
