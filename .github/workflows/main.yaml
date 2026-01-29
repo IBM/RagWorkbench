@@ -27,22 +27,6 @@ jobs:
     name: Test (Python)
     runs-on: ibm-x86-64-large
 
-    env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      RITS_API_KEY: ${{ secrets.RITS_API_KEY }}
-      WATSONX_APIKEY: ${{ secrets.WATSONX_APIKEY }}
-      WATSONX_PROJECT_ID: ${{ secrets.WATSONX_PROJECT_ID }}
-      WATSONX_URL: ${{ secrets.WATSONX_URL }}
-      LAKEHOUSE_TOKEN: ${{ secrets.LAKEHOUSE_TOKEN }}
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      API_URL: ${{ github.api_url }}          # e.g., https://api.github.com
-      REPO: ${{ github.repository }}          # owner/repo
-      NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
-      BASE_BRANCH: ${{ github.event.pull_request.base.ref || github.ref_name }}
-#      OLLAMA_HOST: "172.17.0.1:11434"
-      SPAN_DEBUG: "off"
-      TEST_PROVIDER_ID: watsonx
-
     # Skip CI for draft PRs
     if: ${{ github.event.pull_request.draft == false }}
 
