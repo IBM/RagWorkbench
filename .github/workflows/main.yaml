@@ -80,4 +80,4 @@ jobs:
       - name: Run tests/
         run: |
           source .venv/bin/activate
-          python -m pytest --durations=20 --timeout=600 -x -m "not exclude"  tests/
+          python -m pytest tests/
