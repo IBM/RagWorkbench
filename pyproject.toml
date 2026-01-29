@@ -113,13 +113,6 @@ warn_unused_ignores = true
 warn_no_return = true
 strict_equality = true
 
-[[tool.mypy.overrides]]
-module = [
-    "docling_core.*",
-    "rag_unitxt_cards.*",
-]
-ignore_missing_imports = true
-
 [tool.black]
 line-length = 88
 target-version = ["py313"]
