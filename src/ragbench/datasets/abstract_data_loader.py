@@ -3,11 +3,11 @@ import random
 from abc import ABC, abstractmethod
 from typing import Literal
 
-from datasets.data_models.data_sampling_params import DataSamplingParams
-from datasets.data_models.dataset_names import DatasetName
-from datasets.data_models.document_object import DocumentObject
-from datasets.data_models.rag_benchmark import RagBenchmark, RagBenchmarkEntry
-from datasets.data_models.rag_corpus import RagCorpus
+from ragbench.datasets.data_models.data_sampling_params import DataSamplingParams
+from ragbench.datasets.data_models.dataset_names import DatasetName
+from ragbench.datasets.data_models.document_object import DocumentObject
+from ragbench.datasets.data_models.rag_benchmark import RagBenchmark, RagBenchmarkEntry
+from ragbench.datasets.data_models.rag_corpus import RagCorpus
 
 logger: logging.Logger = logging.getLogger(__name__)
 
