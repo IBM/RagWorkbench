@@ -45,52 +45,6 @@ jobs:
           cache-dependency-path: |
             pyproject.toml
 
-      - name: Set up SSH for GHE private deps (heredoc) # This step replaces the webfactory/ssh-agent@v0.9.0 action which is not supported
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-
-          cat > ~/.ssh/id_ed25519 <<'EOF'
-          ${{ secrets.GH_SSH_KEY }}
-          EOF
-          chmod 600 ~/.ssh/id_ed25519
-
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_ed25519
-
-          ssh-keyscan -t ecdsa github.ibm.com >> ~/.ssh/known_hosts || true
-          ssh-keyscan -t rsa github.ibm.com   >> ~/.ssh/known_hosts || true
-          ssh-keyscan -t ed25519 github.ibm.com >> ~/.ssh/known_hosts || true
-          chmod 644 ~/.ssh/known_hosts
-
-
-      # Trust GitHub's SSH host key (prevent "Host key verification failed")
-      - name: Add github.com to known_hosts
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          # Use rsa + ed25519 to cover modern keys
-          ssh-keyscan -t rsa,ed25519 github.com >> ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-
-      # (Optional) Pin SSH options used by uv/pip's git commands
-      # Explanation:
-      # GIT_SSH_COMMAND=... is a special environment variable that Git honors.
-      #      Whenever Git needs to use SSH (e.g., git fetch ssh://git@github.ibm.com/...), it will invoke SSH using the exact command string you provide. This lets you enforce options like host key checking, custom known_hosts path, identity files, etc.
-      #
-      # -o StrictHostKeyChecking=yes tells SSH to refuse connections to hosts whose key is not already in ~/.ssh/known_hosts.
-      #
-      # This prevents silent trust of unknown hosts (which could be a MITM risk).
-      # With this option, you must pre-populate known_hosts (we did using ssh-keyscan for github.ibm.com).
-      # $GITHUB_ENV appends the environment variable to GitHub Actions’ special file so it becomes available to all subsequent steps in the job.
-      # In Actions, writing VAR=value to $GITHUB_ENV is the supported way to export environment variables across steps.
-      - name: Export GIT_SSH_COMMAND
-        run: |
-          echo "GIT_SSH_COMMAND=ssh -o StrictHostKeyChecking=yes" >> $GITHUB_ENV
-
-
       # Show environment info (helpful on self-hosted runners)
       - name: Environment info
         run: |
