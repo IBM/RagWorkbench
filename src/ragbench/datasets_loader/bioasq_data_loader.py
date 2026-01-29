@@ -9,7 +9,7 @@ import logging
 from io import BytesIO
 from typing import Literal
 
-from datasets import load_dataset
+import datasets as hf_datasets
 
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
@@ -60,7 +60,7 @@ class BioasqDataLoader(RagDataLoader):
         logger.info(f"Loading documents from HuggingFace dataset: {hf_path}/{subset}")
 
         # Load the text corpus from HuggingFace
-        dataset = load_dataset(hf_path, subset)
+        dataset = hf_datasets.load_dataset(hf_path, subset)
 
         # The dataset should have a split (typically 'train')
         # Get the first available split
@@ -121,7 +121,7 @@ class BioasqDataLoader(RagDataLoader):
         )
 
         # Load the question-answer-passage dataset from HuggingFace
-        dataset = load_dataset(hf_path, subset)
+        dataset = hf_datasets.load_dataset(hf_path, subset)
 
         # Determine which splits to process
         entries: list[RagBenchmarkEntry] = []
