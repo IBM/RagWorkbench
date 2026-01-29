@@ -9,17 +9,17 @@ Uses a concrete mock implementation for testing abstract methods.
 from io import BytesIO
 from typing import Literal
 
-from datasets.datasets_utils import get_benchmark_split
-from src.datasets.abstract_data_loader import RagDataLoader
-from src.datasets.data_models.data_sampling_params import DataSamplingParams
-from src.datasets.data_models.dataset_names import DatasetName
-from src.datasets.data_models.document_object import DocumentObject
-from src.datasets.data_models.rag_benchmark import (
+from datasets.abstract_data_loader import RagDataLoader
+from datasets.data_models.data_sampling_params import DataSamplingParams
+from datasets.data_models.dataset_names import DatasetName
+from datasets.data_models.document_object import DocumentObject
+from datasets.data_models.rag_benchmark import (
     GroundTruthContextId,
     RagBenchmark,
     RagBenchmarkEntry,
 )
-from src.datasets.data_models.rag_corpus import RagCorpus
+from datasets.data_models.rag_corpus import RagCorpus
+from datasets.datasets_utils import get_benchmark_split
 
 
 class MockRagDataLoader(RagDataLoader):
