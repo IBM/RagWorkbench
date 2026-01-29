@@ -12,6 +12,7 @@ class DatasetName(str, Enum):
 
     Attributes:
         AI_ARXIV: ArXiv AI papers dataset identifier.
+        BIOASQ: BioASQ biomedical question answering dataset identifier.
 
     Example:
         >>> dataset = DatasetName.AI_ARXIV
@@ -22,3 +23,4 @@ class DatasetName(str, Enum):
     """
 
     AI_ARXIV = "ai_arxiv"
+    BIOASQ = "bioasq"
