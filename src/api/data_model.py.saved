@@ -2,27 +2,19 @@ from __future__ import annotations
 
 from enum import StrEnum, auto
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple, TypeAlias, Union
+from typing import Annotated, Any, TypeAlias
 
-from docling_core.types.doc.document import DoclingDocument
 from pydantic import (
     BaseModel,
     BeforeValidator,
     ConfigDict,
-    Field,
     PrivateAttr,
     SerializeAsAny,
-    ValidationError,
     model_validator,
 )
-from rag_unitxt_cards.data_models.document_object import DocumentObject
 from rag_unitxt_cards.data_models.rag_benchmark import RagBenchmark
 from rag_unitxt_cards.data_models.rag_corpus import RagCorpusMetadata
-from typing_extensions import Annotated
-
-from rageval.components import DATABASE_DIR
 from rageval.components.generation.generation_result import GeneratorResult
-from rageval.resources.model_defs import ModelDefs
 from rageval.resources.provider_defs import ProviderId
 
 
@@ -31,6 +23,7 @@ class StrictBaseModel(BaseModel):
         extra="forbid",
         protected_namespaces=(),  # avoid warnings about fields with names that start with "model_"
     )
+
 
 #
 # class DataLoading(StrictBaseModel):
@@ -70,6 +63,7 @@ class StrictBaseModel(BaseModel):
 #
 class DataStoreDescription(StrictBaseModel):
     pass
+
 
 #
 # class OpenRAGDataStore(DataStoreDescription):
@@ -163,7 +157,7 @@ class DataStoreDescription(StrictBaseModel):
 
 
 class DataPipelineOutput(StrictBaseModel):
-    data_store_descriptions: List[SerializeAsAny[DataStoreDescription]]
+    data_store_descriptions: list[SerializeAsAny[DataStoreDescription]]
     dataset_id: str
     # TODO : we should avoid ConvertedDocument
     document_mappings: dict[str, ConvertedDocument] | None = None
@@ -392,15 +386,16 @@ class DataPipelineOutput(StrictBaseModel):
 #         return self
 #
 
+
 class InferencePipelineInput(StrictBaseModel):
     benchmark: RagBenchmark
-    data_store_descriptions: List[DataStoreDescription]
+    data_store_descriptions: list[DataStoreDescription]
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
 
 class InferencePipelineOutput(StrictBaseModel):
-    generation_results: Dict[str, GeneratorResult]
+    generation_results: dict[str, GeneratorResult]
 
 
 class HyDEParams(StrictBaseModel):
@@ -447,7 +442,7 @@ class GroundTruthRetrievalParams(StrictBaseModel):
     doc_output_type: DocOutputType
 
     @model_validator(mode="after")
-    def validate_combo(self) -> "GroundTruthRetrievalParams":
+    def validate_combo(self) -> GroundTruthRetrievalParams:
         valid_combinations = [
             (DocOutputType.MD, ObjectResolution.CORPUS),
             (DocOutputType.MD, ObjectResolution.DOCUMENT),
@@ -479,11 +474,11 @@ class ModelProvider(StrictBaseModel):
     model_id: str
     provider_id: ProviderId
 
-    _host: Optional[str] = PrivateAttr()
-    _model_def_name: Optional[str] = PrivateAttr()
+    _host: str | None = PrivateAttr()
+    _model_def_name: str | None = PrivateAttr()
 
     @classmethod
-    def from_string(cls, provider: str) -> "ModelProvider":
+    def from_string(cls, provider: str) -> ModelProvider:
         if "/" not in provider:
             raise ValueError(
                 f"Provider must contain '/' separating provider_id and model_id. Got `{provider}`."
@@ -566,7 +561,7 @@ class ModelProvider(StrictBaseModel):
         return model_id
 
 
-ModelInput: TypeAlias = Union[ModelProvider, str]
+ModelInput: TypeAlias = ModelProvider | str
 
 
 def none_to(default):
@@ -656,8 +651,8 @@ class IndexingParams(StrictBaseModel):
 
 class CachingParams(StrictBaseModel):
     use_cache: bool
-    cache_type: Optional[str] = None
-    cache_dir: Optional[str] = None
+    cache_type: str | None = None
+    cache_dir: str | None = None
 
 
 class OpenRagInferenceParams(StrictBaseModel):
@@ -677,8 +672,8 @@ class AgenticPipelineParams(StrictBaseModel):
     task_prompt: str = ""
     strategy: str = "ReAct"  # "Dag"
     cpd: bool = True
-    external_tools_jsons: Optional[list[str]] = None
-    tool_definitions: Optional[dict[str, dict]] = None
+    external_tools_jsons: list[str] | None = None
+    tool_definitions: dict[str, dict] | None = None
 
 
 class NodeParams(StrictBaseModel):
@@ -717,7 +712,6 @@ class DatabaseParams(StrictBaseModel):
 # A support function for resolving the correct type for connection_details based on vendor. It is used as validator in classes that use
 # vendor+connection_details combo, such as DatabaseParams and DatabaseDescription
 def _coerce_conn_details(data):
-
     # if not a dict (already an instance, etc.), just return it
     if not isinstance(data, dict):
         return data

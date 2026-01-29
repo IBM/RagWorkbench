@@ -3,7 +3,6 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 from rag_unitxt_cards.data_models.rag_corpus import RagCorpus
-
 from rageval.flows.dataset_id import DatasetID
 from rageval.pipeline.api.data_model import DataPipelineOutput, RuntimeParams
 
@@ -11,7 +10,6 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class DataPipeline(ABC, Generic[T]):
-
     def __init__(
         self, pipeline_params: T, runtime_params: RuntimeParams, drop_index: bool
     ):

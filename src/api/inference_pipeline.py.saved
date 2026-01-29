@@ -3,7 +3,6 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 from rag_unitxt_cards.data_models.rag_benchmark import RagBenchmark
-
 from rageval.pipeline.api.data_model import (
     DataPipelineOutput,
     InferencePipelineOutput,
@@ -14,7 +13,6 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class InferencePipeline(ABC, Generic[T]):
-
     def __init__(self, pipeline_params: T, runtime_params: RuntimeParams):
         self.pipeline_params = pipeline_params
         self.runtime_params = runtime_params
