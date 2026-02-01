@@ -1,21 +1,18 @@
 """
 BioASQ dataset loader implementation.
 
-This module provides a concrete implementation of RagDataLoader for the BioASQ
-biomedical question answering dataset.
-
-BioASQ is a challenge on large-scale biomedical semantic indexing and question
-answering. The dataset contains questions about biomedical literature with
-corresponding answers and relevant document references.
-
 References:
-    - BioASQ Challenge: http://bioasq.org/
-    - Dataset Paper: https://academic.oup.com/database/article/doi/10.1093/database/baw068/2630414
+    - https://huggingface.co/datasets/enelpol/rag-mini-bioasq
 """
 
 import logging
 from io import BytesIO
 from typing import Literal
+
+from datasets import (  # type: ignore[import-not-found]
+    concatenate_datasets,
+    load_dataset,
+)
 
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
@@ -97,56 +94,54 @@ class BioasqDataLoader(RagDataLoader):
 
     def _get_documents(self) -> list[DocumentObject]:
         """
-        Load biomedical documents from the BioASQ dataset.
+        Load documents from the BioASQ text corpus.
 
-        This method should load PubMed articles/abstracts that are referenced
-        in the BioASQ questions. Documents are typically identified by PubMed IDs.
+        This method loads the text corpus from the HuggingFace dataset
+        "enelpol/rag-mini-bioasq" subset "text-corpus". Each row contains
+        a passage (document content) and an id (document identifier).
 
         Returns:
-            List of DocumentObject instances representing biomedical articles.
+            List of DocumentObject instances, where each document has:
+            - name: The document ID from the corpus
+            - content: The passage text as bytes
+            - mime_type: Set to 'text/plain' for text documents
 
         Raises:
-            FileNotFoundError: If document files cannot be found.
-            ValueError: If document format is invalid.
-
-        Note:
-            Current implementation returns placeholder data. To implement:
-            1. Parse BioASQ JSON files to extract document IDs
-            2. Load document content (abstracts, full text if available)
-            3. Create DocumentObject instances with proper metadata
-            4. Handle PubMed ID to document mapping
+            Exception: If the dataset cannot be loaded from HuggingFace.
         """
-        logger.warning(
-            "BioasqDataLoader._get_documents() is not fully implemented. "
-            "Returning placeholder data."
-        )
+        hf_path = "enelpol/rag-mini-bioasq"
+        subset = "text-corpus"
 
-        # TODO: Implement actual BioASQ document loading
-        # Example structure:
-        # - Read BioASQ JSON files
-        # - Extract PubMed IDs from questions
-        # - Load corresponding abstracts/articles
-        # - Create DocumentObject instances
+        logger.info(f"Loading documents from HuggingFace dataset: {hf_path}/{subset}")
 
-        # Placeholder implementation
-        documents = []
-        for i in range(10):
+        # Load the text corpus from HuggingFace
+        dataset = load_dataset(hf_path, subset)
+
+        # The dataset should have a split (typically 'test')
+        # Get the first available split
+        split_name = "test"
+        corpus_data = dataset[split_name]
+
+        logger.info(f"Found {len(corpus_data)} documents in split '{split_name}'")
+
+        # Create DocumentObject for each row
+        documents: list[DocumentObject] = []
+        for row in corpus_data:
+            # Extract id and passage from the row
+            # Convert id to string in case it's an integer
+            doc_id = str(row["id"])
+            passage = row["passage"]
+
+            # Create DocumentObject with the passage content
+            # Convert string content to bytes for DocumentStream
             doc = DocumentObject(
-                name=f"PMID_{i}",  # PubMed ID format
-                stream=BytesIO(
-                    f"Placeholder biomedical abstract {i}. "
-                    f"This should contain actual PubMed article content.".encode()
-                ),
+                name=doc_id,
+                stream=BytesIO(passage.encode("utf-8")),
                 mime_type="text/plain",
-                metadata={
-                    "source": "bioasq",
-                    "pubmed_id": f"PMID_{i}",
-                    "placeholder": True,
-                },
             )
             documents.append(doc)
 
-        logger.info(f"Loaded {len(documents)} placeholder documents")
+        logger.info(f"Loaded {len(documents)} documents from BioASQ corpus")
         return documents
 
     def _get_benchmark_entries(
@@ -155,12 +150,9 @@ class BioasqDataLoader(RagDataLoader):
         """
         Load question-answer pairs from the BioASQ dataset.
 
-        This method should load BioASQ questions with their ground truth answers
-        and document references. BioASQ questions can be of different types:
-        - Yes/No questions
-        - Factoid questions (short answer)
-        - List questions (multiple answers)
-        - Summary questions (paragraph answer)
+        This method loads BioASQ questions with their ground truth answers
+        and document references from the HuggingFace dataset
+        "enelpol/rag-mini-bioasq" subset "question-answer-passages".
 
         Args:
             split: Dataset split to load ('train', 'test', or None for all).
@@ -169,49 +161,64 @@ class BioasqDataLoader(RagDataLoader):
             List of RagBenchmarkEntry instances with questions and answers.
 
         Raises:
-            FileNotFoundError: If benchmark files cannot be found.
-            ValueError: If benchmark format is invalid.
-
-        Note:
-            Current implementation returns placeholder data. To implement:
-            1. Parse BioASQ JSON files for the specified split
-            2. Extract questions, answers, and document references
-            3. Handle different question types appropriately
-            4. Create RagBenchmarkEntry instances with proper ground truth
+            Exception: If the dataset cannot be loaded from HuggingFace.
         """
-        logger.warning(
-            f"BioasqDataLoader._get_benchmark_entries(split='{split}') is not "
-            f"fully implemented. Returning placeholder data."
+        hf_path = "enelpol/rag-mini-bioasq"
+        subset = "question-answer-passages"
+
+        logger.info(
+            f"Loading benchmark entries from HuggingFace dataset: {hf_path}/{subset}, "
+            f"split='{split}'"
         )
 
-        # TODO: Implement actual BioASQ benchmark loading
-        # Example structure:
-        # - Read BioASQ JSON files for the specified split
-        # - Parse question objects
-        # - Extract answers (handle different answer types)
-        # - Map document references to GroundTruthContextId
-        # - Create RagBenchmarkEntry instances
+        # Load the question-answer-passages dataset from HuggingFace
+        dataset = load_dataset(hf_path, subset)
 
-        # Placeholder implementation
-        entries = []
-        num_questions = 15 if split is None else (10 if split == "train" else 5)
+        # Handle split parameter
+        if split == "train":
+            data = dataset["train"]
+            logger.info(f"Loading train split with {len(data)} entries")
+        elif split == "test":
+            data = dataset["test"]
+            logger.info(f"Loading test split with {len(data)} entries")
+        else:
+            # Concatenate both train and test splits
+            train_data = dataset["train"]
+            test_data = dataset["test"]
+            data = concatenate_datasets([train_data, test_data])
+            logger.info(
+                f"Loading all splits: {len(train_data)} train + {len(test_data)} test "
+                f"= {len(data)} total entries"
+            )
 
-        for i in range(num_questions):
+        # Create RagBenchmarkEntry for each row
+        entries: list[RagBenchmarkEntry] = []
+        for row in data:
+            # Extract fields from the row
+            question_id = str(row["id"])
+            question = row["question"]
+            answer = row["answer"]
+            relevant_passage_ids = row["relevant_passage_ids"]
+
+            # Convert relevant_passage_ids to GroundTruthContextId objects
+            ground_truth_context_ids = [
+                GroundTruthContextId(document_id=str(doc_id))
+                for doc_id in relevant_passage_ids
+            ]
+
+            # Create RagBenchmarkEntry
             entry = RagBenchmarkEntry(
-                question_id=f"bioasq_q_{i}",
-                question=f"Placeholder biomedical question {i}?",
-                ground_truth_answers=[f"Placeholder answer {i}"],
-                ground_truth_context_ids=[
-                    GroundTruthContextId(document_id=f"PMID_{i % 10}")
-                ],
-                is_answerable=True,
+                question_id=question_id,
+                question=question,
+                ground_truth_answers=[answer],  # Wrap single answer in list
+                ground_truth_context_ids=ground_truth_context_ids,
+                is_answerable=True,  # All BioASQ questions are answerable
                 additional_information={
                     "source": "bioasq",
-                    "question_type": "factoid",  # Could be yes/no, list, summary
-                    "placeholder": True,
+                    "question_type": "factoid",  # Default type for BioASQ
                 },
             )
             entries.append(entry)
 
-        logger.info(f"Loaded {len(entries)} placeholder benchmark entries")
+        logger.info(f"Loaded {len(entries)} benchmark entries from BioASQ dataset")
         return entries
