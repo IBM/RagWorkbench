@@ -17,7 +17,7 @@ import logging
 from io import BytesIO
 from typing import Literal
 
-from ragbench.datasets.abstract_data_loader import RagDataLoader
+from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.dataset_names import DatasetName
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
