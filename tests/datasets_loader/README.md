@@ -157,41 +157,41 @@ pip install -e ".[dev]"
 ### Run All Dataset Tests
 
 ```bash
-pytest tests/datasets/ -v
+pytest tests/datasets_loader/ -v
 ```
 
 ### Run Tests by Category
 
 ```bash
 # Data model tests only
-pytest tests/datasets/unit/data_models/ -v
+pytest tests/datasets_loader/unit/data_models/ -v
 
 # Loader tests only
-pytest tests/datasets/unit/loaders/ -v
+pytest tests/datasets_loader/unit/loaders/ -v
 
 # Utility tests only
-pytest tests/datasets/unit/utils/ -v
+pytest tests/datasets_loader/unit/utils/ -v
 ```
 
 ### Run Specific Test File
 
 ```bash
-pytest tests/datasets/unit/data_models/test_rag_benchmark.py -v
-pytest tests/datasets/unit/loaders/test_abstract_data_loader_sampling.py -v
-pytest tests/datasets/unit/loaders/test_bioasq_data_loader.py -v
+pytest tests/datasets_loader/unit/data_models/test_rag_benchmark.py -v
+pytest tests/datasets_loader/unit/loaders/test_abstract_data_loader_sampling.py -v
+pytest tests/datasets_loader/unit/loaders/test_bioasq_data_loader.py -v
 ```
 
 ### Run Specific Test Class
 
 ```bash
-pytest tests/datasets/unit/data_models/test_rag_benchmark.py::TestRagBenchmark -v
-pytest tests/datasets/unit/loaders/test_abstract_data_loader_sampling.py::TestRagDataLoaderSampling -v
+pytest tests/datasets_loader/unit/data_models/test_rag_benchmark.py::TestRagBenchmark -v
+pytest tests/datasets_loader/unit/loaders/test_abstract_data_loader_sampling.py::TestRagDataLoaderSampling -v
 ```
 
 ### Run Specific Test Method
 
 ```bash
-tests/datasets/test_abstract_data_loader.py::TestRagDataLoaderEdgeCases::test_document_factor_zero PASSED
+tests/datasets_loader/test_abstract_data_loader.py::TestRagDataLoaderEdgeCases::test_document_factor_zero PASSED
 
 ========================= 41 passed in X.XXs =========================
 ```

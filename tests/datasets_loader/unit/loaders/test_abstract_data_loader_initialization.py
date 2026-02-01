@@ -7,7 +7,7 @@ base class, including split handling and corpus/benchmark creation.
 
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
-from tests.datasets.helpers.mock_data_loader import MockRagDataLoader
+from tests.datasets_loader.helpers.mock_data_loader import MockRagDataLoader
 
 
 class TestRagDataLoaderInitialization:
