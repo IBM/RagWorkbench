@@ -7,7 +7,7 @@ including question sampling, document sampling, and reproducibility.
 
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
-from tests.datasets.helpers.mock_data_loader import MockRagDataLoader
+from tests.datasets_loader.helpers.mock_data_loader import MockRagDataLoader
 
 
 class TestRagDataLoaderSampling:
