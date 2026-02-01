@@ -29,8 +29,6 @@ class RagDataLoader(ABC):
     Attributes:
         dataset_name: Identifier for the dataset being loaded.
         split: Dataset split ('train' or 'test'), or None for full dataset.
-        all_docs: Complete list of documents before sampling.
-        all_benchmark_entries: Complete list of benchmark entries before sampling.
         benchmark: The sampled RagBenchmark instance.
         rag_corpus: The sampled RagCorpus instance.
 
@@ -189,7 +187,7 @@ class RagDataLoader(ABC):
 
         Example:
             >>> entries, docs = RagDataLoader._load_sample(
-            ...     all_entries,
+            ...     benchmark_entries,
             ...     all_docs,
             ...     DataSamplingParams(question_limit=50, document_factor=2, seed=42)
             ... )
