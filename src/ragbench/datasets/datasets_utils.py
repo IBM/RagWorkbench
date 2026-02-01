@@ -8,7 +8,7 @@ including splitting datasets into train/test sets with reproducible randomizatio
 import random
 from typing import Literal
 
-from ragbench.datasets.data_models.rag_benchmark import RagBenchmarkEntry
+from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmarkEntry
 
 # Default train/test split ratio
 DEFAULT_TRAIN_RATIO = 0.7
