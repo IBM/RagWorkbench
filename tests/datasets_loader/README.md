@@ -35,15 +35,16 @@ tests/datasets/
 │   │   ├── __init__.py
 │   │   ├── test_abstract_data_loader_initialization.py  # 6 tests
 │   │   ├── test_abstract_data_loader_sampling.py        # 8 tests
-│   │   ├── test_abstract_data_loader_methods.py         # 8 tests
-│   │   └── test_bioasq_data_loader.py                   # 18 tests
+│   │   └── test_abstract_data_loader_methods.py         # 8 tests
 │   │
 │   └── utils/                         # Utility function tests
 │       ├── __init__.py
 │       └── test_datasets_utils.py     # 13 tests
 │
-└── integration/                        # Integration tests (future)
-    └── __init__.py
+└── integration/                        # Integration tests
+    ├── __init__.py
+    ├── README.md                       # Integration test documentation
+    └── test_bioasq_integration.py      # 5 tests - BioASQ ground truth validation
 ```
 
 ## Test Organization
@@ -115,14 +116,6 @@ Tests for data loader implementations:
   - End-to-end integration workflow
   - Edge cases (minimal dataset, no sampling, factor=0)
 
-- **`test_bioasq_data_loader.py`** (18 tests)
-  - Initialization with various parameters
-  - Document loading and format validation
-  - Benchmark entry loading
-  - Split handling
-  - Sampling functionality
-  - Integration scenarios
-
 #### Utils (`unit/utils/`)
 
 Tests for utility functions:
@@ -135,14 +128,26 @@ Tests for utility functions:
   - Correct split ratios
   - Edge cases (single entry, small datasets)
 
+### Integration Tests (`integration/`)
+
+Integration tests that interact with real external services:
+
+- **`test_bioasq_integration.py`** (5 tests)
+  - **Ground-truth document validation** - Verifies all documents referenced in benchmark entries exist in corpus
+  - Tests for train, test, and combined splits
+  - Sampling preservation - Ground-truth documents preserved with sampling
+  - Data consistency checks between corpus and benchmark
+  - Requires internet connection to download from HuggingFace
+
 ## Test Coverage Summary
 
 | Component | Test Files | Test Methods | Key Features Tested |
 |-----------|------------|--------------|---------------------|
 | Data Models | 3 | 23 | Validation, immutability, filtering, document ID extraction |
-| Loaders | 4 | 40 | Sampling logic, initialization, reproducibility, integration |
+| Loaders (Unit) | 3 | 22 | Sampling logic, initialization, reproducibility |
 | Utils | 1 | 13 | Split validation, reproducibility, ratio handling |
-| **Total** | **8** | **76** | **Comprehensive coverage of all components** |
+| **Integration** | **1** | **5** | **Ground-truth validation, real data loading** |
+| **Total** | **8** | **63** | **Comprehensive coverage of all components** |
 
 ## Running the Tests
 
@@ -171,6 +176,12 @@ pytest tests/datasets_loader/unit/loaders/ -v
 
 # Utility tests only
 pytest tests/datasets_loader/unit/utils/ -v
+
+# Integration tests only (requires internet connection)
+pytest tests/datasets_loader/integration/ -v -m integration
+
+# All tests except integration (faster for development)
+pytest tests/datasets_loader/ -v -m "not integration"
 ```
 
 ### Run Specific Test File
