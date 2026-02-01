@@ -5,11 +5,11 @@ This module tests the public methods of RagDataLoader and various
 edge cases and boundary conditions.
 """
 
-from ragbench.datasets.data_models.data_sampling_params import DataSamplingParams
-from ragbench.datasets.data_models.rag_benchmark import (
+from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
+from ragbench.datasets_loader.data_models.rag_benchmark import (
     RagBenchmark,
 )
-from ragbench.datasets.data_models.rag_corpus import RagCorpus
+from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
 from tests.datasets.helpers.mock_data_loader import MockRagDataLoader
 
 

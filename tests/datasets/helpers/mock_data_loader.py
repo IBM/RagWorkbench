@@ -9,14 +9,14 @@ from io import BytesIO
 from typing import Literal
 
 from ragbench.datasets.abstract_data_loader import RagDataLoader
-from ragbench.datasets.data_models.data_sampling_params import DataSamplingParams
-from ragbench.datasets.data_models.dataset_names import DatasetName
-from ragbench.datasets.data_models.document_object import DocumentObject
-from ragbench.datasets.data_models.rag_benchmark import (
+from ragbench.datasets.datasets_utils import get_benchmark_split
+from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
+from ragbench.datasets_loader.data_models.dataset_names import DatasetName
+from ragbench.datasets_loader.data_models.document_object import DocumentObject
+from ragbench.datasets_loader.data_models.rag_benchmark import (
     GroundTruthContextId,
     RagBenchmarkEntry,
 )
-from ragbench.datasets.datasets_utils import get_benchmark_split
 
 
 class MockRagDataLoader(RagDataLoader):

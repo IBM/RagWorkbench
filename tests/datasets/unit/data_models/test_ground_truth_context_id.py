@@ -8,7 +8,7 @@ immutability, and field requirements.
 import pytest
 from pydantic import ValidationError
 
-from ragbench.datasets.data_models.rag_benchmark import GroundTruthContextId
+from ragbench.datasets_loader.data_models.rag_benchmark import GroundTruthContextId
 
 
 class TestGroundTruthContextId:
