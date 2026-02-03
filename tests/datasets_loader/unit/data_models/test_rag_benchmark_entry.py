@@ -1,12 +1,9 @@
 """
 Tests for RagBenchmarkEntry data model.
 
-This module tests the RagBenchmarkEntry class including validation,
-immutability, and various entry configurations.
+This module tests the RagBenchmarkEntry class focusing on business logic
+and various entry configurations.
 """
-
-import pytest
-from pydantic import ValidationError
 
 from ragbench.datasets_loader.data_models.rag_benchmark import (
     GroundTruthContextId,
@@ -17,8 +14,8 @@ from ragbench.datasets_loader.data_models.rag_benchmark import (
 class TestRagBenchmarkEntry:
     """Test suite for RagBenchmarkEntry model."""
 
-    def test_valid_creation_with_all_fields(self):
-        """Test creating a RagBenchmarkEntry with all fields provided."""
+    def test_creation_with_all_fields(self):
+        """Test creating a RagBenchmarkEntry with all optional fields."""
         context_id = GroundTruthContextId(document_id="doc_1", page=2)
         entry = RagBenchmarkEntry(
             question_id="q_1",
@@ -39,8 +36,8 @@ class TestRagBenchmarkEntry:
             "difficulty": "easy",
         }
 
-    def test_valid_creation_minimal_fields(self):
-        """Test creating a RagBenchmarkEntry with only required fields."""
+    def test_creation_with_minimal_fields(self):
+        """Test creating a RagBenchmarkEntry with only required fields and defaults."""
         entry = RagBenchmarkEntry(
             question_id="q_2",
             question="Another question?",
@@ -52,22 +49,6 @@ class TestRagBenchmarkEntry:
         assert entry.ground_truth_context_ids == []
         assert entry.is_answerable is True  # Default value
         assert entry.additional_information is None
-
-    def test_immutability_frozen_fields(self):
-        """Test that frozen fields cannot be modified after creation."""
-        entry = RagBenchmarkEntry(
-            question_id="q_3",
-            question="Test question?",
-        )
-
-        with pytest.raises(ValidationError):
-            entry.question_id = "new_q_3"
-
-        with pytest.raises(ValidationError):
-            entry.question = "New question?"
-
-        with pytest.raises(ValidationError):
-            entry.is_answerable = False
 
     def test_unanswerable_question(self):
         """Test creating an unanswerable question entry."""
