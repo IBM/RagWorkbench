@@ -13,6 +13,7 @@ class DatasetName(str, Enum):
     Attributes:
         AI_ARXIV: ArXiv AI papers dataset identifier.
         BIOASQ: BioASQ biomedical question answering dataset identifier.
+        CLAP_NQ: CLAP-NQ dataset identifier.
         HOTPOT_QA: HotpotQA multi-hop question answering dataset identifier.
 
     Example:
@@ -25,4 +26,5 @@ class DatasetName(str, Enum):
 
     AI_ARXIV = "ai_arxiv"
     BIOASQ = "bioasq"
+    CLAP_NQ = "clap_nq"
     HOTPOT_QA = "hotpot_qa"
