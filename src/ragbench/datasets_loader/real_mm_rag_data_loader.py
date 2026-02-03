@@ -1,10 +1,13 @@
 """
 RealMM dataset loader implementation.
 
-This module provides a data loader for the RealMM multimodal RAG dataset.
+This module provides a data loader for the RealMM multimodal RAG datasets.
 
 References:
     - HuggingFace: https://huggingface.co/datasets/ibm-research/REAL-MM-RAG_FinSlides
+    - HuggingFace: https://huggingface.co/datasets/ibm-research/REAL-MM-RAG_FinReport
+    - HuggingFace: https://huggingface.co/datasets/ibm-research/REAL-MM-RAG_TechReport
+    - HuggingFace: https://huggingface.co/datasets/ibm-research/REAL-MM-RAG_TechSlides
 """
 
 import logging
@@ -26,43 +29,48 @@ from ragbench.datasets_loader.datasets_utils import get_benchmark_split
 
 logger = logging.getLogger(__name__)
 
+# Mapping from DatasetName to HuggingFace dataset path
+DATASET_NAME_TO_HF_PATH = {
+    DatasetName.REAL_MM_FIN_SLIDES: "ibm-research/REAL-MM-RAG_FinSlides",
+    DatasetName.REAL_MM_FIN_REPORT: "ibm-research/REAL-MM-RAG_FinReport",
+    DatasetName.REAL_MM_TECH_REPORT: "ibm-research/REAL-MM-RAG_TechReport",
+    DatasetName.REAL_MM_TECH_SLIDES: "ibm-research/REAL-MM-RAG_TechSlides",
+}
+
 
 class RealMMRagDataLoader(RagDataLoader):
     """
-    Data loader for the RealMM multimodal RAG dataset.
+    Data loader for the RealMM multimodal RAG datasets.
 
-    This loader handles loading and processing of the RealMM dataset from
-    HuggingFace (ibm-research/REAL-MM-RAG_FinSlides), including multimodal
-    documents and question-answer pairs with ground truth document references.
+    This loader handles loading and processing of the RealMM datasets from
+    HuggingFace, including multimodal documents and question-answer pairs
+    with ground truth document references.
 
-    The RealMM dataset includes:
-    - Multimodal financial slide documents (text, images, tables, charts)
+    Supported datasets:
+    - REAL-MM-RAG_FinSlides: Financial slide documents
+    - REAL-MM-RAG_FinReport: Financial report documents
+    - REAL-MM-RAG_TechReport: Technical report documents
+    - REAL-MM-RAG_TechSlides: Technical slide documents
+
+    The RealMM datasets include:
+    - Multimodal documents (text, images, tables, charts)
     - Questions requiring multimodal understanding
     - Ground truth answers
     - References to relevant documents and specific content locations
 
     Example:
         >>> loader = RealMMRagDataLoader(
+        ...     dataset_name=DatasetName.REAL_MM_FIN_SLIDES,
         ...     split="train",
         ...     sampling_params=DataSamplingParams(question_limit=100)
         ... )
         >>> corpus = loader.get_corpus()
         >>> benchmark = loader.get_benchmark()
-
-    Note:
-        This is a skeleton implementation. To complete this loader, you need to:
-        1. Implement the data loading logic in _get_documents() and
-           _get_benchmark_entries()
-        2. Determine the correct HuggingFace dataset configuration names
-        3. Handle the specific RealMM data format and field names
-        4. Process multimodal content appropriately
     """
-
-    # Fixed HuggingFace dataset path
-    HF_DATASET_PATH = "ibm-research/REAL-MM-RAG_FinSlides"
 
     def __init__(
         self,
+        dataset_name: DatasetName,
         split: Literal["train", "test"] | None = None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
     ):
@@ -70,31 +78,41 @@ class RealMMRagDataLoader(RagDataLoader):
         Initialize the RealMM data loader.
 
         Args:
+            dataset_name: Which RealMM dataset to load.
+                         Must be one of: REAL_MM_FIN_SLIDES, REAL_MM_FIN_REPORT,
+                         REAL_MM_TECH_REPORT, REAL_MM_TECH_SLIDES.
             split: Dataset split to load ('train', 'test', or None for all).
             sampling_params: Parameters controlling question and document sampling.
                            Defaults to no sampling (all data included).
 
         Raises:
-            NotImplementedError: Currently raised as this is a skeleton implementation.
+            ValueError: If dataset_name is not a supported RealMM dataset.
             Exception: If the dataset cannot be loaded from HuggingFace.
 
         Note:
             The initialization process:
-            1. Loads all documents via _get_documents()
-            2. Loads all benchmark entries via _get_benchmark_entries()
-            3. Applies sampling based on sampling_params
-            4. Creates RagBenchmark and RagCorpus instances
-            5. Logs the final dataset size
-
-            The dataset is loaded from the fixed HuggingFace path:
-            ibm-research/REAL-MM-RAG_FinSlides
+            1. Validates dataset_name and determines HuggingFace path
+            2. Loads all documents via _get_documents()
+            3. Loads all benchmark entries via _get_benchmark_entries()
+            4. Applies sampling based on sampling_params
+            5. Creates RagBenchmark and RagCorpus instances
+            6. Logs the final dataset size
         """
+        # Validate dataset_name and get HuggingFace path
+        if dataset_name not in DATASET_NAME_TO_HF_PATH:
+            raise ValueError(
+                f"Unsupported dataset_name: {dataset_name}. "
+                f"Must be one of: {list(DATASET_NAME_TO_HF_PATH.keys())}"
+            )
+
+        self.hf_dataset_path = DATASET_NAME_TO_HF_PATH[dataset_name]
+
         logger.info(
-            f"Initializing RealMMRagDataLoader with split='{split}' "
-            f"from HuggingFace dataset: {self.HF_DATASET_PATH}"
+            f"Initializing RealMMRagDataLoader with dataset='{dataset_name}', "
+            f"split='{split}' from HuggingFace dataset: {self.hf_dataset_path}"
         )
 
-        super().__init__(DatasetName.REAL_MM, split, sampling_params)
+        super().__init__(dataset_name, split, sampling_params)
 
     def _get_documents(self) -> list[DocumentObject]:
         """
@@ -118,11 +136,11 @@ class RealMMRagDataLoader(RagDataLoader):
             Exception: If the dataset cannot be loaded from HuggingFace.
         """
         logger.info(
-            f"Loading documents from HuggingFace dataset: {self.HF_DATASET_PATH}"
+            f"Loading documents from HuggingFace dataset: {self.hf_dataset_path}"
         )
 
         # Load the dataset from HuggingFace (only 'test' split is available)
-        dataset = load_dataset(self.HF_DATASET_PATH)
+        dataset = load_dataset(self.hf_dataset_path)
         data = dataset["test"]
         logger.info(f"Loaded {len(data)} entries from test split")
 
@@ -205,12 +223,12 @@ class RealMMRagDataLoader(RagDataLoader):
             Exception: If the dataset cannot be loaded from HuggingFace.
         """
         logger.info(
-            f"Loading benchmark entries from HuggingFace dataset: {self.HF_DATASET_PATH}, "
+            f"Loading benchmark entries from HuggingFace dataset: {self.hf_dataset_path}, "
             f"split='{split}'"
         )
 
         # Load the dataset from HuggingFace (only 'test' split is available)
-        dataset = load_dataset(self.HF_DATASET_PATH)
+        dataset = load_dataset(self.hf_dataset_path)
         data = dataset["test"]
         logger.info(f"Loaded {len(data)} entries from test split")
 
