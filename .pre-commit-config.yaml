@@ -17,20 +17,22 @@ repos:
       - id: debug-statements
       - id: mixed-line-ending
 
-  # Ruff - Fast Python linter (replaces flake8, isort, and more)
+
+  # Black first
+  - repo: https://github.com/psf/black
+    rev: 26.1.0
+    hooks:
+      - id: black
+        args: [--config=pyproject.toml]
+        language_version: python3.13
+
+  # Ruff second (linting)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.14
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-      - id: ruff-format
 
-  # Black - Python code formatter
-  - repo: https://github.com/psf/black
-    rev: 26.1.0
-    hooks:
-      - id: black
-        args: [ --config=pyproject.toml ]  # ← add this if missing
 
   # MyPy - Static type checker
   - repo: https://github.com/pre-commit/mirrors-mypy
