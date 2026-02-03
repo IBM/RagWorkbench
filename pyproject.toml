@@ -37,6 +37,8 @@ dependencies = [
     "docling-core",
     "typing-extensions",
     "datasets>=4.5.0",
+    "types-requests",
+    "requests"
 ]
 
 [project.optional-dependencies]
