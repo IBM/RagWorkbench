@@ -15,6 +15,7 @@ class DatasetName(str, Enum):
         BIOASQ: BioASQ biomedical question answering dataset identifier.
         CLAP_NQ: CLAP-NQ dataset identifier.
         HOTPOT_QA: HotpotQA multi-hop question answering dataset identifier.
+        MINI_WIKI: Mini Wikipedia RAG dataset identifier.
 
     Example:
         >>> dataset = DatasetName.AI_ARXIV
@@ -28,3 +29,4 @@ class DatasetName(str, Enum):
     BIOASQ = "bioasq"
     CLAP_NQ = "clap_nq"
     HOTPOT_QA = "hotpot_qa"
+    MINI_WIKI = "mini_wiki"
