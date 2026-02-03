@@ -16,6 +16,7 @@ class DatasetName(str, Enum):
         CLAP_NQ: CLAP-NQ dataset identifier.
         HOTPOT_QA: HotpotQA multi-hop question answering dataset identifier.
         MINI_WIKI: Mini Wikipedia RAG dataset identifier.
+        WATSONX_DOCS_QA: WatsonX DocsQA enterprise documentation dataset identifier.
 
     Example:
         >>> dataset = DatasetName.AI_ARXIV
@@ -30,3 +31,4 @@ class DatasetName(str, Enum):
     CLAP_NQ = "clap_nq"
     HOTPOT_QA = "hotpot_qa"
     MINI_WIKI = "mini_wiki"
+    WATSONX_DOCS_QA = "watsonx_docs_qa"
