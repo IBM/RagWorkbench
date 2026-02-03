@@ -30,7 +30,8 @@ repos:
     rev: 26.1.0
     hooks:
       - id: black
-        language_version: python3.13
+        args: [ --config=pyproject.toml ]  # ← add this if missing
+        language_version: python3.11
 
   # MyPy - Static type checker
   - repo: https://github.com/pre-commit/mirrors-mypy
