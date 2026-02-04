@@ -36,3 +36,4 @@ class DatasetName(str, Enum):
     DA_CODE = "da_code"
     DABSTEP = "dabstep"
     MLDR = "mldr"
+    NARRATIVE_QA = "narrative_qa"
