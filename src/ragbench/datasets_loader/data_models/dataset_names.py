@@ -39,3 +39,4 @@ class DatasetName(str, Enum):
     NARRATIVE_QA = "narrative_qa"
     OFFICEQA = "officeqa"
     QASPER = "qasper"
+    SECQUE = "secque"
