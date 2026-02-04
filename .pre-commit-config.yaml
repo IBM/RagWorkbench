@@ -43,5 +43,6 @@ repos:
           - pydantic>=2.0
           - typing-extensions
           - docling-core
+          - types-requests
         args: [--config-file=pyproject.toml, --explicit-package-bases]
         files: ^src/
