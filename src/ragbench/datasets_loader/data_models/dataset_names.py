@@ -34,3 +34,4 @@ class DatasetName(str, Enum):
     WATSONX_DOCS_QA = "watsonx_docs_qa"
     KRAMABENCH = "kramabench"
     DA_CODE = "da_code"
+    DABSTEP = "dabstep"
