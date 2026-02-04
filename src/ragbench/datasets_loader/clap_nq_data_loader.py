@@ -14,7 +14,7 @@ import logging
 from io import BytesIO, StringIO
 from typing import Literal
 
-import requests  # type: ignore[import-untyped]
+import requests
 from datasets import load_dataset  # type: ignore[import-not-found]
 
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
