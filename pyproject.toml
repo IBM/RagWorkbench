@@ -41,7 +41,7 @@ dependencies = [
     "requests",
     "huggingface-hub>=1.3.0",
     "pandas",
-    "gdown"
+    "gdown",
 ]
 
 [project.optional-dependencies]
