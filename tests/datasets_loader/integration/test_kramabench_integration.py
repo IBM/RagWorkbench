@@ -7,7 +7,7 @@ and verify data integrity.
 
 import pytest
 
-from ragbench.datasets_loader.kramabench_data_loader import KramaBenchDataLoader
+from ragbench.datasets_loader.kramabench_data_loader import KramabenchDataLoader
 from tests.datasets_loader.helpers.integration_test_helpers import (
     IntegrationTestHelpers as helpers,
 )
@@ -29,7 +29,7 @@ class TestKramaBenchIntegration:
         would make it impossible to properly evaluate retrieval performance.
         """
         # Load KramaBench data
-        loader = KramaBenchDataLoader()
+        loader = KramabenchDataLoader()
 
         # Get corpus and benchmark
         corpus = loader.get_corpus()
@@ -45,7 +45,7 @@ class TestKramaBenchIntegration:
         Verifies that the loader successfully loads both documents and questions.
         """
         # Load KramaBench data
-        loader = KramaBenchDataLoader()
+        loader = KramabenchDataLoader()
 
         # Get corpus and benchmark
         corpus = loader.get_corpus()
@@ -62,7 +62,7 @@ class TestKramaBenchIntegration:
         This test verifies data integrity by ensuring no duplicate document IDs.
         """
         # Load KramaBench data
-        loader = KramaBenchDataLoader()
+        loader = KramabenchDataLoader()
         corpus = loader.get_corpus()
 
         # Verify uniqueness
@@ -75,7 +75,7 @@ class TestKramaBenchIntegration:
         This test verifies data integrity by ensuring no duplicate question IDs.
         """
         # Load KramaBench data
-        loader = KramaBenchDataLoader()
+        loader = KramabenchDataLoader()
         benchmark = loader.get_benchmark()
 
         # Verify uniqueness
@@ -88,7 +88,7 @@ class TestKramaBenchIntegration:
         Verifies that documents are properly loaded with content.
         """
         # Load KramaBench data
-        loader = KramaBenchDataLoader()
+        loader = KramabenchDataLoader()
         corpus = loader.get_corpus()
 
         # Verify documents have content
@@ -101,7 +101,7 @@ class TestKramaBenchIntegration:
         Verifies that every question has at least one answer.
         """
         # Load KramaBench data
-        loader = KramaBenchDataLoader()
+        loader = KramabenchDataLoader()
         benchmark = loader.get_benchmark()
 
         # Verify all entries have answers

@@ -27,7 +27,7 @@ NUMBER_OF_THREADS = 2
 class KramabenchDataLoader(RagDataLoader):
     def __init__(
         self,
-        split: Literal["train", "test"] | None,
+        split: Literal["train", "test"] | None = None,
         data_sampling: DataSamplingParams | None = None,
         verbose: bool = True,
         progress_every: int = 50,
