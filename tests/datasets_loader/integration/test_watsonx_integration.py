@@ -8,8 +8,10 @@ referenced in benchmark entries exist in the corpus.
 
 import pytest
 
-from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragbench.datasets_loader.watsonx_data_loader import WatsonxDocsQADataLoader
+from tests.datasets_loader.helpers.integration_test_helpers import (
+    IntegrationTestHelpers as helpers,
+)
 
 
 @pytest.mark.integration
@@ -31,15 +33,16 @@ class TestWatsonxDocsQAIntegration:
         benchmark = loader.get_benchmark()
 
         # Verify we have data
-        assert len(corpus) > 0, "Corpus should not be empty"
-        assert len(benchmark) > 0, "Benchmark should not be empty"
+        helpers.assert_corpus_not_empty(corpus)
+        helpers.assert_benchmark_not_empty(benchmark)
 
         # Verify expected dataset size (approximately)
         # The dataset should have around 1,144 documents and 75 Q&A pairs
         assert len(corpus) > 1000, f"Expected ~1,144 documents, got {len(corpus)}"
         assert len(benchmark) > 70, f"Expected ~75 questions, got {len(benchmark)}"
 
-    def test_ground_truth_documents_exist_in_corpus(self):
+    @pytest.mark.parametrize("split", [None, "train", "test"])
+    def test_ground_truth_documents_exist_in_corpus(self, split):
         """
         Test that all ground-truth doc_ids in benchmark exist in corpus.
 
@@ -51,81 +54,14 @@ class TestWatsonxDocsQAIntegration:
         would make it impossible to properly evaluate retrieval performance.
         """
         # Load WatsonX DocsQA data
-        loader = WatsonxDocsQADataLoader()
+        loader = WatsonxDocsQADataLoader(split=split)
 
         # Get corpus and benchmark
         corpus = loader.get_corpus()
         benchmark = loader.get_benchmark()
 
-        # Extract all document IDs from corpus
-        corpus_doc_ids = {doc.name for doc in corpus.documents}
-
-        # Extract all ground-truth document IDs from benchmark
-        benchmark_doc_ids = RagBenchmark.get_doc_ids_set(benchmark.benchmark_entries)
-
         # Verify all ground-truth documents exist in corpus
-        missing_docs = benchmark_doc_ids - corpus_doc_ids
-
-        assert len(missing_docs) == 0, (
-            f"Found {len(missing_docs)} ground-truth documents missing from corpus: "
-            f"{sorted(missing_docs)[:10]}..."  # Show first 10 missing docs
-        )
-
-        # Additional verification: ensure we have data
-        assert len(corpus_doc_ids) > 0, "Corpus should not be empty"
-        assert len(benchmark_doc_ids) > 0, "Benchmark should reference documents"
-
-    def test_ground_truth_documents_exist_in_corpus_train_split(self):
-        """
-        Test ground-truth document validation for train split.
-
-        Verifies that the train split maintains data integrity between
-        corpus and benchmark.
-        """
-        # Load WatsonX DocsQA train split
-        loader = WatsonxDocsQADataLoader(split="train")
-
-        # Get corpus and benchmark
-        corpus = loader.get_corpus()
-        benchmark = loader.get_benchmark()
-
-        # Extract document IDs
-        corpus_doc_ids = {doc.name for doc in corpus.documents}
-        benchmark_doc_ids = RagBenchmark.get_doc_ids_set(benchmark.benchmark_entries)
-
-        # Verify all ground-truth documents exist in corpus
-        missing_docs = benchmark_doc_ids - corpus_doc_ids
-
-        assert len(missing_docs) == 0, (
-            f"Found {len(missing_docs)} ground-truth documents missing from corpus "
-            f"in train split: {sorted(missing_docs)[:10]}..."
-        )
-
-    def test_ground_truth_documents_exist_in_corpus_test_split(self):
-        """
-        Test ground-truth document validation for test split.
-
-        Verifies that the test split also maintains data integrity between
-        corpus and benchmark.
-        """
-        # Load WatsonX DocsQA test split
-        loader = WatsonxDocsQADataLoader(split="test")
-
-        # Get corpus and benchmark
-        corpus = loader.get_corpus()
-        benchmark = loader.get_benchmark()
-
-        # Extract document IDs
-        corpus_doc_ids = {doc.name for doc in corpus.documents}
-        benchmark_doc_ids = RagBenchmark.get_doc_ids_set(benchmark.benchmark_entries)
-
-        # Verify all ground-truth documents exist in corpus
-        missing_docs = benchmark_doc_ids - corpus_doc_ids
-
-        assert len(missing_docs) == 0, (
-            f"Found {len(missing_docs)} ground-truth documents missing from corpus "
-            f"in test split: {sorted(missing_docs)[:10]}..."
-        )
+        helpers.assert_ground_truth_documents_exist(corpus, benchmark, split)
 
     def test_document_metadata_structure(self):
         """
@@ -138,18 +74,10 @@ class TestWatsonxDocsQAIntegration:
         loader = WatsonxDocsQADataLoader()
         corpus = loader.get_corpus()
 
-        # Check first few documents for metadata
-        for doc in corpus.documents[:10]:
-            assert (
-                "title" in doc.metadata
-            ), f"Document {doc.name} missing 'title' in metadata"
-            assert (
-                "url" in doc.metadata
-            ), f"Document {doc.name} missing 'url' in metadata"
-
-            # Verify metadata values are strings
-            assert isinstance(doc.metadata["title"], str), "Title should be a string"
-            assert isinstance(doc.metadata["url"], str), "URL should be a string"
+        # Verify documents have required metadata fields
+        helpers.assert_documents_have_metadata(
+            corpus, required_fields=["title", "url"], sample_size=10
+        )
 
     def test_benchmark_entry_structure(self):
         """
@@ -166,26 +94,12 @@ class TestWatsonxDocsQAIntegration:
         loader = WatsonxDocsQADataLoader()
         benchmark = loader.get_benchmark()
 
-        # Check first few entries
-        for entry in benchmark.benchmark_entries[:10]:
-            # Verify basic structure
-            assert entry.question_id, "Question ID should not be empty"
-            assert entry.question, "Question should not be empty"
-            assert entry.ground_truth_answers, "Should have at least one answer"
-            assert (
-                len(entry.ground_truth_answers) > 0
-            ), "Should have at least one answer"
+        # Verify entries have answers and are answerable
+        helpers.assert_entries_have_answers(benchmark)
+        helpers.assert_entries_are_answerable(benchmark)
 
-            # Verify single document reference (as per task specification)
-            assert len(entry.ground_truth_context_ids) == 1, (
-                f"Expected exactly 1 ground truth document, "
-                f"got {len(entry.ground_truth_context_ids)}"
-            )
-
-            # Verify all questions are answerable
-            assert (
-                entry.is_answerable is True
-            ), "All WatsonX questions should be answerable"
+        # Verify single document reference (WatsonX-specific requirement)
+        helpers.assert_entries_have_ground_truth_contexts(benchmark, expected_count=1)
 
     def test_document_content_not_empty(self):
         """
@@ -197,16 +111,5 @@ class TestWatsonxDocsQAIntegration:
         loader = WatsonxDocsQADataLoader()
         corpus = loader.get_corpus()
 
-        # Check that documents have content
-        empty_docs = []
-        for doc in corpus.documents[:20]:  # Check first 20 documents
-            # Read content from stream
-            content = doc.stream.read()
-            if len(content) == 0:
-                empty_docs.append(doc.name)
-            # Reset stream for potential future reads
-            doc.stream.seek(0)
-
-        assert (
-            len(empty_docs) == 0
-        ), f"Found {len(empty_docs)} documents with empty content: {empty_docs}"
+        # Verify documents have content
+        helpers.assert_documents_have_content(corpus, sample_size=20)
