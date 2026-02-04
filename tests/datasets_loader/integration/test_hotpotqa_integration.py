@@ -7,7 +7,7 @@ and verify data integrity, including multi-hop reasoning support.
 
 import pytest
 
-from ragbench.datasets_loader.hotpot_qa_data_loader import HotpotQADataLoader
+from ragbench.datasets_loader.hotpot_qa_data_loader import HotpotQaDataLoader
 from tests.datasets_loader.helpers.integration_test_helpers import (
     IntegrationTestHelpers as helpers,
 )
@@ -30,7 +30,7 @@ class TestHotpotQAIntegration:
         would make it impossible to properly evaluate retrieval performance.
         """
         # Load HotpotQA data
-        loader = HotpotQADataLoader(split=split)
+        loader = HotpotQaDataLoader(split=split)
 
         # Get corpus and benchmark
         corpus = loader.get_corpus()
@@ -47,7 +47,7 @@ class TestHotpotQAIntegration:
         questions should require information from multiple documents.
         """
         # Load HotpotQA data
-        loader = HotpotQADataLoader(split="train")
+        loader = HotpotQaDataLoader(split="train")
         benchmark = loader.get_benchmark()
 
         # Count entries with multiple ground truth contexts
@@ -69,7 +69,7 @@ class TestHotpotQAIntegration:
         This test verifies data integrity by ensuring no duplicate document IDs.
         """
         # Load HotpotQA data
-        loader = HotpotQADataLoader(split="train")
+        loader = HotpotQaDataLoader(split="train")
         corpus = loader.get_corpus()
 
         # Verify uniqueness
@@ -82,7 +82,7 @@ class TestHotpotQAIntegration:
         This test verifies data integrity by ensuring no duplicate question IDs.
         """
         # Load HotpotQA data
-        loader = HotpotQADataLoader(split="train")
+        loader = HotpotQaDataLoader(split="train")
         benchmark = loader.get_benchmark()
 
         # Verify uniqueness
@@ -95,7 +95,7 @@ class TestHotpotQAIntegration:
         Verifies that Wikipedia paragraphs are properly loaded with content.
         """
         # Load HotpotQA data
-        loader = HotpotQADataLoader(split="train")
+        loader = HotpotQaDataLoader(split="train")
         corpus = loader.get_corpus()
 
         # Verify documents have content
@@ -108,7 +108,7 @@ class TestHotpotQAIntegration:
         Verifies that every question has at least one answer.
         """
         # Load HotpotQA data
-        loader = HotpotQADataLoader(split="train")
+        loader = HotpotQaDataLoader(split="train")
         benchmark = loader.get_benchmark()
 
         # Verify all entries have answers
