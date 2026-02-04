@@ -36,9 +36,10 @@ dependencies = [
     "pydantic>=2.0",
     "docling-core",
     "typing-extensions",
-    "datasets>=4.5.0",
+    "datasets",
     "types-requests",
-    "requests"
+    "requests",
+    "gdown"
 ]
 
 [project.optional-dependencies]
