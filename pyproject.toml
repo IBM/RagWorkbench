@@ -39,7 +39,7 @@ dependencies = [
     "datasets",
     "types-requests",
     "requests",
-    "gdown"
+    "huggingface-hub>=1.3.0",
 ]
 
 [project.optional-dependencies]

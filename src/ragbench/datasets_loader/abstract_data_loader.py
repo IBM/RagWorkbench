@@ -71,7 +71,7 @@ class RagDataLoader(ABC):
         """
         self.dataset_name: DatasetName = dataset_name
         self.split: Literal["train", "test"] | None = split
-        all_docs: list[DocumentObject] = self._get_documents()
+        self.all_docs: list[DocumentObject] = self._get_documents()
         all_benchmark_entries: list[RagBenchmarkEntry] = self._get_benchmark_entries(
             split=split
         )
@@ -80,7 +80,7 @@ class RagDataLoader(ABC):
         sampled_benchmark_entries: list[RagBenchmarkEntry]
         sampled_docs: list[DocumentObject]
         sampled_benchmark_entries, sampled_docs = self._load_sample(
-            all_benchmark_entries, all_docs, sampling_params
+            all_benchmark_entries, self.all_docs, sampling_params
         )
 
         # Create benchmark and corpus instances

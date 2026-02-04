@@ -32,3 +32,4 @@ class DatasetName(str, Enum):
     HOTPOT_QA = "hotpot_qa"
     MINI_WIKI = "mini_wiki"
     WATSONX_DOCS_QA = "watsonx_docs_qa"
+    KRAMABENCH = "kramabench"
