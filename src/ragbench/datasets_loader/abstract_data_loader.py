@@ -71,6 +71,8 @@ class RagDataLoader(ABC):
         """
         self.dataset_name: DatasetName = dataset_name
         self.split: Literal["train", "test"] | None = split
+        self.sampling_params = sampling_params
+
         all_docs: list[DocumentObject] = self._get_documents()
         all_benchmark_entries: list[RagBenchmarkEntry] = self._get_benchmark_entries(
             split=split

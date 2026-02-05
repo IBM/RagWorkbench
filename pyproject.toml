@@ -7,7 +7,7 @@ name = "ragbench"
 version = "0.1.0"
 description = "A comprehensive benchmarking framework for Retrieval-Augmented Generation (RAG) systems"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
 authors = [
     {name = "Matan Orbach", email = "matano@il.ibm.com"},
@@ -37,6 +37,8 @@ dependencies = [
     "docling-core",
     "typing-extensions",
     "datasets>=4.5.0",
+    "mlflow>=3.1",
+    "pandas-stubs~=2.3.3",
 ]
 
 [project.optional-dependencies]
@@ -55,8 +57,11 @@ docs = [
     "mkdocs>=1.5",
     "mkdocs-material>=9.0",
 ]
+examples = [
+    "docling"
+]
 all = [
-    "ragbench[dev,docs]",
+    "ragbench[dev,docs,examples]",
 ]
 
 [project.urls]
