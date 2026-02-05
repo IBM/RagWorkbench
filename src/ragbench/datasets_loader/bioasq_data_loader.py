@@ -40,10 +40,6 @@ class BioasqDataLoader(RagDataLoader):
     - Ground truth answers (exact, yes/no, factoid, list)
     - References to relevant documents
 
-    Attributes:
-        dataset_path: Path to the BioASQ dataset directory.
-        version: BioASQ dataset version (e.g., "Task B", "Task Synergy").
-
     Example:
         >>> loader = BioasqDataLoader(
         ...     dataset_name=DatasetName.BIOASQ,
@@ -74,12 +70,6 @@ class BioasqDataLoader(RagDataLoader):
         Args:
             split: Dataset split to load ('train', 'test', or None for all).
             sampling_params: Parameters controlling question and document sampling.
-            dataset_path: Path to the BioASQ dataset directory. If None, will
-                         attempt to use default location or environment variable.
-
-        Raises:
-            FileNotFoundError: If dataset_path is not provided and cannot be found.
-            ValueError: If the dataset files are not in the expected format.
         """
         logger.info(f"Initializing BioasqDataLoader with split='{split}'")
 
