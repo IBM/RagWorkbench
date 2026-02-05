@@ -5,6 +5,10 @@ This module provides helper functions for working with RAG benchmark datasets,
 including splitting datasets into train/test sets with reproducible randomization.
 """
 
+from __future__ import annotations
+
+import base64
+import mimetypes
 import random
 from typing import Literal
 
@@ -72,3 +76,11 @@ def get_benchmark_split(
         return shuffled[:split_idx]
     else:  # split == "test"
         return shuffled[split_idx:]
+
+
+def encode_bytes(raw: bytes) -> str:
+    return base64.b64encode(raw).decode("ascii")
+
+
+def guess_mime(name: str) -> str:
+    return mimetypes.guess_type(name)[0] or "application/octet-stream"
