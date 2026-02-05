@@ -65,16 +65,13 @@ class BioasqDataLoader(RagDataLoader):
 
     def __init__(
         self,
-        dataset_name: DatasetName = DatasetName.BIOASQ,
         split: Literal["train", "test"] | None = None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
-        dataset_path: str | None = None,
     ):
         """
         Initialize the BioASQ data loader.
 
         Args:
-            dataset_name: Dataset identifier (default: BIOASQ).
             split: Dataset split to load ('train', 'test', or None for all).
             sampling_params: Parameters controlling question and document sampling.
             dataset_path: Path to the BioASQ dataset directory. If None, will
@@ -84,13 +81,9 @@ class BioasqDataLoader(RagDataLoader):
             FileNotFoundError: If dataset_path is not provided and cannot be found.
             ValueError: If the dataset files are not in the expected format.
         """
-        self.dataset_path = dataset_path
         logger.info(f"Initializing BioasqDataLoader with split='{split}'")
 
-        # TODO: Validate dataset_path exists and contains required files
-        # TODO: Load BioASQ configuration (version, task type, etc.)
-
-        super().__init__(dataset_name, split, sampling_params)
+        super().__init__(DatasetName.BIOASQ, split, sampling_params)
 
     def _get_documents(self) -> list[DocumentObject]:
         """
