@@ -21,11 +21,12 @@ from ragbench.datasets_loader.data_models.rag_benchmark import (
 )
 from ragbench.datasets_loader.dataset_names import DatasetName
 from ragbench.datasets_loader.datasets_utils import (
+    GitHubClient,
+    GitHubRef,
     encode_bytes,
     get_benchmark_split,
     guess_mime,
 )
-from ragbench.datasets_loader.gh_client import GitHubClient, GitHubRef
 
 logger = logging.getLogger(__name__)
 
