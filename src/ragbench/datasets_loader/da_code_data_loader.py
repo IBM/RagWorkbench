@@ -204,7 +204,8 @@ class DaCodeDataLoader(RagDataLoader):
     # -------------------------------------------------------------------------
     # Gold indexing
     # -------------------------------------------------------------------------
-    def _index_gold(self, gold_zip_path: Path) -> dict[str, list[zipfile.ZipInfo]]:
+    @staticmethod
+    def _index_gold(gold_zip_path: Path) -> dict[str, list[zipfile.ZipInfo]]:
         """
         Index gold.zip members by task_id.
 
