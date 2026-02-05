@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import os
-import sys
 import zipfile
 from collections import defaultdict
 from collections.abc import Iterable
@@ -26,6 +26,8 @@ from ragbench.datasets_loader.datasets_utils import (
     guess_mime,
 )
 from ragbench.datasets_loader.gh_client import GitHubClient, GitHubRef
+
+logger = logging.getLogger(__name__)
 
 # =============================================================================
 # Helpers
@@ -106,7 +108,7 @@ class DaCodeDataLoader(RagDataLoader):
         cache_dir = Path.home() / ".cache" / "da_code"
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        print(f"Using cache dir: {cache_dir}")
+        logger.info(f"Using cache dir: {cache_dir}")
 
         # Fail fast with a helpful error if paths are wrong
         _ = self._gh_client.list_dir(self.gh, self.task_cfg_dir)
@@ -129,7 +131,7 @@ class DaCodeDataLoader(RagDataLoader):
         if path.exists() and path.stat().st_size > 0:
             return path
 
-        print(f"[DA-Code] Downloading {name} via gdown -> {path}", file=sys.stderr)
+        logger.info(f"Downloading {name} via gdown -> {path}")
         url = f"https://drive.google.com/uc?id={drive_file_id}"
         out = gdown.download(url=url, output=str(path), quiet=True, fuzzy=True)
         if not out or not path.exists() or path.stat().st_size == 0:
@@ -300,12 +302,9 @@ class DaCodeDataLoader(RagDataLoader):
             )
 
             if len(out) % 50 == 0:
-                print(
-                    f"[DA-Code] Loaded {len(out)} task_id_to_task_cfgs (last={tid})",
-                    file=sys.stderr,
-                )
+                logger.info(f"Loaded {len(out)} task_id_to_task_cfgs (last={tid})")
 
-        print(f"[DA-Code] DONE — {len(out)} benchmark entries ready", file=sys.stderr)
+        logger.info(f"DONE — {len(out)} benchmark entries ready")
         return get_benchmark_split(benchmark_entries=out, split=split)
 
     # -------------------------------------------------------------------------
@@ -323,9 +322,7 @@ class DaCodeDataLoader(RagDataLoader):
         with zipfile.ZipFile(source_path) as zf:
             members = [zi for zi in zf.infolist() if not zi.is_dir()]
             total = len(members)
-            print(
-                f"[DA-Code] Loading source.zip corpus: {total} files", file=sys.stderr
-            )
+            logger.info(f"Loading source.zip corpus: {total} files")
 
             for i, zi in enumerate(members, 1):
                 file_str = zi.filename
@@ -354,14 +351,8 @@ class DaCodeDataLoader(RagDataLoader):
                 # progress every 100 files or at end
                 if i % 100 == 0 or i == total:
                     pct = (i / total) * 100
-                    print(
-                        f"[DA-Code]  progress: {i}/{total} ({pct:.1f}%)",
-                        file=sys.stderr,
-                    )
+                    logger.info(f"Progress: {i}/{total} ({pct:.1f}%)")
 
-        print(
-            f"[DA-Code] Source corpus loaded, total={total}",
-            file=sys.stderr,
-        )
+        logger.info(f"Source corpus loaded, total={total}")
 
         return docs
