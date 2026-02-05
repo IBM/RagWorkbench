@@ -74,6 +74,8 @@ class RagDataLoader(ABC):
         self.sampling_params = sampling_params
 
         self.all_docs: list[DocumentObject] = self._get_documents()
+        self.sampling_params = sampling_params
+
         all_benchmark_entries: list[RagBenchmarkEntry] = self._get_benchmark_entries(
             split=split
         )
