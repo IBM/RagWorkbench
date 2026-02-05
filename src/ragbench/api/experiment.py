@@ -1,84 +1,97 @@
+import uuid
+from abc import abstractmethod, ABC
 from typing import List
 
+import mlflow
+import pandas as pd
 from pydantic import BaseModel
 
+from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
 
-class DatasetId:
-    pass
 
-class DataLoader:
-
-    def load_benchmark(self) -> RagBenchmark:
-        return RagBenchmark()
-
-    def load_corpus(self) -> RagCorpus:
-        return RagCorpus()
-
-class DataStoreDescription:
-    pass
-
-class IngestParams(BaseModel):
+class IngestArtifact:
     pass
 
 class IngestRuntimeParams(BaseModel):
     pass
 
-class IngestPipeline:
+class IngestPipeline(ABC):
 
-    def __init__(self, ingest_params: IngestParams):
-        self.ingest_params = ingest_params
-
-    def process(self, dataset_id: DatasetId, rag_corpus: RagCorpus, runtime_params: IngestRuntimeParams) -> List[DataStoreDescription]:
+    @abstractmethod
+    def process(self, rag_corpus: RagCorpus, runtime_params: IngestRuntimeParams) -> List[IngestArtifact]:
         pass
 
-
-class InferenceParams(BaseModel):
-    pass
 
 class InferenceRuntimeParams(BaseModel):
     pass
 
-class InferencePipeline:
+class InferencePipeline(ABC):
 
-    def __init__(self, inference_params: InferenceParams):
-        self.inference_params = inference_params
+    def __init__(self):
+        self.ingest_artifacts = None
 
-    def process(self, dataset_id: DatasetId,
+    def set_ingest_artifact(self, ingest_artifacts: List[IngestArtifact]):
+        self.ingest_artifacts = ingest_artifacts
+
+    @abstractmethod
+    def process(self,
                 rag_benchmark: RagBenchmark,
-                data_store_descriptions: List[DataStoreDescription],
-                runtime_params: InferenceRuntimeParams) -> List[DataStoreDescription]:
+                runtime_params: InferenceRuntimeParams):
         pass
 
 
 class Experiment:
 
     def __init__(self,
-                 dataset_id: DatasetId,
-                 data_loader: DataLoader,
+                 data_loader: RagDataLoader,
                  ingest_pipeline: IngestPipeline,
                  inference_pipeline: InferencePipeline):
 
-        self.dataset_id = dataset_id
         self.data_loader = data_loader
         self.ingest_pipeline = ingest_pipeline
         self.inference_pipeline = inference_pipeline
 
-
     def run(self, ingest_runtime_params: IngestRuntimeParams, inference_runtime_params: InferenceRuntimeParams):
-        rag_benchmark = self.data_loader.load_benchmark()
-        rag_corpus = self.data_loader.load_corpus()
+        experiment_id = str(uuid.uuid4())
+        mlflow.set_tracking_uri("sqlite:///mlflow.db")
+        mlflow.set_experiment(experiment_id)
 
-        data_tore_descriptions = self.ingest_pipeline.process(
-            dataset_id=self.dataset_id,
-            rag_corpus=rag_corpus,
-            runtime_params=ingest_runtime_params)
+        rag_benchmark = self.data_loader.get_benchmark()
 
-        results = self.inference_pipeline.process(
-            dataset_id=self.dataset_id,
-            rag_benchmark=rag_benchmark,
-            data_store_descriptions=data_tore_descriptions,
-            runtime_params=inference_runtime_params)
+        rag_corpus = self.data_loader.get_corpus()
+
+        rag_benchmark_df = pd.DataFrame(
+            {"question_id": entry.question_id,
+             "question": entry.question,
+             "ground-truths": entry.ground_truth_answers}
+            for entry in rag_benchmark.get_benchmark_entries()
+        )
+
+        dataset = mlflow.data.from_pandas(
+            rag_benchmark_df,
+            source="my source",
+            name=self.data_loader.dataset_name,
+            targets=None
+        )
+
+        with mlflow.start_run() as run:
+            mlflow.log_param("dataset.name", self.data_loader.dataset_name)
+            mlflow.log_param("dataset.split", self.data_loader.split)
+            mlflow.log_param("dataset.question_limit", self.data_loader.sampling_params.question_limit)
+            mlflow.log_param("dataset.document_factor", self.data_loader.sampling_params.document_factor)
+
+            ingest_artifacts = self.ingest_pipeline.process(
+                rag_corpus=rag_corpus,
+                runtime_params=ingest_runtime_params)
+
+            mlflow.log_input(dataset, context="inference")
+
+            self.inference_pipeline.set_ingest_artifact(ingest_artifacts)
+
+            self.inference_pipeline.process(
+                rag_benchmark=rag_benchmark,
+                runtime_params=inference_runtime_params)
 
 
