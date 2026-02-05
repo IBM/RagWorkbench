@@ -1,5 +1,4 @@
 import io
-import mimetypes
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Literal
 
@@ -12,6 +11,7 @@ from ragbench.datasets_loader.data_models.data_sampling_params import DataSampli
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmarkEntry
 from ragbench.datasets_loader.dataset_names import DatasetName
+from ragbench.datasets_loader.datasets_utils import guess_mime
 
 NUMBER_OF_THREADS = 2
 
@@ -45,7 +45,7 @@ class DabStepDataLoader(RagDataLoader):
 
             # We have to keep all the path from input/ as document name.
             name = path.split("/context/", 1)[1]
-            mime_type = mimetypes.guess_type(name)[0] or "application/octet-stream"
+            mime_type = guess_mime(name)
 
             doc_obj = DocumentObject(
                 name=name,
