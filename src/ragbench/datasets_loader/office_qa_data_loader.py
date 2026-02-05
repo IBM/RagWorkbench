@@ -7,12 +7,12 @@ import requests
 
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
-from ragbench.datasets_loader.data_models.dataset_names import DatasetName
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
 from ragbench.datasets_loader.data_models.rag_benchmark import (
     GroundTruthContextId,
     RagBenchmarkEntry,
 )
+from ragbench.datasets_loader.dataset_names import DatasetName
 
 # Constants
 OFFICEQA_CSV_URL = (
