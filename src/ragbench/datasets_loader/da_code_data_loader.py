@@ -1,20 +1,16 @@
 from __future__ import annotations
 
-import base64
 import io
 import json
-import mimetypes
 import os
 import sys
 import zipfile
 from collections import defaultdict
 from collections.abc import Iterable
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import gdown  # type: ignore[import-not-found]
-import requests
 
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
@@ -24,14 +20,16 @@ from ragbench.datasets_loader.data_models.rag_benchmark import (
     RagBenchmarkEntry,
 )
 from ragbench.datasets_loader.dataset_names import DatasetName
-from ragbench.datasets_loader.datasets_utils import get_benchmark_split
-
+from ragbench.datasets_loader.datasets_utils import (
+    encode_bytes,
+    get_benchmark_split,
+    guess_mime,
+)
+from ragbench.datasets_loader.gh_client import GitHubClient, GitHubRef
 
 # =============================================================================
 # Helpers
 # =============================================================================
-def _guess_mime(name: str) -> str:
-    return mimetypes.guess_type(name)[0] or "application/octet-stream"
 
 
 def _stem(path: str) -> str:
@@ -69,52 +67,6 @@ def _iter_jsonl_rows_from_bytes(data: bytes) -> Iterable[dict[str, Any]]:
                 for item in obj:
                     if isinstance(item, dict):
                         yield item
-
-
-def encode_bytes(raw: bytes) -> str:
-    return base64.b64encode(raw).decode("ascii")
-
-
-# =============================================================================
-# GitHub access
-# =============================================================================
-@dataclass(frozen=True)
-class GitHubRef:
-    repo: str
-    ref: str = "main"
-
-
-class GitHubClient:
-    """List directory contents via GitHub API + fetch raw bytes via raw.githubusercontent.com."""
-
-    def __init__(
-        self, token: str | None = None, session: requests.Session | None = None
-    ):
-        self._s = session or requests.Session()
-        self._s.headers.update({"User-Agent": "da-code-loader"})
-        if token:
-            self._s.headers.update({"Authorization": f"Bearer {token}"})
-
-    def list_dir(self, gh: GitHubRef, path: str) -> list[dict[str, Any]]:
-        api = f"https://api.github.com/repos/{gh.repo}/contents/{path.lstrip('/')}"
-        r = self._s.get(api, params={"ref": gh.ref}, timeout=60)
-        if r.status_code == 404:
-            raise FileNotFoundError(f"GitHub path not found: {gh.repo}@{gh.ref}:{path}")
-        r.raise_for_status()
-        data = r.json()
-        if isinstance(data, dict) and data.get("type") == "file":
-            return [data]
-        if not isinstance(data, list):
-            raise ValueError(f"Unexpected GitHub API response for {api}: {type(data)}")
-        return data
-
-    def read_file(self, gh: GitHubRef, path: str) -> bytes:
-        url = f"https://raw.githubusercontent.com/{gh.repo}/{gh.ref}/{path.lstrip('/')}"
-        r = self._s.get(url, timeout=120)
-        if r.status_code == 404:
-            raise FileNotFoundError(f"GitHub file not found: {gh.repo}@{gh.ref}:{path}")
-        r.raise_for_status()
-        return cast(bytes, r.content)
 
 
 # =============================================================================
@@ -296,7 +248,7 @@ class DaCodeDataLoader(RagDataLoader):
                         {
                             "path": zi.filename,
                             "name": fname,
-                            "mime_type": _guess_mime(fname),
+                            "mime_type": guess_mime(fname),
                             "size_bytes": zi.file_size,
                             "b64": encode_bytes(raw),
                         }
@@ -391,7 +343,7 @@ class DaCodeDataLoader(RagDataLoader):
                     DocumentObject(
                         stream=io.BytesIO(raw),
                         name=file_name_with_task,
-                        mime_type=_guess_mime(filename),
+                        mime_type=guess_mime(filename),
                         metadata={
                             "filename": filename,
                             "file_path": file_str,
