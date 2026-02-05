@@ -4,13 +4,13 @@ from abc import ABC, abstractmethod
 from typing import Literal
 
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
-from ragbench.datasets_loader.data_models.dataset_names import DatasetName
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
 from ragbench.datasets_loader.data_models.rag_benchmark import (
     RagBenchmark,
     RagBenchmarkEntry,
 )
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from ragbench.datasets_loader.dataset_names import DatasetName
 
 logger: logging.Logger = logging.getLogger(__name__)
 
