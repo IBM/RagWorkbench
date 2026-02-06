@@ -23,8 +23,8 @@ repos:
     rev: 26.1.0
     hooks:
       - id: black
+        language_version: python3.11
         args: [--config=pyproject.toml]
-        language_version: python3.13
 
   # Ruff second (linting)
   - repo: https://github.com/astral-sh/ruff-pre-commit
@@ -43,6 +43,8 @@ repos:
           - pydantic>=2.0
           - typing-extensions
           - docling-core
+          - pandas-stubs
+          - pandas
           - types-requests
         args: [--config-file=pyproject.toml, --explicit-package-bases]
         files: ^src/
