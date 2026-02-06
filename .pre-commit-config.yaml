@@ -26,13 +26,19 @@ repos:
         args: [--config=pyproject.toml]
         language_version: python3.11
 
+  # Black - Python code formatter
+  - repo: https://github.com/psf/black
+    rev: 26.1.0
+    hooks:
+      - id: black
+        language_version: python3.11
+
   # Ruff second (linting)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.14
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-
 
   # MyPy - Static type checker
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -46,5 +52,7 @@ repos:
           - pandas-stubs
           - pandas
           - types-requests
+          - pandas-stubs
+          - pandas
         args: [--config-file=pyproject.toml, --explicit-package-bases]
         files: ^src/
