@@ -32,6 +32,9 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
+#[mypy.missing_imports]
+#mlflow = true
+
 dependencies = [
     "pydantic>=2.0",
     "docling-core",
@@ -128,6 +131,11 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 strict_equality = true
+
+# Per-module overrides for untyped libraries
+[[tool.mypy.overrides]]
+module = ["mlflow.*"]
+ignore_missing_imports = true
 
 [tool.black]
 line-length = 88
