@@ -27,10 +27,13 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
+#[mypy.missing_imports]
+#mlflow = true
 
 dependencies = [
     "pydantic>=2.0",
@@ -39,6 +42,7 @@ dependencies = [
     "datasets>=4.5.0",
     "mlflow>=3.1",
     "pandas-stubs~=2.3.3",
+    "pandas"
 ]
 
 [project.optional-dependencies]
@@ -122,6 +126,11 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 strict_equality = true
+
+# Per-module overrides for untyped libraries
+[[tool.mypy.overrides]]
+module = ["mlflow.*"]
+ignore_missing_imports = true
 
 [tool.black]
 line-length = 88
