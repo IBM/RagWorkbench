@@ -35,17 +35,12 @@ class InferenceRuntimeParams(BaseModel):
 
 
 class InferencePipeline(ABC):
-    def __init__(self):
-        self.ingest_artifacts = None
-
-    def set_ingest_artifact(self, ingest_artifacts: list[IngestArtifact]):
-        self.ingest_artifacts = ingest_artifacts
-
     @abstractmethod
     def process(
         self,
         dataset_name: DatasetName,
         rag_benchmark: RagBenchmark,
+        ingest_artifacts: list[IngestArtifact],
         runtime_params: InferenceRuntimeParams,
     ):
         pass
@@ -111,10 +106,9 @@ class Experiment:
 
             mlflow.log_input(dataset, context="inference")
 
-            self.inference_pipeline.set_ingest_artifact(ingest_artifacts)
-
             self.inference_pipeline.process(
                 dataset_name=self.data_loader.dataset_name,
                 rag_benchmark=rag_benchmark,
+                ingest_artifacts=ingest_artifacts,
                 runtime_params=inference_runtime_params,
             )
