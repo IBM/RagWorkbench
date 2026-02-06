@@ -11,7 +11,7 @@ from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
 
 
-class IngestArtifact:
+class IngestArtifact(BaseModel):
     pass
 
 
