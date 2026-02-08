@@ -32,7 +32,6 @@ class KramabenchDataLoader(RagDataLoader):
         verbose: bool = True,
         progress_every: int = 50,
     ):
-        # IMPORTANT: default should be an instance (or None), not the class object
         if data_sampling is None:
             data_sampling = DataSamplingParams()
 
