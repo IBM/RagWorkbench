@@ -2,6 +2,7 @@ import fnmatch
 import gzip
 import io
 import json
+import logging
 import mimetypes
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -22,6 +23,8 @@ from ragbench.datasets_loader.datasets_utils import get_benchmark_split
 REPO_ID = "eugenie-y/KramaBench"
 SEED = 42
 NUMBER_OF_THREADS = 2
+
+logger = logging.getLogger(__name__)
 
 
 class KramabenchDataLoader(RagDataLoader):
@@ -62,9 +65,11 @@ class KramabenchDataLoader(RagDataLoader):
         total = len(paths_str)
 
         if self.verbose:
-            print(f"[Kramabench] Loading documents from: {base}")
-            print(f"[Kramabench] Found {total} document files")
-            print(f"[Kramabench] Reading up to {NUMBER_OF_THREADS} files in parallel")
+            logger.info(f"[Kramabench] Loading documents from: {base}")
+            logger.info(f"[Kramabench] Found {total} document files")
+            logger.info(
+                f"[Kramabench] Reading up to {NUMBER_OF_THREADS} files in parallel"
+            )
 
         def load_one(path: str) -> tuple[str, DocumentObject]:
             fs = HfFileSystem()  # thread-safe: one FS per worker
@@ -104,7 +109,7 @@ class KramabenchDataLoader(RagDataLoader):
                     or completed % self.progress_every == 0
                     or completed == total
                 ):
-                    print(f"[Kramabench] Documents loaded: {completed}/{total}")
+                    logger.info(f"[Kramabench] Documents loaded: {completed}/{total}")
 
         # Preserve deterministic order
         documents = [results[path] for path in paths_str]
@@ -161,8 +166,8 @@ class KramabenchDataLoader(RagDataLoader):
         total_files = len(paths_str)
 
         if self.verbose:
-            print(f"[Kramabench] Loading benchmark entries from: {base}")
-            print(
+            logger.info(f"[Kramabench] Loading benchmark entries from: {base}")
+            logger.info(
                 f"[Kramabench] Found {len(paths_str)} workload JSON files (excluded: {sorted(excluded)})"
             )
 
@@ -226,17 +231,17 @@ class KramabenchDataLoader(RagDataLoader):
                     len(benchmark_entries) == 1
                     or len(benchmark_entries) % self.progress_every == 0
                 ):
-                    print(
+                    logger.info(
                         f"[Kramabench] Entries loaded: {len(benchmark_entries)} (latest file: {Path(path).name})"
                     )
 
             if self.verbose:
-                print(
+                logger.info(
                     f"[Kramabench] Workload files processed: {file_i}/{total_files} ({Path(path).name})"
                 )
 
         if self.verbose:
-            print(
+            logger.info(
                 f"[Kramabench] Total benchmark entries loaded: {len(benchmark_entries)}"
             )
 
