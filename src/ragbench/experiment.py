@@ -1,49 +1,11 @@
 import uuid
-from abc import ABC, abstractmethod
 
 import mlflow
 import pandas as pd
-from pydantic import BaseModel
 
+from ragbench.api.inference import InferencePipeline, InferenceRuntimeParams
+from ragbench.api.ingest import IngestPipeline, IngestRuntimeParams
 from ragbench.datasets_loader import RagDataLoader
-from ragbench.datasets_loader.data_models.dataset_names import DatasetName
-from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
-from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
-
-
-class IngestArtifact(BaseModel):
-    pass
-
-
-class IngestRuntimeParams(BaseModel):
-    pass
-
-
-class IngestPipeline(ABC):
-    @abstractmethod
-    def process(
-        self,
-        dataset_name: DatasetName,
-        rag_corpus: RagCorpus,
-        runtime_params: IngestRuntimeParams,
-    ) -> list[IngestArtifact]:
-        pass
-
-
-class InferenceRuntimeParams(BaseModel):
-    pass
-
-
-class InferencePipeline(ABC):
-    @abstractmethod
-    def process(
-        self,
-        dataset_name: DatasetName,
-        rag_benchmark: RagBenchmark,
-        ingest_artifacts: list[IngestArtifact],
-        runtime_params: InferenceRuntimeParams,
-    ):
-        pass
 
 
 class Experiment:
