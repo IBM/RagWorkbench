@@ -61,11 +61,8 @@ docs = [
     "mkdocs>=1.5",
     "mkdocs-material>=9.0",
 ]
-examples = [
-    "docling"
-]
 all = [
-    "ragbench[dev,docs,examples]",
+    "ragbench[dev,docs]",
 ]
 
 [project.urls]
