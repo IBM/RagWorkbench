@@ -7,8 +7,9 @@ referenced in benchmark entries exist in the corpus.
 
 The tests are parameterized to run against BioasqDataLoader, ClapNqDataLoader,
 DaCodeDataLoader, DabStepDataLoader, HotpotQaDataLoader, KramabenchDataLoader,
-and MiniWikiDataLoader, ensuring consistent behavior and data integrity across
-all datasets.
+MiniWikiDataLoader, MLDRDataLoader, NarrativeQaDataLoader, OfficeQADataLoader,
+QasperQaDataLoader, SecqueDataLoader, and WatsonxDocsQADataLoader, ensuring
+consistent behavior and data integrity across all datasets.
 """
 
 from typing import Literal
@@ -25,6 +26,12 @@ from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
 from ragbench.datasets_loader.hotpot_qa_data_loader import HotpotQaDataLoader
 from ragbench.datasets_loader.kramabench_data_loader import KramabenchDataLoader
 from ragbench.datasets_loader.miniwiki_data_loader import MiniWikiDataLoader
+from ragbench.datasets_loader.mldr_data_loader import MLDRDataLoader
+from ragbench.datasets_loader.narrative_qa_data_loader import NarrativeQaDataLoader
+from ragbench.datasets_loader.office_qa_data_loader import OfficeQADataLoader
+from ragbench.datasets_loader.qasper_data_loader import QasperQaDataLoader
+from ragbench.datasets_loader.secque_data_loader import SecqueDataLoader
+from ragbench.datasets_loader.watsonx_data_loader import WatsonxDocsQADataLoader
 from tests.datasets_loader.helpers.integration_test_helpers import (
     IntegrationTestHelpers as helpers,
 )
@@ -184,6 +191,138 @@ def miniwiki_test_loader() -> MiniWikiDataLoader:
     return MiniWikiDataLoader(split="test")
 
 
+@pytest.fixture(scope="class")
+def mldr_train_loader() -> MLDRDataLoader:
+    """
+    Class-scoped fixture that loads MLDR train data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return MLDRDataLoader(split="train")
+
+
+@pytest.fixture(scope="class")
+def mldr_test_loader() -> MLDRDataLoader:
+    """
+    Class-scoped fixture that loads MLDR test data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return MLDRDataLoader(split="test")
+
+
+@pytest.fixture(scope="class")
+def narrative_qa_train_loader() -> NarrativeQaDataLoader:
+    """
+    Class-scoped fixture that loads NarrativeQA train data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return NarrativeQaDataLoader(split="train")
+
+
+@pytest.fixture(scope="class")
+def narrative_qa_test_loader() -> NarrativeQaDataLoader:
+    """
+    Class-scoped fixture that loads NarrativeQA test data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return NarrativeQaDataLoader(split="test")
+
+
+@pytest.fixture(scope="class")
+def office_qa_train_loader() -> OfficeQADataLoader:
+    """
+    Class-scoped fixture that loads OfficeQA train data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return OfficeQADataLoader(split="train")
+
+
+@pytest.fixture(scope="class")
+def office_qa_test_loader() -> OfficeQADataLoader:
+    """
+    Class-scoped fixture that loads OfficeQA test data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return OfficeQADataLoader(split="test")
+
+
+@pytest.fixture(scope="class")
+def qasper_train_loader() -> QasperQaDataLoader:
+    """
+    Class-scoped fixture that loads Qasper train data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return QasperQaDataLoader(split="train")
+
+
+@pytest.fixture(scope="class")
+def qasper_test_loader() -> QasperQaDataLoader:
+    """
+    Class-scoped fixture that loads Qasper test data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return QasperQaDataLoader(split="test")
+
+
+@pytest.fixture(scope="class")
+def secque_train_loader() -> SecqueDataLoader:
+    """
+    Class-scoped fixture that loads Secque train data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return SecqueDataLoader(split="train")
+
+
+@pytest.fixture(scope="class")
+def secque_test_loader() -> SecqueDataLoader:
+    """
+    Class-scoped fixture that loads Secque test data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return SecqueDataLoader(split="test")
+
+
+@pytest.fixture(scope="class")
+def watsonx_train_loader() -> WatsonxDocsQADataLoader:
+    """
+    Class-scoped fixture that loads WatsonX DocsQA train data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return WatsonxDocsQADataLoader(split="train")
+
+
+@pytest.fixture(scope="class")
+def watsonx_test_loader() -> WatsonxDocsQADataLoader:
+    """
+    Class-scoped fixture that loads WatsonX DocsQA test data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return WatsonxDocsQADataLoader(split="test")
+
+
 @pytest.mark.integration
 @pytest.mark.parametrize(
     "loader_name",
@@ -197,6 +336,12 @@ def miniwiki_test_loader() -> MiniWikiDataLoader:
         # TODO!
         # "kramabench",
         "miniwiki",
+        "mldr",
+        "narrative_qa",
+        "office_qa",
+        "qasper",
+        "secque",
+        "watsonx",
     ],
 )
 class TestDataLoaderIntegration:
@@ -205,8 +350,9 @@ class TestDataLoaderIntegration:
 
     This test class is parameterized to run all tests against BioasqDataLoader,
     ClapNqDataLoader, DaCodeDataLoader, DabStepDataLoader, HotpotQaDataLoader,
-    KramabenchDataLoader, and MiniWikiDataLoader, ensuring consistent behavior
-    and data integrity across all datasets.
+    KramabenchDataLoader, MiniWikiDataLoader, MLDRDataLoader, NarrativeQaDataLoader,
+    OfficeQADataLoader, QasperQaDataLoader, SecqueDataLoader, and WatsonxDocsQADataLoader,
+    ensuring consistent behavior and data integrity across all datasets.
 
     The parameterization allows us to:
     - Eliminate code duplication between similar test files
