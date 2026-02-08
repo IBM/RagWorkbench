@@ -144,9 +144,10 @@ class OfficeQADataLoader(RagDataLoader):
         if split is None:
             return self.total_df
 
-        if self._train_df is not None:
+        if self._train_df is None:
             self._train_df = self.total_df.sample(frac=0.7, random_state=42)
-            self._test_df = self.total_df.drop(self._train_df.index)
+            if self._train_df is not None:
+                self._test_df = self.total_df.drop(self._train_df.index)
 
         # At this point, both _train_df and _test_df are guaranteed to be DataFrames
         if split == "train":
