@@ -5,64 +5,50 @@ This module contains integration tests that load real data from various sources
 and verify data integrity, particularly ensuring that all ground-truth documents
 referenced in benchmark entries exist in the corpus.
 
-The tests are parameterized to run against BioasqDataLoader, ClapNqDataLoader,
-DaCodeDataLoader, DabStepDataLoader, HotpotQaDataLoader, KramabenchDataLoader,
-MiniWikiDataLoader, MLDRDataLoader, NarrativeQaDataLoader, OfficeQADataLoader,
-QasperQaDataLoader, SecqueDataLoader, and WatsonxDocsQADataLoader, ensuring
-consistent behavior and data integrity across all datasets.
+The tests are parameterized to run against all available datasets using the
+DataLoaderFactory, ensuring consistent behavior and data integrity across
+all datasets.
 """
 
 from typing import Any, Literal
 
 import pytest
 
-from ragbench.datasets_loader import KramabenchDataLoader
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
-from ragbench.datasets_loader.bioasq_data_loader import BioasqDataLoader
-from ragbench.datasets_loader.clap_nq_data_loader import ClapNqDataLoader
-from ragbench.datasets_loader.da_code_data_loader import DaCodeDataLoader
-from ragbench.datasets_loader.dabstep_data_loader import DabStepDataLoader
+from ragbench.datasets_loader.data_loader_factory import DataLoaderFactory
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
-from ragbench.datasets_loader.hotpot_qa_data_loader import HotpotQaDataLoader
-from ragbench.datasets_loader.miniwiki_data_loader import MiniWikiDataLoader
-from ragbench.datasets_loader.mldr_data_loader import MLDRDataLoader
-from ragbench.datasets_loader.narrative_qa_data_loader import NarrativeQaDataLoader
-from ragbench.datasets_loader.office_qa_data_loader import OfficeQADataLoader
-from ragbench.datasets_loader.qasper_data_loader import QasperQaDataLoader
-from ragbench.datasets_loader.secque_data_loader import SecqueDataLoader
-from ragbench.datasets_loader.watsonx_data_loader import WatsonxDocsQADataLoader
 from tests.datasets_loader.helpers.integration_test_helpers import (
     IntegrationTestHelpers as helpers,
 )
 
-# Mapping of loader names to their corresponding classes
-LOADER_CLASSES: dict[str, type[RagDataLoader]] = {
-    "bioasq": BioasqDataLoader,
-    "clap_nq": ClapNqDataLoader,
-    "da_code": DaCodeDataLoader,
-    "dabstep": DabStepDataLoader,
-    "hotpot_qa": HotpotQaDataLoader,
-    "kramabench": KramabenchDataLoader,
-    "miniwiki": MiniWikiDataLoader,
-    "mldr": MLDRDataLoader,
-    "narrative_qa": NarrativeQaDataLoader,
-    "office_qa": OfficeQADataLoader,
-    "qasper": QasperQaDataLoader,
-    "secque": SecqueDataLoader,
-    "watsonx": WatsonxDocsQADataLoader,
-}
+# List of all available dataset names for parameterization
+DATASET_NAMES = [
+    "bioasq",
+    "clap_nq",
+    "da_code",
+    "dabstep",
+    "hotpot_qa",
+    "kramabench",
+    "miniwiki",
+    "mldr",
+    "narrative_qa",
+    "office_qa",
+    "qasper",
+    "secque",
+    "watsonx",
+]
 
 
-def _create_loader_fixture(loader_class: type[RagDataLoader], split: str) -> Any:
+def _create_loader_fixture(dataset_name: str, split: Literal["train", "test"]) -> Any:
     """
-    Factory function to create loader fixtures dynamically.
+    Factory function to create loader fixtures dynamically using DataLoaderFactory.
 
     This eliminates the need for 28 nearly identical fixture definitions.
-    Each loader is instantiated with only the split parameter.
+    Each loader is instantiated via the factory with only the split parameter.
 
     Args:
-        loader_class: The loader class to instantiate
+        dataset_name: The dataset name to load
         split: Dataset split ('train' or 'test')
 
     Returns:
@@ -71,16 +57,18 @@ def _create_loader_fixture(loader_class: type[RagDataLoader], split: str) -> Any
 
     @pytest.fixture(scope="class")
     def loader_fixture() -> RagDataLoader:
-        return loader_class(split=split)  # type: ignore[call-arg]
+        return DataLoaderFactory.create_loader(dataset_name=dataset_name, split=split)
 
     return loader_fixture
 
 
 # Dynamically create all loader fixtures
-for loader_name, loader_class in LOADER_CLASSES.items():
-    for split in ["train", "test"]:
-        fixture_name = f"{loader_name}_{split}_loader"
-        globals()[fixture_name] = _create_loader_fixture(loader_class, split)
+for dataset_name in DATASET_NAMES:
+    for split_value in ["train", "test"]:
+        fixture_name = f"{dataset_name}_{split_value}_loader"
+        # Cast to Literal type for type checker
+        split_literal: Literal["train", "test"] = split_value  # type: ignore[assignment]
+        globals()[fixture_name] = _create_loader_fixture(dataset_name, split_literal)
 
 
 @pytest.mark.integration
