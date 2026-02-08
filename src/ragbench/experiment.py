@@ -1,17 +1,16 @@
 import uuid
 
-import mlflow
+import mlflow  # type: ignore[import-not-found]
 import pandas as pd
 
 from ragbench.api.inference import InferencePipeline, InferenceRuntimeParams
 from ragbench.api.ingest import IngestPipeline, IngestRuntimeParams
-from ragbench.datasets_loader import RagDataLoader
 
 
 class Experiment:
     def __init__(
         self,
-        data_loader: RagDataLoader,
+        data_loader,
         ingest_pipeline: IngestPipeline,
         inference_pipeline: InferencePipeline,
     ):
