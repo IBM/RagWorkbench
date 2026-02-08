@@ -16,9 +16,11 @@ from typing import Any, Literal
 
 import pytest
 
+from ragbench.datasets_loader import KramabenchDataLoader
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.bioasq_data_loader import BioasqDataLoader
 from ragbench.datasets_loader.clap_nq_data_loader import ClapNqDataLoader
+from ragbench.datasets_loader.da_code_data_loader import DaCodeDataLoader
 from ragbench.datasets_loader.dabstep_data_loader import DabStepDataLoader
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
@@ -38,12 +40,10 @@ from tests.datasets_loader.helpers.integration_test_helpers import (
 LOADER_CLASSES: dict[str, type[RagDataLoader]] = {
     "bioasq": BioasqDataLoader,
     "clap_nq": ClapNqDataLoader,
-    # TODO
-    # "da_code": DaCodeDataLoader,
+    "da_code": DaCodeDataLoader,
     "dabstep": DabStepDataLoader,
     "hotpot_qa": HotpotQaDataLoader,
-    # TODO
-    # "kramabench": KramabenchDataLoader,
+    "kramabench": KramabenchDataLoader,
     "miniwiki": MiniWikiDataLoader,
     "mldr": MLDRDataLoader,
     "narrative_qa": NarrativeQaDataLoader,
@@ -89,12 +89,10 @@ for loader_name, loader_class in LOADER_CLASSES.items():
     [
         "bioasq",
         "clap_nq",
-        # TODO
-        # "da_code",
+        "da_code",
         "dabstep",
         "hotpot_qa",
-        # TODO!
-        # "kramabench",
+        "kramabench",
         "miniwiki",
         "mldr",
         "narrative_qa",
