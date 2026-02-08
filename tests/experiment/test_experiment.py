@@ -1,10 +1,10 @@
 from ragbench.api.inference import InferencePipeline, InferenceRuntimeParams
 from ragbench.api.ingest import IngestPipeline, IngestRuntimeParams
 from ragbench.api.ingest_artifact import IngestArtifact
-from ragbench.datasets_loader import HotpotQaDataLoader
-from ragbench.datasets_loader.data_models.dataset_names import DatasetName
+from ragbench.datasets_loader import DataLoaderFactory
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from ragbench.datasets_loader.dataset_names import DatasetName
 from ragbench.experiment import Experiment
 
 
@@ -30,7 +30,7 @@ class EmptyInferencePipeline(InferencePipeline):
 
 
 def test_empty_flow():
-    data_loader = HotpotQaDataLoader()
+    data_loader = DataLoaderFactory.create_loader(dataset_name=DatasetName.HOTPOT_QA)
     ingest_pipeline = EmptyIngestPipeline()
     inference_pipeline = EmptyInferencePipeline()
     experiment = Experiment(
