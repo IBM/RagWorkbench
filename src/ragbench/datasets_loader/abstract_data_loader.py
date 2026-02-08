@@ -4,13 +4,13 @@ from abc import ABC, abstractmethod
 from typing import Literal
 
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
-from ragbench.datasets_loader.data_models.dataset_names import DatasetName
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
 from ragbench.datasets_loader.data_models.rag_benchmark import (
     RagBenchmark,
     RagBenchmarkEntry,
 )
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from ragbench.datasets_loader.dataset_names import DatasetName
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ class RagDataLoader(ABC):
         self.split: Literal["train", "test"] | None = split
         self.sampling_params = sampling_params
 
-        all_docs: list[DocumentObject] = self._get_documents()
+        self.all_docs: list[DocumentObject] = self._get_documents()
         all_benchmark_entries: list[RagBenchmarkEntry] = self._get_benchmark_entries(
             split=split
         )
@@ -82,7 +82,7 @@ class RagDataLoader(ABC):
         sampled_benchmark_entries: list[RagBenchmarkEntry]
         sampled_docs: list[DocumentObject]
         sampled_benchmark_entries, sampled_docs = self._load_sample(
-            all_benchmark_entries, all_docs, sampling_params
+            all_benchmark_entries, self.all_docs, sampling_params
         )
 
         # Create benchmark and corpus instances

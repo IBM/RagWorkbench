@@ -1,0 +1,89 @@
+import hashlib
+import io
+from typing import Literal
+
+from datasets import load_dataset  # type: ignore[import-not-found]
+
+from ragbench.datasets_loader import RagDataLoader
+from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
+from ragbench.datasets_loader.data_models.document_object import DocumentObject
+from ragbench.datasets_loader.data_models.rag_benchmark import (
+    GroundTruthContextId,
+    RagBenchmarkEntry,
+)
+from ragbench.datasets_loader.dataset_names import DatasetName
+
+
+class SecqueDataLoader(RagDataLoader):
+    def __init__(
+        self,
+        split: Literal["train", "test"] | None,
+        data_sampling: DataSamplingParams = DataSamplingParams(),
+        dataset_name: str = "nogabenyoash/SecQue",
+    ):
+        # We read the content of the HF
+        self.hf_dataset_df = load_dataset(dataset_name)[
+            "train"
+        ].to_pandas()  # There is only train on HF
+
+        # Since we do not have corpus, we map the ground_truth_context to be the corpus
+        context_html_without_headers = self.hf_dataset_df[
+            "context_markdown_with_headers"
+        ].tolist()
+        self.corpus_text_to_context_id: dict[str, GroundTruthContextId] = {
+            s: GroundTruthContextId(
+                document_id=hashlib.sha256(s.encode("utf-8")).hexdigest()
+            )
+            for s in context_html_without_headers
+        }
+
+        super().__init__(
+            dataset_name=DatasetName.SECQUE, split=split, sampling_params=data_sampling
+        )
+
+    def _get_documents(self) -> list[DocumentObject]:
+        return [
+            DocumentObject(
+                mime_type="text/markdown",
+                name=ground_truth_doc_id.document_id,
+                stream=io.BytesIO(str(text).encode("utf-8")),
+            )
+            for text, ground_truth_doc_id in self.corpus_text_to_context_id.items()
+        ]
+
+    def _get_benchmark_entries(
+        self, split: Literal["train", "test"] | None
+    ) -> list[RagBenchmarkEntry]:
+        if split is not None:
+            df_train = self.hf_dataset_df.sample(frac=0.7, random_state=42)
+            df_test = self.hf_dataset_df.drop(df_train.index)
+
+            if split == "train":
+                df = df_train
+            else:
+                df = df_test
+        else:
+            df = self.hf_dataset_df
+
+        entries = []
+        for _, row in df.iterrows():
+            answers = row["ground_truth_answer"]
+            # ensure it's a list of str
+            if isinstance(answers, str):
+                answers = [answers]
+            elif isinstance(answers, (list, tuple)):
+                answers = [str(a) for a in answers]
+            else:
+                answers = [str(answers)]
+            ground_truth_context_id = self.corpus_text_to_context_id.get(
+                str(row["context_markdown_with_headers"])
+            )
+            if ground_truth_context_id is not None:
+                entry = RagBenchmarkEntry(
+                    question_id=str(row["QID"]),
+                    question=str(row["Question"]),
+                    ground_truth_answers=answers,
+                    ground_truth_context_ids=[ground_truth_context_id],
+                )
+                entries.append(entry)
+        return entries
