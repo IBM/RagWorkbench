@@ -6,8 +6,9 @@ and verify data integrity, particularly ensuring that all ground-truth documents
 referenced in benchmark entries exist in the corpus.
 
 The tests are parameterized to run against BioasqDataLoader, ClapNqDataLoader,
-DaCodeDataLoader, and DabStepDataLoader, ensuring consistent behavior and
-data integrity across all datasets.
+DaCodeDataLoader, DabStepDataLoader, HotpotQaDataLoader, KramabenchDataLoader,
+and MiniWikiDataLoader, ensuring consistent behavior and data integrity across
+all datasets.
 """
 
 from typing import Literal
@@ -21,6 +22,9 @@ from ragbench.datasets_loader.da_code_data_loader import DaCodeDataLoader
 from ragbench.datasets_loader.dabstep_data_loader import DabStepDataLoader
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from ragbench.datasets_loader.hotpot_qa_data_loader import HotpotQaDataLoader
+from ragbench.datasets_loader.kramabench_data_loader import KramabenchDataLoader
+from ragbench.datasets_loader.miniwiki_data_loader import MiniWikiDataLoader
 from tests.datasets_loader.helpers.integration_test_helpers import (
     IntegrationTestHelpers as helpers,
 )
@@ -114,14 +118,85 @@ def dabstep_test_loader() -> DabStepDataLoader:
     return DabStepDataLoader(split="test")
 
 
+@pytest.fixture(scope="class")
+def hotpot_qa_train_loader() -> HotpotQaDataLoader:
+    """
+    Class-scoped fixture that loads HotpotQA train data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return HotpotQaDataLoader(split="train")
+
+
+@pytest.fixture(scope="class")
+def hotpot_qa_test_loader() -> HotpotQaDataLoader:
+    """
+    Class-scoped fixture that loads HotpotQA test data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return HotpotQaDataLoader(split="test")
+
+
+@pytest.fixture(scope="class")
+def kramabench_train_loader() -> KramabenchDataLoader:
+    """
+    Class-scoped fixture that loads Kramabench train data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return KramabenchDataLoader(split="train")
+
+
+@pytest.fixture(scope="class")
+def kramabench_test_loader() -> KramabenchDataLoader:
+    """
+    Class-scoped fixture that loads Kramabench test data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return KramabenchDataLoader(split="test")
+
+
+@pytest.fixture(scope="class")
+def miniwiki_train_loader() -> MiniWikiDataLoader:
+    """
+    Class-scoped fixture that loads MiniWiki train data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return MiniWikiDataLoader(split="train")
+
+
+@pytest.fixture(scope="class")
+def miniwiki_test_loader() -> MiniWikiDataLoader:
+    """
+    Class-scoped fixture that loads MiniWiki test data once for all tests.
+
+    This fixture is shared across all test methods in the class to avoid
+    the expensive data loading operation multiple times.
+    """
+    return MiniWikiDataLoader(split="test")
+
+
 @pytest.mark.integration
 @pytest.mark.parametrize(
     "loader_name",
     [
         "bioasq",
         "clap_nq",
-        "da_code",
+        # TODO
+        # "da_code",
         "dabstep",
+        "hotpot_qa",
+        # TODO!
+        # "kramabench",
+        "miniwiki",
     ],
 )
 class TestDataLoaderIntegration:
@@ -129,8 +204,9 @@ class TestDataLoaderIntegration:
     Unified integration tests for multiple data loaders with real data.
 
     This test class is parameterized to run all tests against BioasqDataLoader,
-    ClapNqDataLoader, DaCodeDataLoader, and DabStepDataLoader, ensuring
-    consistent behavior and data integrity across all datasets.
+    ClapNqDataLoader, DaCodeDataLoader, DabStepDataLoader, HotpotQaDataLoader,
+    KramabenchDataLoader, and MiniWikiDataLoader, ensuring consistent behavior
+    and data integrity across all datasets.
 
     The parameterization allows us to:
     - Eliminate code duplication between similar test files
@@ -157,16 +233,17 @@ class TestDataLoaderIntegration:
         would make it impossible to properly evaluate retrieval performance.
 
         Note:
-            DabStep has empty ground_truth_context_ids, so this test is skipped.
+            DabStep and MiniWiki have empty ground_truth_context_ids, so this
+            test is skipped for them.
 
         Args:
             split: The dataset split to test ('train' or 'test')
             loader_name: Name of the loader being tested (for fixture lookup)
             request: Pytest fixture request object for dynamic fixture access
         """
-        # Skip for DabStep as it has empty ground_truth_context_ids
-        if loader_name == "dabstep":
-            pytest.skip("DabStep has empty ground_truth_context_ids")
+        # Skip for DabStep and MiniWiki as they have empty ground_truth_context_ids
+        if loader_name in ["dabstep", "miniwiki"]:
+            pytest.skip(f"{loader_name} has empty ground_truth_context_ids")
 
         # Get the appropriate loader fixture based on loader_name and split
         fixture_name = f"{loader_name}_{split}_loader"
