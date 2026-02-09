@@ -40,7 +40,7 @@ class MockRagDataLoader(RagDataLoader):
 
     def __init__(
         self,
-        dataset_name: DatasetName = DatasetName.AI_ARXIV,
+        dataset_name: DatasetName = DatasetName.BIOASQ,
         split: Literal["train", "test"] | None = None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
         num_docs: int = 20,

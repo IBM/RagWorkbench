@@ -1,8 +1,12 @@
 import logging
 import random
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Literal
 
+from ragbench.datasets_loader.data_loader_caching.data_loader_cache import (
+    DataLoaderCache,
+)
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
 from ragbench.datasets_loader.data_models.rag_benchmark import (
@@ -52,6 +56,7 @@ class RagDataLoader(ABC):
         dataset_name: DatasetName,
         split: Literal["train", "test"] | None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
+        cache_dir: Path | None = None,
     ):
         """
         Initialize the RAG data loader.
@@ -72,31 +77,53 @@ class RagDataLoader(ABC):
         self.dataset_name: DatasetName = dataset_name
         self.split: Literal["train", "test"] | None = split
         self.sampling_params = sampling_params
+        cached_rag_corpus: RagCorpus | None = None
+        cached_rag_benchmark: RagBenchmark | None = None
+        cache = None
+        if cache_dir is not None:
+            # there is a cache
+            cache = DataLoaderCache(
+                cache_dir=cache_dir,
+                dataset_config_dict={
+                    "split": self.split,
+                    "sampling_params": self.sampling_params.as_id(),
+                },
+            )
+            cached_rag_corpus, cached_rag_benchmark = cache.get()
+        if cached_rag_corpus is not None and cached_rag_benchmark is not None:
+            self.rag_corpus = cached_rag_corpus
+            self.benchmark = cached_rag_benchmark
+            logger.debug(
+                f"Loaded from cache - {len(self.rag_corpus)} documents and {len(self.benchmark)}  "
+                f"labeled examples from '{dataset_name}', split '{split}'."
+            )
+        else:
+            self.all_docs: list[DocumentObject] = self._get_documents()
+            self.sampling_params = sampling_params
 
-        self.all_docs: list[DocumentObject] = self._get_documents()
-        self.sampling_params = sampling_params
+            all_benchmark_entries: list[RagBenchmarkEntry] = (
+                self._get_benchmark_entries(split=split)
+            )
 
-        all_benchmark_entries: list[RagBenchmarkEntry] = self._get_benchmark_entries(
-            split=split
-        )
+            # Apply sampling to both benchmark entries and documents
+            sampled_benchmark_entries: list[RagBenchmarkEntry]
+            sampled_docs: list[DocumentObject]
+            sampled_benchmark_entries, sampled_docs = self._load_sample(
+                all_benchmark_entries, self.all_docs, sampling_params
+            )
 
-        # Apply sampling to both benchmark entries and documents
-        sampled_benchmark_entries: list[RagBenchmarkEntry]
-        sampled_docs: list[DocumentObject]
-        sampled_benchmark_entries, sampled_docs = self._load_sample(
-            all_benchmark_entries, self.all_docs, sampling_params
-        )
+            # Create benchmark and corpus instances
+            self.benchmark: RagBenchmark = RagBenchmark(  # type: ignore[no-redef]
+                benchmark_entries=sampled_benchmark_entries
+            )
+            self.rag_corpus: RagCorpus = RagCorpus(documents=sampled_docs)  # type: ignore[no-redef]
 
-        # Create benchmark and corpus instances
-        self.benchmark: RagBenchmark = RagBenchmark(
-            benchmark_entries=sampled_benchmark_entries
-        )
-        self.rag_corpus: RagCorpus = RagCorpus(documents=sampled_docs)
-
-        logger.debug(
-            f"Loaded {len(self.rag_corpus)} documents and {len(self.benchmark)} "
-            f"labeled examples from '{dataset_name}', split '{split}'."
-        )
+            logger.debug(
+                f"Loaded {len(self.rag_corpus)} documents and {len(self.benchmark)} "
+                f"labeled examples from '{dataset_name}', split '{split}'."
+            )
+            if cache is not None:
+                cache.add(self.benchmark, self.rag_corpus)
 
     @abstractmethod
     def _get_documents(self) -> list[DocumentObject]:
