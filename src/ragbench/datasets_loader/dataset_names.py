@@ -51,6 +51,10 @@ class DatasetName(str, Enum):
     QASPER = "qasper"
     SECQUE = "secque"
     WATSONX_DOCS_QA = "watsonx_docs_qa"
+    REAL_MM_FIN_SLIDES = "real_mm_fin_slides"
+    REAL_MM_FIN_REPORT = "real_mm_fin_report"
+    REAL_MM_TECH_REPORT = "real_mm_tech_report"
+    REAL_MM_TECH_SLIDES = "real_mm_tech_slides"
 
     @classmethod
     def list_all(cls) -> list[str]:
