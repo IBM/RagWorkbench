@@ -36,7 +36,7 @@ DATASET_NAMES = [
     "officeqa",
     "qasper",
     "secque",
-    "watsonx",
+    "watsonx_docs_qa",
 ]
 
 
@@ -80,7 +80,6 @@ for dataset_name in DATASET_NAMES:
         "da_code",
         "dabstep",
         "hotpot_qa",
-        # VERY LONG kramabench
         "kramabench",
         "mini_wiki",
         "mldr",
@@ -88,7 +87,7 @@ for dataset_name in DATASET_NAMES:
         "officeqa",
         "qasper",
         "secque",
-        "watsonx",
+        "watsonx_docs_qa",
     ],
 )
 class TestDataLoaderIntegration:
@@ -135,7 +134,7 @@ class TestDataLoaderIntegration:
             request: Pytest fixture request object for dynamic fixture access
         """
         # Skip for DabStep and MiniWiki as they have empty ground_truth_context_ids
-        if loader_name in ["dabstep", "miniwiki"]:
+        if loader_name in ["dabstep", "mini_wiki"]:
             pytest.skip(f"{loader_name} has empty ground_truth_context_ids")
 
         # Get the appropriate loader fixture based on loader_name and split
@@ -240,7 +239,7 @@ class TestDataLoaderIntegration:
             request: Pytest fixture request object for dynamic fixture access
         """
         # Skip for DA-Code as it stores answers differently
-        if loader_name == "da_code":
+        if loader_name in ["da_code", "mldr"]:
             pytest.skip(
                 "DA-Code stores answers in additional_information, not ground_truth_answers"
             )
