@@ -6,6 +6,7 @@ based on the dataset name, simplifying the process of loading different RAG benc
 """
 
 import logging
+from pathlib import Path
 from typing import Any, Literal
 
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
@@ -123,6 +124,7 @@ class DataLoaderFactory:
         dataset_name: DatasetName | str,
         split: Literal["train", "test"] | None = None,
         sampling_params: DataSamplingParams | None = None,
+        cache_dir: Path | None = None,
         **kwargs: Any,
     ) -> RagDataLoader:
         """
@@ -203,6 +205,7 @@ class DataLoaderFactory:
         # Build constructor arguments based on loader requirements
         constructor_args: dict[str, Any] = {
             "split": split,
+            "cache_dir": cache_dir,
         }
 
         # RealMMRagDataLoader requires dataset_name as a constructor parameter
@@ -217,6 +220,7 @@ class DataLoaderFactory:
             RealMMRagDataLoader,
             WatsonxDocsQADataLoader,
         ]:
+            # TODO!!!
             constructor_args["sampling_params"] = sampling_params
         else:
             constructor_args["data_sampling"] = sampling_params
