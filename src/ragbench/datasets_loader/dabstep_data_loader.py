@@ -2,7 +2,7 @@ import io
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Literal
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 from datasets import load_dataset  # type: ignore[import-not-found]
 from huggingface_hub import HfFileSystem  # type: ignore[import-not-found]
 

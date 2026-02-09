@@ -2,7 +2,7 @@ import hashlib
 import io
 from typing import Literal
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 from datasets import load_dataset  # type: ignore[import-not-found]
 
 from ragbench.datasets_loader import RagDataLoader

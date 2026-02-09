@@ -2,7 +2,7 @@ import io
 from typing import Literal
 from zipfile import ZipFile
 
-import pandas as pd  # type: ignore[import-untyped]
+import pandas as pd
 import requests
 
 from ragbench.datasets_loader import RagDataLoader
@@ -44,8 +44,8 @@ class OfficeQADataLoader(RagDataLoader):
         """
         # Load the CSV from GitHub
         self.total_df: pd.DataFrame = pd.read_csv(OFFICEQA_CSV_URL)
-        self._train_df = None
-        self._test_df = None
+        self._train_df = self.total_df.sample(frac=0.7, random_state=42)
+        self._test_df = self.total_df.drop(self._train_df.index)
 
         super().__init__(
             dataset_name=DatasetName.OFFICEQA,
@@ -143,11 +143,6 @@ class OfficeQADataLoader(RagDataLoader):
         """Get the appropriate dataframe for the given split."""
         if split is None:
             return self.total_df
-
-        if self._train_df is None:
-            self._train_df = self.total_df.sample(frac=0.7, random_state=42)
-            if self._train_df is not None:
-                self._test_df = self.total_df.drop(self._train_df.index)
 
         # At this point, both _train_df and _test_df are guaranteed to be DataFrames
         if split == "train":
