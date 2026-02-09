@@ -50,9 +50,7 @@ repos:
           - typing-extensions
           - docling-core
           - pandas-stubs
-          - pandas
           - types-requests
-          - pandas-stubs
           - pandas
         args: [--config-file=pyproject.toml, --explicit-package-bases]
         files: ^src/
