@@ -6,9 +6,9 @@ import pandas as pd
 from pydantic import BaseModel
 
 from ragbench.datasets_loader import RagDataLoader
-from ragbench.datasets_loader.data_models.dataset_names import DatasetName
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from ragbench.datasets_loader.dataset_names import DatasetName
 
 
 class IngestArtifact:
