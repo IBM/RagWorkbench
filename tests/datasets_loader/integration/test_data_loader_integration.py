@@ -18,26 +18,13 @@ from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.data_loader_factory import DataLoaderFactory
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from ragbench.datasets_loader.dataset_names import DatasetName
 from tests.datasets_loader.helpers.integration_test_helpers import (
     IntegrationTestHelpers as helpers,
 )
 
 # List of all available dataset names for parameterization
-DATASET_NAMES = [
-    "bioasq",
-    "clap_nq",
-    "da_code",
-    "dabstep",
-    "hotpot_qa",
-    "kramabench",
-    "mini_wiki",
-    "mldr",
-    "narrative_qa",
-    "officeqa",
-    "qasper",
-    "secque",
-    "watsonx_docs_qa",
-]
+DATASET_NAMES: list[str] = [d.value for d in DatasetName]
 
 
 def _create_loader_fixture(dataset_name: str, split: Literal["train", "test"]) -> Any:
@@ -74,21 +61,8 @@ for dataset_name in DATASET_NAMES:
 @pytest.mark.integration
 @pytest.mark.parametrize(
     "loader_name",
-    [
-        "bioasq",
-        "clap_nq",
-        "da_code",
-        "dabstep",
-        "hotpot_qa",
-        "kramabench",
-        "mini_wiki",
-        "mldr",
-        "narrative_qa",
-        "officeqa",
-        "qasper",
-        "secque",
-        "watsonx_docs_qa",
-    ],
+    DATASET_NAMES,
+    ids=str,
 )
 class TestDataLoaderIntegration:
     """
