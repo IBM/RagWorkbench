@@ -38,7 +38,6 @@ class DatasetName(str, Enum):
         True
     """
 
-    AI_ARXIV = "ai_arxiv"
     BIOASQ = "bioasq"
     CLAP_NQ = "clap_nq"
     DA_CODE = "da_code"

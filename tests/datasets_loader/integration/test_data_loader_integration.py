@@ -18,26 +18,13 @@ from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.data_loader_factory import DataLoaderFactory
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from ragbench.datasets_loader.dataset_names import DatasetName
 from tests.datasets_loader.helpers.integration_test_helpers import (
     IntegrationTestHelpers as helpers,
 )
 
 # List of all available dataset names for parameterization
-DATASET_NAMES = [
-    "bioasq",
-    "clap_nq",
-    "da_code",
-    "dabstep",
-    "hotpot_qa",
-    "kramabench",
-    "miniwiki",
-    "mldr",
-    "narrative_qa",
-    "office_qa",
-    "qasper",
-    "secque",
-    "watsonx",
-]
+DATASET_NAMES: list[str] = [d.value for d in DatasetName]
 
 
 def _create_loader_fixture(dataset_name: str, split: Literal["train", "test"]) -> Any:
@@ -74,21 +61,8 @@ for dataset_name in DATASET_NAMES:
 @pytest.mark.integration
 @pytest.mark.parametrize(
     "loader_name",
-    [
-        "bioasq",
-        "clap_nq",
-        "da_code",
-        "dabstep",
-        "hotpot_qa",
-        "kramabench",
-        "miniwiki",
-        "mldr",
-        "narrative_qa",
-        "office_qa",
-        "qasper",
-        "secque",
-        "watsonx",
-    ],
+    DATASET_NAMES,
+    ids=str,
 )
 class TestDataLoaderIntegration:
     """
@@ -134,7 +108,7 @@ class TestDataLoaderIntegration:
             request: Pytest fixture request object for dynamic fixture access
         """
         # Skip for DabStep and MiniWiki as they have empty ground_truth_context_ids
-        if loader_name in ["dabstep", "miniwiki"]:
+        if loader_name in ["dabstep", "mini_wiki"]:
             pytest.skip(f"{loader_name} has empty ground_truth_context_ids")
 
         # Get the appropriate loader fixture based on loader_name and split
@@ -239,7 +213,7 @@ class TestDataLoaderIntegration:
             request: Pytest fixture request object for dynamic fixture access
         """
         # Skip for DA-Code as it stores answers differently
-        if loader_name == "da_code":
+        if loader_name in ["da_code", "mldr"]:
             pytest.skip(
                 "DA-Code stores answers in additional_information, not ground_truth_answers"
             )

@@ -12,4 +12,5 @@ from ragbench.datasets_loader.watsonx_data_loader import WatsonxDocsQADataLoader
 
 __all__ = [
     "DataLoaderFactory",
+    "RagDataLoader",
 ]
