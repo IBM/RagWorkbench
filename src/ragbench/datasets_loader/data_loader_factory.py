@@ -22,6 +22,7 @@ from ragbench.datasets_loader.mldr_data_loader import MLDRDataLoader
 from ragbench.datasets_loader.narrative_qa_data_loader import NarrativeQaDataLoader
 from ragbench.datasets_loader.office_qa_data_loader import OfficeQADataLoader
 from ragbench.datasets_loader.qasper_data_loader import QasperQaDataLoader
+from ragbench.datasets_loader.real_mm_data_loader import RealMMRagDataLoader
 from ragbench.datasets_loader.secque_data_loader import SecqueDataLoader
 from ragbench.datasets_loader.watsonx_data_loader import WatsonxDocsQADataLoader
 
@@ -36,7 +37,7 @@ class DataLoaderFactory:
     RAG benchmark dataset loaders. It handles dataset name validation, parameter
     routing, and provides clear error messages for invalid inputs.
 
-    The factory supports all 14 available datasets and their specific parameters,
+    The factory supports all 18 available datasets and their specific parameters,
     while maintaining a consistent API across all loaders.
 
     Attributes:
@@ -108,6 +109,10 @@ class DataLoaderFactory:
         DatasetName.NARRATIVE_QA: NarrativeQaDataLoader,
         DatasetName.OFFICEQA: OfficeQADataLoader,
         DatasetName.QASPER: QasperQaDataLoader,
+        DatasetName.REAL_MM_FIN_SLIDES: RealMMRagDataLoader,
+        DatasetName.REAL_MM_FIN_REPORT: RealMMRagDataLoader,
+        DatasetName.REAL_MM_TECH_REPORT: RealMMRagDataLoader,
+        DatasetName.REAL_MM_TECH_SLIDES: RealMMRagDataLoader,
         DatasetName.SECQUE: SecqueDataLoader,
         DatasetName.WATSONX_DOCS_QA: WatsonxDocsQADataLoader,
     }
@@ -200,11 +205,16 @@ class DataLoaderFactory:
             "split": split,
         }
 
+        # RealMMRagDataLoader requires dataset_name as a constructor parameter
+        if loader_class == RealMMRagDataLoader:
+            constructor_args["dataset_name"] = dataset_name
+
         # Add sampling_params with the appropriate parameter name
         # Most loaders use 'data_sampling', but some use 'sampling_params'
         if loader_class in [
             BioasqDataLoader,
             ClapNqDataLoader,
+            RealMMRagDataLoader,
             WatsonxDocsQADataLoader,
         ]:
             constructor_args["sampling_params"] = sampling_params
