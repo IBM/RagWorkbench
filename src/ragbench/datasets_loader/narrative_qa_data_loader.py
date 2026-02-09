@@ -65,9 +65,14 @@ class NarrativeQaDataLoader(RagDataLoader):
             df = pd.concat([self.hf_dataset_train_df, self.hf_dataset_test_df], axis=1)
 
         entries = []
+        seen_question_ids = set()
         for _, row in df.iterrows():
             hash_object = hashlib.md5()
-            hash_object.update(str(row["question"]).encode("utf-8"))
+            question = str(row["question"]["text"])
+            if question in seen_question_ids:
+                continue
+            seen_question_ids.add(question)
+            hash_object.update(str(row["question"]["text"]).encode("utf-8"))
             question_id = hash_object.hexdigest()
             answers = []
             for a in row["answers"]:
@@ -84,7 +89,7 @@ class NarrativeQaDataLoader(RagDataLoader):
             )
             entry = RagBenchmarkEntry(
                 question_id=question_id,
-                question=str(row["question"]),
+                question=question,
                 ground_truth_answers=answers,
                 ground_truth_context_ids=[
                     GroundTruthContextId(document_id=str(document_id))
