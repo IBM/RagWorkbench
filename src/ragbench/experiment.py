@@ -1,6 +1,6 @@
 import uuid
 
-import mlflow  # type: ignore[import-not-found]
+import mlflow
 import pandas as pd
 
 from ragbench.api.inference import InferencePipeline, InferenceRuntimeParams
