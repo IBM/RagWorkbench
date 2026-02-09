@@ -22,7 +22,7 @@ from ragbench.datasets_loader.datasets_utils import get_benchmark_split
 
 REPO_ID = "eugenie-y/KramaBench"
 SEED = 42
-NUMBER_OF_THREADS = 2
+NUMBER_OF_THREADS = 5
 
 logger = logging.getLogger(__name__)
 
