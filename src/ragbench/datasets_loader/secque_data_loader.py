@@ -31,12 +31,14 @@ class SecqueDataLoader(RagDataLoader):
         context_html_without_headers = self.hf_dataset_df[
             "context_markdown_with_headers"
         ].tolist()
-        self.corpus_text_to_context_id: dict[str, GroundTruthContextId] = {
-            s: GroundTruthContextId(
-                document_id=hashlib.sha256(s.encode("utf-8")).hexdigest()
+        self.corpus_text_to_context_id: dict[str, GroundTruthContextId] = {}
+        for s in context_html_without_headers:
+            shake = hashlib.shake_128()
+            shake.update(s.encode("utf-8"))
+            doc_id = shake.hexdigest(10)
+            self.corpus_text_to_context_id[s] = GroundTruthContextId(
+                document_id=f"{doc_id}.md"
             )
-            for s in context_html_without_headers
-        }
 
         super().__init__(
             dataset_name=DatasetName.SECQUE,
