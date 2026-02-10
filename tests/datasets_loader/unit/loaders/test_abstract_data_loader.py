@@ -32,7 +32,7 @@ class TestRagDataLoaderInitialization:
         # With default params (no sampling), all data should be included
         assert len(loader.get_benchmark()) == 8
         assert len(loader.get_corpus()) == 10
-        assert loader.dataset_name == DatasetName.AI_ARXIV
+        assert loader.dataset_name == DatasetName.BIOASQ
         assert loader.split is None
 
     @pytest.mark.parametrize(
@@ -58,14 +58,14 @@ class TestRagDataLoaderInitialization:
             question_limit=5, document_factor=2, seed=42
         )
         loader = MockRagDataLoader(
-            dataset_name=DatasetName.AI_ARXIV,
+            dataset_name=DatasetName.BIOASQ,
             split="train",
             sampling_params=sampling_params,
             num_docs=20,
             num_questions=15,
         )
 
-        assert loader.dataset_name == DatasetName.AI_ARXIV
+        assert loader.dataset_name == DatasetName.BIOASQ
         assert loader.split == "train"
         assert len(loader.get_benchmark()) == 5  # question_limit applied
 
