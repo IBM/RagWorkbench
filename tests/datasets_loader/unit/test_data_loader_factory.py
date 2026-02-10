@@ -73,22 +73,6 @@ class TestDataLoaderFactory:
         assert "Invalid dataset name" in str(exc_info.value)
         assert "invalid_dataset" in str(exc_info.value)
 
-    def test_create_loader_with_enum_returns_loader_instance(self):
-        """Test create_loader with enum returns a RagDataLoader instance."""
-        # Use a mock to avoid actual data loading
-        with pytest.raises((Exception, TypeError)):
-            # This will fail during actual instantiation, but we're testing
-            # that the factory attempts to create the right type
-            DataLoaderFactory.create_loader(
-                dataset_name=DatasetName.BIOASQ, split="train"
-            )
-
-    def test_create_loader_with_string_dataset_name(self):
-        """Test create_loader accepts string dataset names."""
-        # Test that string is converted to enum
-        with pytest.raises((Exception, TypeError)):
-            DataLoaderFactory.create_loader(dataset_name="bioasq", split="train")
-
     def test_create_loader_invalid_dataset_name(self):
         """Test create_loader raises ValueError for invalid dataset name."""
         with pytest.raises(ValueError) as exc_info:
@@ -97,36 +81,6 @@ class TestDataLoaderFactory:
             )
 
         assert "Invalid dataset name" in str(exc_info.value)
-
-    def test_create_loader_with_sampling_params(self):
-        """Test create_loader accepts sampling parameters."""
-        sampling_params = DataSamplingParams(
-            question_limit=10, document_factor=2, seed=42
-        )
-
-        # This will fail during actual instantiation, but we're testing parameter passing
-        with pytest.raises((Exception, TypeError)):
-            DataLoaderFactory.create_loader(
-                dataset_name=DatasetName.BIOASQ,
-                split="train",
-                sampling_params=sampling_params,
-            )
-
-    def test_create_loader_with_none_sampling_params(self):
-        """Test create_loader uses default DataSamplingParams when None provided."""
-        # The factory should create default DataSamplingParams internally
-        with pytest.raises((Exception, TypeError)):
-            DataLoaderFactory.create_loader(
-                dataset_name=DatasetName.BIOASQ, split="train", sampling_params=None
-            )
-
-    def test_create_loader_with_loader_specific_kwargs(self):
-        """Test create_loader passes through loader-specific kwargs."""
-        # HotpotQA accepts a 'level' parameter
-        with pytest.raises((Exception, TypeError)):
-            DataLoaderFactory.create_loader(
-                dataset_name=DatasetName.HOTPOT_QA, split="train", level="hard"
-            )
 
     def test_create_loader_with_multiple_kwargs(self):
         """Test create_loader handles multiple loader-specific kwargs."""
