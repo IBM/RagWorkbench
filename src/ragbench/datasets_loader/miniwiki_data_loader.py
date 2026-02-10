@@ -9,6 +9,7 @@ References:
 
 import logging
 from io import BytesIO
+from pathlib import Path
 from typing import Literal
 
 from datasets import load_dataset  # type: ignore[import-not-found]
@@ -51,6 +52,7 @@ class MiniWikiDataLoader(RagDataLoader):
         self,
         split: Literal["train", "test"] | None = None,
         data_sampling: DataSamplingParams = DataSamplingParams(),
+        cache_dir: Path | None = None,
     ):
         """
         Initialize the Mini Wikipedia data loader.
@@ -65,7 +67,9 @@ class MiniWikiDataLoader(RagDataLoader):
         """
         logger.info(f"Initializing MiniWikiDataLoader with split='{split}'")
 
-        super().__init__(DatasetName.MINI_WIKI, split, data_sampling)
+        super().__init__(
+            DatasetName.MINI_WIKI, split, data_sampling, cache_dir=cache_dir
+        )
 
     def _get_documents(self) -> list[DocumentObject]:
         """

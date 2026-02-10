@@ -1,5 +1,6 @@
 import io
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Literal
 
 import pandas as pd
@@ -21,6 +22,7 @@ class DabStepDataLoader(RagDataLoader):
         self,
         split: Literal["train", "test"] | None = None,
         data_sampling: DataSamplingParams = DataSamplingParams(),
+        cache_dir: Path | None = None,
         verbose: bool = True,
         progress_every: int = 50,
     ):
@@ -31,6 +33,7 @@ class DabStepDataLoader(RagDataLoader):
             dataset_name=DatasetName.DABSTEP,
             split=split,
             sampling_params=data_sampling,
+            cache_dir=cache_dir,
         )
 
     def _get_documents(self) -> list[DocumentObject]:

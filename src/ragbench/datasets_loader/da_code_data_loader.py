@@ -93,6 +93,7 @@ class DaCodeDataLoader(RagDataLoader):
     def __init__(
         self,
         split: Literal["train", "test"] | None,
+        cache_dir: Path | None = None,
         *,
         data_sampling: DataSamplingParams | None = None,
         github_token: str | None = None,
@@ -119,6 +120,7 @@ class DaCodeDataLoader(RagDataLoader):
             dataset_name=DatasetName.DA_CODE,
             split=split,
             sampling_params=data_sampling or DataSamplingParams(),
+            cache_dir=cache_dir,
         )
 
     # -------------------------------------------------------------------------
