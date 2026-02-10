@@ -36,17 +36,17 @@ classifiers = [
 #mlflow = true
 
 dependencies = [
-    "pydantic>=2.0",
+    "pydantic",
     "docling-core",
     "typing-extensions",
     "types-requests",
     "requests",
-    "huggingface-hub>=1.3.0",
+    "huggingface-hub",
     "pandas",
     "gdown",
-    "datasets>=4.5.0",
-    "mlflow>=3.1",
-    "pandas-stubs~=2.3.3",
+    "datasets",
+    "mlflow",
+    "pandas-stubs",
     "pandas"
 ]
 
