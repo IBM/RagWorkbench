@@ -102,7 +102,6 @@ class Experiment:
                     "sentiment_accuracy": 0,
                     "sentence_split_accuracy": 0,
                 }
-                pass
 
             mlflow.evaluate(
                 model=model_fn,
