@@ -11,6 +11,7 @@ References:
 
 import logging
 from io import BytesIO
+from pathlib import Path
 from typing import Literal
 
 from datasets import (  # type: ignore[import-not-found]
@@ -67,6 +68,7 @@ class WatsonxDocsQADataLoader(RagDataLoader):
         self,
         split: Literal["train", "test"] | None = None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
+        cache_dir: Path | None = None,
     ):
         """
         Initialize the WatsonX DocsQA data loader.
@@ -83,7 +85,9 @@ class WatsonxDocsQADataLoader(RagDataLoader):
         """
         logger.info(f"Initializing WatsonxDocsQADataLoader with split='{split}'")
 
-        super().__init__(DatasetName.WATSONX_DOCS_QA, split, sampling_params)
+        super().__init__(
+            DatasetName.WATSONX_DOCS_QA, split, sampling_params, cache_dir=cache_dir
+        )
 
     def _get_documents(self) -> list[DocumentObject]:
         """

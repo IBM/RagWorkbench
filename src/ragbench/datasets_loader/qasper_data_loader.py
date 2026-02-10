@@ -1,4 +1,5 @@
 import io
+from pathlib import Path
 from typing import Literal
 
 import pandas as pd
@@ -19,6 +20,7 @@ class QasperQaDataLoader(RagDataLoader):
         self,
         split: Literal["train", "test"] | None,
         data_sampling: DataSamplingParams = DataSamplingParams(),
+        cache_dir: Path | None = None,
     ):
         # We read the content of the HF
         hf_dataset = load_dataset(
@@ -40,7 +42,10 @@ class QasperQaDataLoader(RagDataLoader):
             self.corpus_doc_id_to_text[doc_id] = d
 
         super().__init__(
-            dataset_name=DatasetName.QASPER, split=split, sampling_params=data_sampling
+            dataset_name=DatasetName.QASPER,
+            split=split,
+            sampling_params=data_sampling,
+            cache_dir=cache_dir,
         )
 
     @staticmethod

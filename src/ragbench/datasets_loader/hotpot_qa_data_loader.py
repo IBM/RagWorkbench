@@ -1,5 +1,6 @@
 import hashlib
 import io
+from pathlib import Path
 from typing import Literal
 
 import pandas as pd
@@ -21,6 +22,7 @@ class HotpotQaDataLoader(RagDataLoader):
         split: Literal["train", "test"] | None,
         level: Literal["easy", "medium", "hard"] | None = None,
         data_sampling: DataSamplingParams = DataSamplingParams(),
+        cache_dir: Path | None = None,
     ):
         self.total_df: pd.DataFrame = load_dataset(
             path="hotpotqa/hotpot_qa", name="distractor", split="train"
@@ -30,6 +32,7 @@ class HotpotQaDataLoader(RagDataLoader):
             dataset_name=DatasetName.HOTPOT_QA,
             split=split,
             sampling_params=data_sampling,
+            cache_dir=cache_dir,
         )
 
     @staticmethod

@@ -32,6 +32,7 @@ class KramabenchDataLoader(RagDataLoader):
         self,
         split: Literal["train", "test"] | None = None,
         data_sampling: DataSamplingParams | None = None,
+        cache_dir: Path | None = None,
         verbose: bool = True,
         progress_every: int = 50,
     ):
@@ -45,6 +46,7 @@ class KramabenchDataLoader(RagDataLoader):
             dataset_name=DatasetName.KRAMABENCH,
             split=split,
             sampling_params=data_sampling,
+            cache_dir=cache_dir,
         )
 
     @staticmethod

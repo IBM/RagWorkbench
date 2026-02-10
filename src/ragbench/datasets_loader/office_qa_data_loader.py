@@ -1,4 +1,5 @@
 import io
+from pathlib import Path
 from typing import Literal
 from zipfile import ZipFile
 
@@ -34,6 +35,7 @@ class OfficeQADataLoader(RagDataLoader):
         self,
         split: Literal["train", "test"] | None,
         data_sampling: DataSamplingParams = DataSamplingParams(),
+        cache_dir: Path | None = None,
     ):
         """
         Initialize the OfficeQA data loader.
@@ -51,6 +53,7 @@ class OfficeQADataLoader(RagDataLoader):
             dataset_name=DatasetName.OFFICEQA,
             split=split,
             sampling_params=data_sampling,
+            cache_dir=cache_dir,
         )
 
     @staticmethod

@@ -12,6 +12,7 @@ References:
 import csv
 import logging
 from io import BytesIO, StringIO
+from pathlib import Path
 from typing import Literal
 
 import requests
@@ -61,6 +62,7 @@ class ClapNqDataLoader(RagDataLoader):
         self,
         split: Literal["train", "test"] | None = None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
+        cache_dir: Path | None = None,
     ):
         """
         Initialize the CLAP-NQ data loader.
@@ -78,7 +80,9 @@ class ClapNqDataLoader(RagDataLoader):
         """
         logger.info(f"Initializing ClapNqDataLoader with split='{split}'")
 
-        super().__init__(DatasetName.CLAP_NQ, split, sampling_params)
+        super().__init__(
+            DatasetName.CLAP_NQ, split, sampling_params, cache_dir=cache_dir
+        )
 
     def _get_documents(self) -> list[DocumentObject]:
         """

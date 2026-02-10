@@ -1,5 +1,6 @@
 import hashlib
 import io
+from pathlib import Path
 from typing import Literal
 
 from datasets import load_dataset  # type: ignore[import-not-found]
@@ -19,10 +20,10 @@ class SecqueDataLoader(RagDataLoader):
         self,
         split: Literal["train", "test"] | None,
         data_sampling: DataSamplingParams = DataSamplingParams(),
-        dataset_name: str = "nogabenyoash/SecQue",
+        cache_dir: Path | None = None,
     ):
         # We read the content of the HF
-        self.hf_dataset_df = load_dataset(dataset_name)[
+        self.hf_dataset_df = load_dataset("nogabenyoash/SecQue")[
             "train"
         ].to_pandas()  # There is only train on HF
 
@@ -38,7 +39,10 @@ class SecqueDataLoader(RagDataLoader):
         }
 
         super().__init__(
-            dataset_name=DatasetName.SECQUE, split=split, sampling_params=data_sampling
+            dataset_name=DatasetName.SECQUE,
+            split=split,
+            sampling_params=data_sampling,
+            cache_dir=cache_dir,
         )
 
     def _get_documents(self) -> list[DocumentObject]:
