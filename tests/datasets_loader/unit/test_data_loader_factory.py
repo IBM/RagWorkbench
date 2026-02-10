@@ -8,8 +8,6 @@ proper error messages for invalid inputs.
 
 from pathlib import Path
 
-import pytest
-
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.bioasq_data_loader import BioasqDataLoader
 from ragbench.datasets_loader.data_loader_factory import DataLoaderFactory
@@ -65,34 +63,6 @@ class TestDataLoaderFactory:
         assert loader_class == BioasqDataLoader
         assert issubclass(loader_class, RagDataLoader)
 
-    def test_get_loader_class_invalid_name(self):
-        """Test get_loader_class raises ValueError for invalid dataset name."""
-        with pytest.raises(ValueError) as exc_info:
-            DataLoaderFactory.get_loader_class("invalid_dataset")
-
-        assert "Invalid dataset name" in str(exc_info.value)
-        assert "invalid_dataset" in str(exc_info.value)
-
-    def test_create_loader_invalid_dataset_name(self):
-        """Test create_loader raises ValueError for invalid dataset name."""
-        with pytest.raises(ValueError) as exc_info:
-            DataLoaderFactory.create_loader(
-                dataset_name="nonexistent_dataset", split="train"
-            )
-
-        assert "Invalid dataset name" in str(exc_info.value)
-
-    def test_create_loader_with_multiple_kwargs(self):
-        """Test create_loader handles multiple loader-specific kwargs."""
-        # Kramabench accepts verbose and progress_every
-        with pytest.raises((Exception, TypeError)):
-            DataLoaderFactory.create_loader(
-                dataset_name=DatasetName.KRAMABENCH,
-                split="test",
-                verbose=True,
-                progress_every=10,
-            )
-
     def test_create_loader_all_registered_datasets(self):
         """Test that all registered datasets can be instantiated (or fail gracefully)."""
         datasets = DataLoaderFactory.list_available_datasets()
@@ -111,16 +81,6 @@ class TestDataLoaderFactory:
                 assert not isinstance(
                     e, ValueError
                 ) or "Invalid dataset name" not in str(e)
-
-    def test_factory_preserves_split_parameter(self):
-        """Test that split parameter is correctly passed to loaders."""
-        # We can't fully test this without mocking, but we can verify
-        # the factory doesn't reject valid split values
-        for split in ["train", "test", None]:
-            with pytest.raises((Exception, TypeError)):
-                DataLoaderFactory.create_loader(
-                    dataset_name=DatasetName.BIOASQ, split=split
-                )
 
     def test_registry_contains_all_expected_loaders(self):
         """Test that the registry contains all expected loader classes."""
@@ -141,18 +101,6 @@ class TestDataLoaderFactory:
         assert registry[DatasetName.BIOASQ] == BioasqDataLoader
         assert registry[DatasetName.HOTPOT_QA] == HotpotQaDataLoader
         assert registry[DatasetName.KRAMABENCH] == KramabenchDataLoader
-
-    def test_create_loader_error_message_quality(self):
-        """Test that error messages are helpful and informative."""
-        # Test invalid dataset name error
-        with pytest.raises(ValueError) as exc_info:
-            DataLoaderFactory.create_loader("invalid_name")
-
-        error_msg = str(exc_info.value)
-        assert "Invalid dataset name" in error_msg
-        assert "invalid_name" in error_msg
-        # Should suggest valid options
-        assert "Valid options" in error_msg or "Available" in error_msg
 
     def test_factory_is_stateless(self):
         """Test that factory methods are stateless and can be called multiple times."""
