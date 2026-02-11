@@ -6,6 +6,7 @@ that can be used in tests without requiring actual dataset files.
 """
 
 from io import BytesIO
+from pathlib import Path
 from typing import Literal
 
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
@@ -42,9 +43,10 @@ class MockRagDataLoader(RagDataLoader):
         self,
         dataset_name: DatasetName = DatasetName.BIOASQ,
         split: Literal["train", "test"] | None = None,
-        sampling_params: DataSamplingParams = DataSamplingParams(),
+        data_sampling: DataSamplingParams = DataSamplingParams(),
         num_docs: int = 20,
         num_questions: int = 15,
+        cache_dir: Path | None = None,
     ):
         """
         Initialize mock data loader with configurable test data size.
@@ -52,13 +54,13 @@ class MockRagDataLoader(RagDataLoader):
         Args:
             dataset_name: Dataset identifier (default: AI_ARXIV).
             split: Dataset split ('train', 'test', or None).
-            sampling_params: Sampling parameters for questions and documents.
+            data_sampling: Sampling parameters for questions and documents.
             num_docs: Number of documents to generate (default: 20).
             num_questions: Number of questions to generate (default: 15).
         """
         self.num_docs = num_docs
         self.num_questions = num_questions
-        super().__init__(dataset_name, split, sampling_params)
+        super().__init__(dataset_name, split, data_sampling, cache_dir=cache_dir)
 
     def _get_documents(self) -> list[DocumentObject]:
         """

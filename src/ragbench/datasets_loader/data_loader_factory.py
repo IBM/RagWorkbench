@@ -38,14 +38,16 @@ class DataLoaderFactory:
     RAG benchmark dataset loaders. It handles dataset name validation, parameter
     routing, and provides clear error messages for invalid inputs.
 
-    The factory supports all 18 available datasets and their specific parameters,
-    while maintaining a consistent API across all loaders.
+    The factory supports all built-in datasets and their specific parameters,
+    while maintaining a consistent API across all loaders. Additionally, it allows
+    external users to register custom data loaders for their own datasets.
 
     Attributes:
-        _LOADER_REGISTRY: Internal mapping of DatasetName to loader classes.
+        _LOADER_REGISTRY: Internal mapping of DatasetName to built-in loader classes.
+        _CUSTOM_LOADER_REGISTRY: Internal mapping of string names to custom loader classes.
 
     Example:
-        Basic usage with enum:
+        Basic usage with built-in dataset:
         >>> from ragbench.datasets_loader import DataLoaderFactory
         >>> from ragbench.datasets_loader.dataset_names import DatasetName
         >>> loader = DataLoaderFactory.create_loader(
@@ -73,28 +75,45 @@ class DataLoaderFactory:
         ...     )
         ... )
 
-        With loader-specific parameters:
-        >>> # HotpotQA with difficulty level
-        >>> loader = DataLoaderFactory.create_loader(
-        ...     dataset_name=DatasetName.HOTPOT_QA,
-        ...     split="train",
-        ...     level="hard"
-        ... )
-        >>> # Kramabench with verbose output
-        >>> loader = DataLoaderFactory.create_loader(
-        ...     dataset_name=DatasetName.KRAMABENCH,
-        ...     split="test",
-        ...     verbose=True,
-        ...     progress_every=10
-        ... )
+        Registering and using a custom loader:
+        >>> from ragbench.datasets_loader import RagDataLoader
+        >>> class MyCustomLoader(RagDataLoader):
+        ...     def _get_documents(self):
+        ...         return [...]  # Your implementation
+        ...     def _get_benchmark_entries(self, split):
+        ...         return [...]  # Your implementation
+        >>>
+        >>> # Register the custom loader
+        >>> DataLoaderFactory.register_loader("my_dataset", MyCustomLoader)
+        >>>
+        >>> # Use it like any built-in dataset
+        >>> loader = DataLoaderFactory.create_loader("my_dataset", split="train")
+        >>> corpus = loader.get_corpus()
+        >>> benchmark = loader.get_benchmark()
+        >>>
+        >>> # Check if a dataset is registered
+        >>> DataLoaderFactory.is_registered("my_dataset")
+        True
+        >>>
+        >>> # List all available datasets (built-in + custom)
+        >>> datasets = DataLoaderFactory.list_available_datasets()
+        >>>
+        >>> # Unregister when done
+        >>> DataLoaderFactory.unregister_loader("my_dataset")
+        True
 
     Note:
-        Some loaders have specific parameters:
+        Some built-in loaders have specific parameters:
         - HotpotQA: `level` (Literal["easy", "medium", "hard"])
         - Kramabench: `verbose` (bool), `progress_every` (int)
         - MLDR: `language` (str)
 
         These can be passed as keyword arguments to create_loader().
+
+        Custom loaders must:
+        - Extend RagDataLoader
+        - Implement _get_documents() and _get_benchmark_entries()
+        - Use string names that don't conflict with built-in DatasetName values
     """
 
     # Registry mapping DatasetName to loader classes
@@ -117,6 +136,167 @@ class DataLoaderFactory:
         DatasetName.SECQUE: SecqueDataLoader,
         DatasetName.WATSONX_DOCS_QA: WatsonxDocsQADataLoader,
     }
+
+    # Custom registry for externally registered loaders (string-based keys)
+    _CUSTOM_LOADER_REGISTRY: dict[str, type[RagDataLoader]] = {}
+
+    @classmethod
+    def register_loader(
+        cls,
+        dataset_name: str,
+        loader_class: type[RagDataLoader],
+    ) -> None:
+        """
+        Register a custom data loader class for a specific dataset name.
+
+        This method allows external users to register their own RagDataLoader
+        implementations for custom datasets. The registered loaders can then be
+        used with create_loader() just like built-in datasets.
+
+        Args:
+            dataset_name: The unique identifier for the custom dataset. Must be
+                         a non-empty string that doesn't conflict with built-in
+                         dataset names (DatasetName enum values).
+            loader_class: The loader class to register. Must be a subclass of
+                         RagDataLoader (not the abstract class itself).
+
+        Raises:
+            ValueError: If dataset_name is empty, None, or matches a built-in
+                       dataset name from the DatasetName enum.
+            TypeError: If loader_class is not a class, not a subclass of
+                      RagDataLoader, or is RagDataLoader itself.
+
+        Example:
+            >>> from ragbench.datasets_loader import DataLoaderFactory, RagDataLoader
+            >>> class MyCustomLoader(RagDataLoader):
+            ...     def _get_documents(self):
+            ...         return [...]
+            ...     def _get_benchmark_entries(self, split):
+            ...         return [...]
+            >>> DataLoaderFactory.register_loader("my_dataset", MyCustomLoader)
+            >>> loader = DataLoaderFactory.create_loader("my_dataset", split="train")
+
+        Note:
+            - If dataset_name already exists in the custom registry, it will be
+              overwritten with a warning logged.
+            - Cannot override built-in dataset names.
+            - The loader_class must implement _get_documents() and
+              _get_benchmark_entries() methods.
+        """
+        # Validate dataset_name is a non-empty string
+        if not isinstance(dataset_name, str):
+            raise TypeError(
+                f"dataset_name must be a string, got {type(dataset_name).__name__}"
+            )
+        if not dataset_name or not dataset_name.strip():
+            raise ValueError("dataset_name cannot be empty")
+
+        # Check if dataset_name conflicts with built-in datasets
+        if DatasetName.is_valid(dataset_name):
+            available = ", ".join([name.value for name in cls._LOADER_REGISTRY.keys()])
+            raise ValueError(
+                f"Cannot register custom loader for '{dataset_name}' - this is a "
+                f"built-in dataset name. Available built-in datasets: {available}"
+            )
+
+        # Validate loader_class is a class
+        if not isinstance(loader_class, type):
+            raise TypeError(
+                f"loader_class must be a class, got {type(loader_class).__name__}"
+            )
+
+        # Validate loader_class is a subclass of RagDataLoader
+        if not issubclass(loader_class, RagDataLoader):
+            raise TypeError(
+                f"Loader class must be a subclass of RagDataLoader, got {loader_class}"
+            )
+
+        # Prevent registering the abstract base class itself
+        if loader_class is RagDataLoader:
+            raise TypeError(
+                "Cannot register RagDataLoader itself - it is an abstract class. "
+                "Please register a concrete subclass."
+            )
+
+        # Warn if overwriting existing custom loader
+        if dataset_name in cls._CUSTOM_LOADER_REGISTRY:
+            logger.warning(
+                f"Overwriting existing custom loader for dataset '{dataset_name}'"
+            )
+
+        # Register the loader
+        cls._CUSTOM_LOADER_REGISTRY[dataset_name] = loader_class
+        logger.debug(
+            f"Registered custom loader {loader_class.__name__} for dataset '{dataset_name}'"
+        )
+
+    @classmethod
+    def unregister_loader(cls, dataset_name: str) -> bool:
+        """
+        Remove a custom data loader from the registry.
+
+        This method removes a previously registered custom loader. It only affects
+        the custom registry and cannot remove built-in loaders.
+
+        Args:
+            dataset_name: The name of the custom dataset to unregister.
+
+        Returns:
+            True if the loader was found and removed, False if not found in
+            the custom registry.
+
+        Example:
+            >>> DataLoaderFactory.register_loader("my_dataset", MyLoader)
+            >>> DataLoaderFactory.unregister_loader("my_dataset")
+            True
+            >>> DataLoaderFactory.unregister_loader("my_dataset")
+            False
+            >>> # Cannot unregister built-in datasets
+            >>> DataLoaderFactory.unregister_loader("bioasq")
+            False
+
+        Note:
+            This method will not raise an error if the dataset is not found;
+            it simply returns False.
+        """
+        if dataset_name in cls._CUSTOM_LOADER_REGISTRY:
+            del cls._CUSTOM_LOADER_REGISTRY[dataset_name]
+            logger.debug(f"Unregistered custom loader for dataset '{dataset_name}'")
+            return True
+        return False
+
+    @classmethod
+    def is_registered(cls, dataset_name: str) -> bool:
+        """
+        Check if a dataset name is registered (either built-in or custom).
+
+        This method checks both the built-in registry (DatasetName enum) and
+        the custom registry for the given dataset name.
+
+        Args:
+            dataset_name: The dataset name to check.
+
+        Returns:
+            True if the dataset is registered in either registry, False otherwise.
+
+        Example:
+            >>> # Check built-in dataset
+            >>> DataLoaderFactory.is_registered("bioasq")
+            True
+            >>> # Check custom dataset
+            >>> DataLoaderFactory.register_loader("my_dataset", MyLoader)
+            >>> DataLoaderFactory.is_registered("my_dataset")
+            True
+            >>> # Check non-existent dataset
+            >>> DataLoaderFactory.is_registered("unknown")
+            False
+        """
+        # Check if it's a valid built-in dataset name
+        if DatasetName.is_valid(dataset_name):
+            return True
+
+        # Check if it's in the custom registry
+        return dataset_name in cls._CUSTOM_LOADER_REGISTRY
 
     @classmethod
     def create_loader(
@@ -182,20 +362,45 @@ class DataLoaderFactory:
             loader constructor. Not all loaders support all parameters - refer to
             individual loader documentation for specific parameter requirements.
         """
-        # Convert string to DatasetName enum if necessary
-        if isinstance(dataset_name, str):
-            dataset_name = DatasetName.from_string(dataset_name)
+        # Determine which registry to use and get the loader class
+        loader_class: type[RagDataLoader]
+        dataset_name_for_realmmrag: DatasetName | str = dataset_name
 
-        # Validate dataset name is in registry
-        if dataset_name not in cls._LOADER_REGISTRY:
-            available = ", ".join([name.value for name in cls._LOADER_REGISTRY.keys()])
-            raise ValueError(
-                f"No loader registered for dataset '{dataset_name.value}'. "
-                f"Available datasets: {available}"
+        if isinstance(dataset_name, DatasetName):
+            # DatasetName enum - use built-in registry
+            if dataset_name not in cls._LOADER_REGISTRY:
+                available = ", ".join(
+                    [name.value for name in cls._LOADER_REGISTRY.keys()]
+                )
+                raise ValueError(
+                    f"No loader registered for dataset '{dataset_name.value}'. "
+                    f"Available datasets: {available}"
+                )
+            loader_class = cls._LOADER_REGISTRY[dataset_name]
+
+        elif isinstance(dataset_name, str):
+            # String - try built-in first, then custom
+            try:
+                # Try to convert to DatasetName enum (built-in dataset)
+                dataset_name_enum = DatasetName.from_string(dataset_name)
+                loader_class = cls._LOADER_REGISTRY[dataset_name_enum]
+                dataset_name_for_realmmrag = dataset_name_enum
+            except ValueError:
+                # Not a built-in dataset, check custom registry
+                if dataset_name in cls._CUSTOM_LOADER_REGISTRY:
+                    loader_class = cls._CUSTOM_LOADER_REGISTRY[dataset_name]
+                else:
+                    # Not found in either registry
+                    available_list = cls.list_available_datasets()
+                    raise ValueError(
+                        f"No loader registered for dataset '{dataset_name}'. "
+                        f"Available datasets: {', '.join(available_list)}"
+                    ) from None
+        else:
+            raise TypeError(
+                f"dataset_name must be a DatasetName enum or string, "
+                f"got {type(dataset_name).__name__}"
             )
-
-        # Get the loader class
-        loader_class = cls._LOADER_REGISTRY[dataset_name]
 
         # Prepare constructor arguments
         # Default sampling_params if not provided
@@ -210,7 +415,7 @@ class DataLoaderFactory:
 
         # RealMMRagDataLoader requires dataset_name as a constructor parameter
         if loader_class == RealMMRagDataLoader:
-            constructor_args["dataset_name"] = dataset_name
+            constructor_args["dataset_name"] = dataset_name_for_realmmrag
 
         # Add sampling_params with the appropriate parameter name
         # Most loaders use 'data_sampling', but some use 'sampling_params'
@@ -245,17 +450,35 @@ class DataLoaderFactory:
     @classmethod
     def list_available_datasets(cls) -> list[str]:
         """
-        Return a list of all available dataset names.
+        Return a list of all available dataset names (built-in and custom).
+
+        This method returns a combined list of all registered datasets, including
+        both built-in datasets (from DatasetName enum) and custom datasets
+        registered via register_loader().
 
         Returns:
             List of dataset name strings that can be used with create_loader().
+            Built-in datasets are listed first, followed by custom datasets
+            (sorted alphabetically).
 
         Example:
             >>> datasets = DataLoaderFactory.list_available_datasets()
             >>> print(f"Available datasets: {', '.join(datasets)}")
-            Available datasets: bioasq, clap_nq, da_code, ...
+            Available datasets: bioasq, clap_nq, da_code, ..., my_custom_dataset
+            >>> # After registering a custom loader
+            >>> DataLoaderFactory.register_loader("my_dataset", MyLoader)
+            >>> datasets = DataLoaderFactory.list_available_datasets()
+            >>> "my_dataset" in datasets
+            True
         """
-        return [name.value for name in cls._LOADER_REGISTRY.keys()]
+        # Get built-in dataset names
+        builtin_names = [name.value for name in cls._LOADER_REGISTRY.keys()]
+
+        # Get custom dataset names (sorted alphabetically)
+        custom_names = sorted(cls._CUSTOM_LOADER_REGISTRY.keys())
+
+        # Return combined list
+        return builtin_names + custom_names
 
     @classmethod
     def get_loader_class(cls, dataset_name: DatasetName | str) -> type[RagDataLoader]:
@@ -263,36 +486,66 @@ class DataLoaderFactory:
         Get the loader class for a given dataset name without instantiating it.
 
         This method is useful for introspection or when you need to access
-        class-level attributes or methods before instantiation.
+        class-level attributes or methods before instantiation. It supports
+        both built-in and custom datasets.
 
         Args:
             dataset_name: The dataset name. Can be a DatasetName enum value
-                         or a string that matches a valid dataset name.
+                         or a string that matches a valid dataset name
+                         (built-in or custom).
 
         Returns:
             The loader class (not an instance) for the specified dataset.
 
         Raises:
             ValueError: If dataset_name is not a valid dataset name.
+            TypeError: If dataset_name is not a DatasetName enum or string.
 
         Example:
+            >>> # Get built-in loader class
             >>> loader_class = DataLoaderFactory.get_loader_class("bioasq")
             >>> print(loader_class.__name__)
             BioasqDataLoader
+            >>> # Get custom loader class
+            >>> DataLoaderFactory.register_loader("my_dataset", MyLoader)
+            >>> loader_class = DataLoaderFactory.get_loader_class("my_dataset")
+            >>> print(loader_class.__name__)
+            MyLoader
             >>> # Check if a loader has a specific method
             >>> hasattr(loader_class, '_get_documents')
             True
         """
-        # Convert string to DatasetName enum if necessary
-        if isinstance(dataset_name, str):
-            dataset_name = DatasetName.from_string(dataset_name)
+        if isinstance(dataset_name, DatasetName):
+            # DatasetName enum - use built-in registry
+            if dataset_name not in cls._LOADER_REGISTRY:
+                available = ", ".join(
+                    [name.value for name in cls._LOADER_REGISTRY.keys()]
+                )
+                raise ValueError(
+                    f"No loader registered for dataset '{dataset_name.value}'. "
+                    f"Available datasets: {available}"
+                )
+            return cls._LOADER_REGISTRY[dataset_name]
 
-        # Validate dataset name is in registry
-        if dataset_name not in cls._LOADER_REGISTRY:
-            available = ", ".join([name.value for name in cls._LOADER_REGISTRY.keys()])
-            raise ValueError(
-                f"No loader registered for dataset '{dataset_name.value}'. "
-                f"Available datasets: {available}"
+        elif isinstance(dataset_name, str):
+            # String - try built-in first, then custom
+            try:
+                # Try to convert to DatasetName enum (built-in dataset)
+                dataset_name_enum = DatasetName.from_string(dataset_name)
+                return cls._LOADER_REGISTRY[dataset_name_enum]
+            except ValueError:
+                # Not a built-in dataset, check custom registry
+                if dataset_name in cls._CUSTOM_LOADER_REGISTRY:
+                    return cls._CUSTOM_LOADER_REGISTRY[dataset_name]
+                else:
+                    # Not found in either registry
+                    available_list = cls.list_available_datasets()
+                    raise ValueError(
+                        f"No loader registered for dataset '{dataset_name}'. "
+                        f"Available datasets: {', '.join(available_list)}"
+                    ) from None
+        else:
+            raise TypeError(
+                f"dataset_name must be a DatasetName enum or string, "
+                f"got {type(dataset_name).__name__}"
             )
-
-        return cls._LOADER_REGISTRY[dataset_name]
