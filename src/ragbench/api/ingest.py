@@ -15,7 +15,7 @@ class IngestPipeline(ABC):
     @abstractmethod
     def process(
         self,
-        dataset_name: DatasetName,
+        dataset_name: DatasetName | str,
         rag_corpus: RagCorpus,
         runtime_params: IngestRuntimeParams,
     ) -> list[IngestArtifact]:

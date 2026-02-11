@@ -147,41 +147,41 @@ class DataLoaderFactory:
         loader_class: type[RagDataLoader],
     ) -> None:
         """
-        Register a custom data loader class for a specific dataset name.
+                Register a custom data loader class for a specific dataset name.
 
-        This method allows external users to register their own RagDataLoader
-        implementations for custom datasets. The registered loaders can then be
-        used with create_loader() just like built-in datasets.
+                This method allows external users to register their own RagDataLoader
+                implementations for custom datasets. The registered loaders can then be
+                used with create_loader() just like built-in datasets.
+        g
+                Args:
+                    dataset_name: The unique identifier for the custom dataset. Must be
+                                 a non-empty string that doesn't conflict with built-in
+                                 dataset names (DatasetName enum values).
+                    loader_class: The loader class to register. Must be a subclass of
+                                 RagDataLoader (not the abstract class itself).
 
-        Args:
-            dataset_name: The unique identifier for the custom dataset. Must be
-                         a non-empty string that doesn't conflict with built-in
-                         dataset names (DatasetName enum values).
-            loader_class: The loader class to register. Must be a subclass of
-                         RagDataLoader (not the abstract class itself).
+                Raises:
+                    ValueError: If dataset_name is empty, None, or matches a built-in
+                               dataset name from the DatasetName enum.
+                    TypeError: If loader_class is not a class, not a subclass of
+                              RagDataLoader, or is RagDataLoader itself.
 
-        Raises:
-            ValueError: If dataset_name is empty, None, or matches a built-in
-                       dataset name from the DatasetName enum.
-            TypeError: If loader_class is not a class, not a subclass of
-                      RagDataLoader, or is RagDataLoader itself.
+                Example:
+                    >>> from ragbench.datasets_loader import DataLoaderFactory, RagDataLoader
+                    >>> class MyCustomLoader(RagDataLoader):
+                    ...     def _get_documents(self):
+                    ...         return [...]
+                    ...     def _get_benchmark_entries(self, split):
+                    ...         return [...]
+                    >>> DataLoaderFactory.register_loader("my_dataset", MyCustomLoader)
+                    >>> loader = DataLoaderFactory.create_loader("my_dataset", split="train")
 
-        Example:
-            >>> from ragbench.datasets_loader import DataLoaderFactory, RagDataLoader
-            >>> class MyCustomLoader(RagDataLoader):
-            ...     def _get_documents(self):
-            ...         return [...]
-            ...     def _get_benchmark_entries(self, split):
-            ...         return [...]
-            >>> DataLoaderFactory.register_loader("my_dataset", MyCustomLoader)
-            >>> loader = DataLoaderFactory.create_loader("my_dataset", split="train")
-
-        Note:
-            - If dataset_name already exists in the custom registry, it will be
-              overwritten with a warning logged.
-            - Cannot override built-in dataset names.
-            - The loader_class must implement _get_documents() and
-              _get_benchmark_entries() methods.
+                Note:
+                    - If dataset_name already exists in the custom registry, it will be
+                      overwritten with a warning logged.
+                    - Cannot override built-in dataset names.
+                    - The loader_class must implement _get_documents() and
+                      _get_benchmark_entries() methods.
         """
         # Validate dataset_name is a non-empty string
         if not isinstance(dataset_name, str):
