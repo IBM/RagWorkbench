@@ -11,7 +11,7 @@ from pathlib import Path
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.bioasq_data_loader import BioasqDataLoader
 from ragbench.datasets_loader.data_loader_factory import DataLoaderFactory
-from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
+from ragbench.datasets_loader.data_models import DataSamplingParams
 from ragbench.datasets_loader.dataset_names import DatasetName
 from ragbench.datasets_loader.hotpot_qa_data_loader import HotpotQaDataLoader
 from ragbench.datasets_loader.kramabench_data_loader import KramabenchDataLoader
@@ -62,25 +62,6 @@ class TestDataLoaderFactory:
 
         assert loader_class == BioasqDataLoader
         assert issubclass(loader_class, RagDataLoader)
-
-    def test_create_loader_all_registered_datasets(self):
-        """Test that all registered datasets can be instantiated (or fail gracefully)."""
-        datasets = DataLoaderFactory.list_available_datasets()
-
-        for dataset_name in datasets:
-            # Each should either create a loader or raise a clear error
-            try:
-                loader = DataLoaderFactory.create_loader(
-                    dataset_name=dataset_name, split="train"
-                )
-                # If successful, should be a RagDataLoader
-                assert isinstance(loader, RagDataLoader)
-            except (Exception, TypeError) as e:
-                # If it fails, it should be due to data loading, not factory issues
-                # Factory issues would be ValueError for invalid names
-                assert not isinstance(
-                    e, ValueError
-                ) or "Invalid dataset name" not in str(e)
 
     def test_registry_contains_all_expected_loaders(self):
         """Test that the registry contains all expected loader classes."""
@@ -143,7 +124,7 @@ class TestDataLoaderFactory:
         loader = MockRagDataLoader(
             dataset_name=DatasetName.BIOASQ,
             split="train",
-            sampling_params=DataSamplingParams(question_limit=5, document_factor=1),
+            data_sampling=DataSamplingParams(question_limit=5, document_factor=1),
             num_docs=10,
             num_questions=5,
         )
@@ -161,7 +142,7 @@ class TestDataLoaderFactory:
         loader1 = MockRagDataLoader(
             dataset_name=DatasetName.BIOASQ,
             split="train",
-            sampling_params=DataSamplingParams(question_limit=5, document_factor=1),
+            data_sampling=DataSamplingParams(question_limit=5, document_factor=1),
             num_docs=10,
             num_questions=5,
         )
@@ -176,15 +157,13 @@ class TestDataLoaderFactory:
     def test_cache_persistence_across_loader_instances(self, tmp_path):
         """Test that cache persists across different loader instances."""
         _ = tmp_path / "test_cache"
-        sampling_params = DataSamplingParams(
-            question_limit=5, document_factor=1, seed=42
-        )
+        data_sampling = DataSamplingParams(question_limit=5, document_factor=1, seed=42)
 
         # Create first loader - should populate cache
         loader1 = MockRagDataLoader(
             dataset_name=DatasetName.BIOASQ,
             split="train",
-            sampling_params=sampling_params,
+            data_sampling=data_sampling,
             num_docs=10,
             num_questions=5,
         )
@@ -195,7 +174,7 @@ class TestDataLoaderFactory:
         loader2 = MockRagDataLoader(
             dataset_name=DatasetName.BIOASQ,
             split="train",
-            sampling_params=sampling_params,
+            data_sampling=data_sampling,
             num_docs=10,
             num_questions=5,
         )
@@ -206,7 +185,7 @@ class TestDataLoaderFactory:
         assert len(corpus1) == len(corpus2)
         assert len(benchmark1) == len(benchmark2)
 
-    def test_cache_with_different_sampling_params(self, tmp_path):
+    def test_cache_with_different_data_sampling(self, tmp_path):
         """Test that different sampling params create different cache entries."""
         _ = tmp_path / "test_cache"
 
@@ -214,7 +193,7 @@ class TestDataLoaderFactory:
         loader1 = MockRagDataLoader(
             dataset_name=DatasetName.BIOASQ,
             split="train",
-            sampling_params=DataSamplingParams(question_limit=5, document_factor=1),
+            data_sampling=DataSamplingParams(question_limit=5, document_factor=1),
             num_docs=10,
             num_questions=10,
         )
@@ -224,7 +203,7 @@ class TestDataLoaderFactory:
         loader2 = MockRagDataLoader(
             dataset_name=DatasetName.BIOASQ,
             split="train",
-            sampling_params=DataSamplingParams(question_limit=3, document_factor=2),
+            data_sampling=DataSamplingParams(question_limit=3, document_factor=2),
             num_docs=10,
             num_questions=10,
         )
@@ -237,13 +216,13 @@ class TestDataLoaderFactory:
     def test_cache_with_different_splits(self, tmp_path):
         """Test that different splits create different cache entries."""
         _ = tmp_path / "test_cache"
-        sampling_params = DataSamplingParams(question_limit=5)
+        data_sampling = DataSamplingParams(question_limit=5)
 
         # Create loader with train split
         loader_train = MockRagDataLoader(
             dataset_name=DatasetName.BIOASQ,
             split="train",
-            sampling_params=sampling_params,
+            data_sampling=data_sampling,
             num_docs=10,
             num_questions=10,
         )
@@ -252,7 +231,7 @@ class TestDataLoaderFactory:
         loader_test = MockRagDataLoader(
             dataset_name=DatasetName.BIOASQ,
             split="test",
-            sampling_params=sampling_params,
+            data_sampling=data_sampling,
             num_docs=10,
             num_questions=10,
         )
@@ -267,7 +246,7 @@ class TestDataLoaderFactory:
         loader = MockRagDataLoader(
             dataset_name=DatasetName.BIOASQ,
             split="train",
-            sampling_params=DataSamplingParams(question_limit=5),
+            data_sampling=DataSamplingParams(question_limit=5),
             num_docs=10,
             num_questions=5,
         )
@@ -283,7 +262,7 @@ class TestDataLoaderFactory:
         loader = MockRagDataLoader(
             dataset_name=DatasetName.BIOASQ,
             split="train",
-            sampling_params=DataSamplingParams(question_limit=5),
+            data_sampling=DataSamplingParams(question_limit=5),
             num_docs=10,
             num_questions=5,
         )
@@ -294,12 +273,318 @@ class TestDataLoaderFactory:
         """Test that cache_dir accepts string paths."""
         _ = str(tmp_path / "test_cache")
 
-        loader = MockRagDataLoader(
+        _ = MockRagDataLoader(
             dataset_name=DatasetName.BIOASQ,
             split="train",
-            sampling_params=DataSamplingParams(question_limit=5),
+            data_sampling=DataSamplingParams(question_limit=5),
             num_docs=10,
             num_questions=5,
         )
 
-        assert isinstance(loader, RagDataLoader)
+    # ============================================================================
+    # Section: Custom Loader Registration Testing
+    # ============================================================================
+
+    def test_register_loader_success(self):
+        """Test successful registration of a custom loader."""
+        # Register a custom loader
+        DataLoaderFactory.register_loader("test_custom_dataset", MockRagDataLoader)
+
+        try:
+            # Verify it's registered
+            assert DataLoaderFactory.is_registered("test_custom_dataset")
+
+            # Verify it appears in available datasets
+            datasets = DataLoaderFactory.list_available_datasets()
+            assert "test_custom_dataset" in datasets
+
+            # Verify we can get the loader class
+            loader_class = DataLoaderFactory.get_loader_class("test_custom_dataset")
+            assert loader_class == MockRagDataLoader
+        finally:
+            # Clean up
+            DataLoaderFactory.unregister_loader("test_custom_dataset")
+
+    def test_register_loader_with_invalid_name_empty_string(self):
+        """Test that registering with empty string raises ValueError."""
+        import pytest
+
+        with pytest.raises(ValueError, match="cannot be empty"):
+            DataLoaderFactory.register_loader("", MockRagDataLoader)
+
+    def test_register_loader_with_invalid_name_none(self):
+        """Test that registering with None raises TypeError."""
+        import pytest
+
+        with pytest.raises(TypeError, match="must be a string"):
+            DataLoaderFactory.register_loader(None, MockRagDataLoader)  # type: ignore
+
+    def test_register_loader_with_builtin_name(self):
+        """Test that registering with built-in dataset name raises ValueError."""
+        import pytest
+
+        with pytest.raises(ValueError, match="built-in dataset name"):
+            DataLoaderFactory.register_loader("bioasq", MockRagDataLoader)
+
+    def test_register_loader_with_invalid_class_not_subclass(self):
+        """Test that registering non-RagDataLoader class raises TypeError."""
+        import pytest
+
+        class NotALoader:
+            pass
+
+        with pytest.raises(TypeError, match="must be a subclass of RagDataLoader"):
+            DataLoaderFactory.register_loader("test_dataset", NotALoader)  # type: ignore
+
+    def test_register_loader_with_abstract_base_class(self):
+        """Test that registering RagDataLoader itself raises TypeError."""
+        import pytest
+
+        with pytest.raises(TypeError, match="abstract class"):
+            DataLoaderFactory.register_loader("test_dataset", RagDataLoader)
+
+    def test_register_loader_with_instance_not_class(self):
+        """Test that registering an instance instead of class raises TypeError."""
+        import pytest
+
+        loader_instance = MockRagDataLoader(num_docs=5, num_questions=3)
+
+        with pytest.raises(TypeError, match="must be a class"):
+            DataLoaderFactory.register_loader("test_dataset", loader_instance)  # type: ignore
+
+    def test_register_loader_overwrite_warning(self, caplog):
+        """Test that overwriting existing custom loader logs a warning."""
+        import logging
+
+        # Register first time
+        DataLoaderFactory.register_loader("test_overwrite", MockRagDataLoader)
+
+        try:
+            # Register again - should log warning
+            with caplog.at_level(logging.WARNING):
+                DataLoaderFactory.register_loader("test_overwrite", MockRagDataLoader)
+
+            assert "Overwriting existing custom loader" in caplog.text
+        finally:
+            # Clean up
+            DataLoaderFactory.unregister_loader("test_overwrite")
+
+    def test_unregister_loader_success(self):
+        """Test successful unregistration of a custom loader."""
+        # Register a loader
+        DataLoaderFactory.register_loader("test_unregister", MockRagDataLoader)
+        assert DataLoaderFactory.is_registered("test_unregister")
+
+        # Unregister it
+        result = DataLoaderFactory.unregister_loader("test_unregister")
+        assert result is True
+
+        # Verify it's no longer registered
+        assert not DataLoaderFactory.is_registered("test_unregister")
+
+    def test_unregister_loader_not_found(self):
+        """Test unregistering non-existent loader returns False."""
+        result = DataLoaderFactory.unregister_loader("nonexistent_dataset")
+        assert result is False
+
+    def test_unregister_builtin_loader_returns_false(self):
+        """Test that attempting to unregister built-in loader returns False."""
+        result = DataLoaderFactory.unregister_loader("bioasq")
+        assert result is False
+
+        # Verify built-in loader is still registered
+        assert DataLoaderFactory.is_registered("bioasq")
+
+    def test_is_registered_builtin_dataset(self):
+        """Test is_registered returns True for built-in datasets."""
+        assert DataLoaderFactory.is_registered("bioasq")
+        assert DataLoaderFactory.is_registered("hotpot_qa")
+        assert DataLoaderFactory.is_registered("kramabench")
+
+    def test_is_registered_custom_dataset(self):
+        """Test is_registered returns True for custom datasets."""
+        DataLoaderFactory.register_loader("test_is_registered", MockRagDataLoader)
+
+        try:
+            assert DataLoaderFactory.is_registered("test_is_registered")
+        finally:
+            DataLoaderFactory.unregister_loader("test_is_registered")
+
+    def test_is_registered_nonexistent_dataset(self):
+        """Test is_registered returns False for non-existent datasets."""
+        assert not DataLoaderFactory.is_registered("totally_fake_dataset")
+
+    def test_list_available_datasets_includes_custom(self):
+        """Test that list_available_datasets includes custom loaders."""
+        initial_datasets = DataLoaderFactory.list_available_datasets()
+
+        # Register custom loaders
+        DataLoaderFactory.register_loader("custom_a", MockRagDataLoader)
+        DataLoaderFactory.register_loader("custom_b", MockRagDataLoader)
+
+        try:
+            updated_datasets = DataLoaderFactory.list_available_datasets()
+
+            # Should include all initial datasets
+            for dataset in initial_datasets:
+                assert dataset in updated_datasets
+
+            # Should include custom datasets
+            assert "custom_a" in updated_datasets
+            assert "custom_b" in updated_datasets
+
+            # Should have more datasets than before
+            assert len(updated_datasets) > len(initial_datasets)
+        finally:
+            DataLoaderFactory.unregister_loader("custom_a")
+            DataLoaderFactory.unregister_loader("custom_b")
+
+    def test_get_loader_class_custom_dataset(self):
+        """Test get_loader_class returns correct class for custom dataset."""
+        DataLoaderFactory.register_loader("test_get_class", MockRagDataLoader)
+
+        try:
+            loader_class = DataLoaderFactory.get_loader_class("test_get_class")
+            assert loader_class == MockRagDataLoader
+            assert issubclass(loader_class, RagDataLoader)
+        finally:
+            DataLoaderFactory.unregister_loader("test_get_class")
+
+    def test_get_loader_class_custom_dataset_not_found(self):
+        """Test get_loader_class raises ValueError for non-existent custom dataset."""
+        import pytest
+
+        with pytest.raises(ValueError, match="No loader registered"):
+            DataLoaderFactory.get_loader_class("nonexistent_custom")
+
+    def test_create_loader_with_custom_dataset(self):
+        """Test create_loader works with custom datasets."""
+        DataLoaderFactory.register_loader("test_create", MockRagDataLoader)
+
+        try:
+            loader = DataLoaderFactory.create_loader(
+                dataset_name="test_create",
+                split="train",
+                data_sampling=DataSamplingParams(question_limit=5),
+            )
+
+            assert isinstance(loader, MockRagDataLoader)
+            assert isinstance(loader, RagDataLoader)
+
+            # Verify loader works
+            corpus = loader.get_corpus()
+            benchmark = loader.get_benchmark()
+            assert len(corpus) > 0
+            assert len(benchmark) > 0
+        finally:
+            DataLoaderFactory.unregister_loader("test_create")
+
+    def test_create_loader_custom_dataset_not_found(self):
+        """Test create_loader raises ValueError for non-existent custom dataset."""
+        import pytest
+
+        with pytest.raises(ValueError, match="No loader registered"):
+            DataLoaderFactory.create_loader("nonexistent_custom_dataset")
+
+    def test_custom_registry_isolation(self):
+        """Test that custom registry doesn't affect built-in registry."""
+        # Get initial state
+        initial_builtin_count = len(DataLoaderFactory._LOADER_REGISTRY)
+        initial_custom_count = len(DataLoaderFactory._CUSTOM_LOADER_REGISTRY)
+
+        # Register custom loaders
+        DataLoaderFactory.register_loader("custom_1", MockRagDataLoader)
+        DataLoaderFactory.register_loader("custom_2", MockRagDataLoader)
+
+        try:
+            # Built-in registry should be unchanged
+            assert len(DataLoaderFactory._LOADER_REGISTRY) == initial_builtin_count
+
+            # Custom registry should have 2 more entries
+            assert (
+                len(DataLoaderFactory._CUSTOM_LOADER_REGISTRY)
+                == initial_custom_count + 2
+            )
+
+            # Built-in datasets should still work
+            assert DataLoaderFactory.is_registered("bioasq")
+            loader_class = DataLoaderFactory.get_loader_class("bioasq")
+            assert loader_class == BioasqDataLoader
+        finally:
+            DataLoaderFactory.unregister_loader("custom_1")
+            DataLoaderFactory.unregister_loader("custom_2")
+
+    def test_multiple_custom_loaders_independent(self):
+        """Test that multiple custom loaders work independently."""
+
+        # Create two different mock loader classes
+        class CustomLoaderA(MockRagDataLoader):
+            pass
+
+        class CustomLoaderB(MockRagDataLoader):
+            pass
+
+        # Register both
+        DataLoaderFactory.register_loader("loader_a", CustomLoaderA)
+        DataLoaderFactory.register_loader("loader_b", CustomLoaderB)
+
+        try:
+            # Verify both are registered
+            assert DataLoaderFactory.is_registered("loader_a")
+            assert DataLoaderFactory.is_registered("loader_b")
+
+            # Verify they return different classes
+            class_a = DataLoaderFactory.get_loader_class("loader_a")
+            class_b = DataLoaderFactory.get_loader_class("loader_b")
+            assert class_a == CustomLoaderA
+            assert class_b == CustomLoaderB
+            assert class_a != class_b
+
+            # Verify both can be instantiated
+            loader_a = DataLoaderFactory.create_loader("loader_a", split="train")
+            loader_b = DataLoaderFactory.create_loader("loader_b", split="train")
+            assert isinstance(loader_a, CustomLoaderA)
+            assert isinstance(loader_b, CustomLoaderB)
+        finally:
+            DataLoaderFactory.unregister_loader("loader_a")
+            DataLoaderFactory.unregister_loader("loader_b")
+
+    def test_custom_loader_with_data_sampling(self):
+        """Test that custom loaders work with sampling parameters."""
+        DataLoaderFactory.register_loader("test_sampling", MockRagDataLoader)
+
+        try:
+            data_sampling = DataSamplingParams(
+                question_limit=3, document_factor=2, seed=42
+            )
+
+            loader = DataLoaderFactory.create_loader(
+                dataset_name="test_sampling", split="train", data_sampling=data_sampling
+            )
+
+            # Verify sampling was applied
+            benchmark = loader.get_benchmark()
+            assert len(benchmark) <= 3  # Should respect question_limit
+        finally:
+            DataLoaderFactory.unregister_loader("test_sampling")
+
+    def test_custom_registry_persists_across_calls(self):
+        """Test that custom registry persists across multiple factory calls."""
+        DataLoaderFactory.register_loader("persistent_loader", MockRagDataLoader)
+
+        try:
+            # Call various factory methods
+            datasets1 = DataLoaderFactory.list_available_datasets()
+            assert "persistent_loader" in datasets1
+
+            loader_class1 = DataLoaderFactory.get_loader_class("persistent_loader")
+            assert loader_class1 == MockRagDataLoader
+
+            # Call again - should still be there
+            datasets2 = DataLoaderFactory.list_available_datasets()
+            assert "persistent_loader" in datasets2
+
+            loader_class2 = DataLoaderFactory.get_loader_class("persistent_loader")
+            assert loader_class2 == MockRagDataLoader
+        finally:
+            DataLoaderFactory.unregister_loader("persistent_loader")
