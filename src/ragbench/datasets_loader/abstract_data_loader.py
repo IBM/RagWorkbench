@@ -53,7 +53,7 @@ class RagDataLoader(ABC):
 
     def __init__(
         self,
-        dataset_name: DatasetName,
+        dataset_name: DatasetName | str,
         split: Literal["train", "test"] | None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
@@ -74,7 +74,7 @@ class RagDataLoader(ABC):
             3. Creates RagBenchmark and RagCorpus instances
             4. Logs the final dataset size
         """
-        self.dataset_name: DatasetName = dataset_name
+        self.dataset_name: DatasetName | str = dataset_name
         self.split: Literal["train", "test"] | None = split
         self.sampling_params = sampling_params
         cached_rag_corpus: RagCorpus | None = None
