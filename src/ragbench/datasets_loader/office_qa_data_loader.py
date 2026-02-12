@@ -34,7 +34,7 @@ class OfficeQADataLoader(RagDataLoader):
     def __init__(
         self,
         split: Literal["train", "test"] | None,
-        data_sampling: DataSamplingParams = DataSamplingParams(),
+        sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
     ):
         """
@@ -42,7 +42,7 @@ class OfficeQADataLoader(RagDataLoader):
 
         Args:
             split: Dataset split ('train', 'test', or None for all data)
-            data_sampling: Sampling parameters for the dataset
+            sampling_params: Sampling parameters for the dataset
         """
         # Load the CSV from GitHub
         self.total_df: pd.DataFrame = pd.read_csv(OFFICEQA_CSV_URL)
@@ -52,7 +52,7 @@ class OfficeQADataLoader(RagDataLoader):
         super().__init__(
             dataset_name=DatasetName.OFFICEQA,
             split=split,
-            sampling_params=data_sampling,
+            sampling_params=sampling_params,
             cache_dir=cache_dir,
         )
 

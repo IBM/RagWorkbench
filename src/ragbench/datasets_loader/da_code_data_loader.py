@@ -95,7 +95,7 @@ class DaCodeDataLoader(RagDataLoader):
         split: Literal["train", "test"] | None,
         cache_dir: Path | None = None,
         *,
-        data_sampling: DataSamplingParams | None = None,
+        sampling_params: DataSamplingParams | None = None,
         github_token: str | None = None,
     ):
         self.gh = GitHubRef(repo="yiyihum/da-code", ref="main")
@@ -107,9 +107,9 @@ class DaCodeDataLoader(RagDataLoader):
         self.gold_drive_file_id = "1WxcrijbCgdHzFSSSt2HVlkJqQrBWQ2IL"
         self.source_drive_file_id = "1eM_FVT1tlY4XXp6b7TrKzgTWOvskrjTs"
 
-        cache_dir = Path.home() / ".cache" / "da_code"
-        self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        download_cache_dir = Path.home() / ".cache" / "da_code"
+        self.download_cache_dir = Path(download_cache_dir)
+        self.download_cache_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Using cache dir: {cache_dir}")
 
         # Fail fast with a helpful error if paths are wrong
@@ -119,7 +119,7 @@ class DaCodeDataLoader(RagDataLoader):
         super().__init__(
             dataset_name=DatasetName.DA_CODE,
             split=split,
-            sampling_params=data_sampling or DataSamplingParams(),
+            sampling_params=sampling_params or DataSamplingParams(),
             cache_dir=cache_dir,
         )
 
@@ -127,7 +127,7 @@ class DaCodeDataLoader(RagDataLoader):
     # Drive downloads (gdown) + caching
     # -------------------------------------------------------------------------
     def _cached_path(self, name: str) -> Path:
-        return self.cache_dir / name
+        return self.download_cache_dir / name
 
     def _ensure_drive_file(self, *, name: str, drive_file_id: str) -> Path:
         path = self._cached_path(name)

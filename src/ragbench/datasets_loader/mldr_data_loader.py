@@ -19,7 +19,7 @@ class MLDRDataLoader(RagDataLoader):
     def __init__(
         self,
         split: Literal["train", "test"] | None,
-        data_sampling: DataSamplingParams = DataSamplingParams(),
+        sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
     ):
         # # We read the content of the HF
@@ -43,7 +43,7 @@ class MLDRDataLoader(RagDataLoader):
         super().__init__(
             dataset_name=DatasetName.MLDR,
             split=split,
-            sampling_params=data_sampling,
+            sampling_params=sampling_params,
             cache_dir=cache_dir,
         )
 

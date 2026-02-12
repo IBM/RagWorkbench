@@ -21,7 +21,7 @@ class HotpotQaDataLoader(RagDataLoader):
         self,
         split: Literal["train", "test"] | None,
         level: Literal["easy", "medium", "hard"] | None = None,
-        data_sampling: DataSamplingParams = DataSamplingParams(),
+        sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
     ):
         self.total_df: pd.DataFrame = load_dataset(
@@ -31,7 +31,7 @@ class HotpotQaDataLoader(RagDataLoader):
         super().__init__(
             dataset_name=DatasetName.HOTPOT_QA,
             split=split,
-            sampling_params=data_sampling,
+            sampling_params=sampling_params,
             cache_dir=cache_dir,
         )
 
