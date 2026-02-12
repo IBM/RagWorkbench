@@ -21,7 +21,7 @@ class DabStepDataLoader(RagDataLoader):
     def __init__(
         self,
         split: Literal["train", "test"] | None = None,
-        data_sampling: DataSamplingParams = DataSamplingParams(),
+        sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
         verbose: bool = True,
         progress_every: int = 50,
@@ -32,7 +32,7 @@ class DabStepDataLoader(RagDataLoader):
         super().__init__(
             dataset_name=DatasetName.DABSTEP,
             split=split,
-            sampling_params=data_sampling,
+            sampling_params=sampling_params,
             cache_dir=cache_dir,
         )
 

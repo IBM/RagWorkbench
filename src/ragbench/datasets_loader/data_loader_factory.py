@@ -417,18 +417,7 @@ class DataLoaderFactory:
         if loader_class == RealMMRagDataLoader:
             constructor_args["dataset_name"] = dataset_name_for_realmmrag
 
-        # Add sampling_params with the appropriate parameter name
-        # Most loaders use 'data_sampling', but some use 'sampling_params'
-        if loader_class in [
-            BioasqDataLoader,
-            ClapNqDataLoader,
-            RealMMRagDataLoader,
-            WatsonxDocsQADataLoader,
-        ]:
-            # TODO!!!
-            constructor_args["sampling_params"] = sampling_params
-        else:
-            constructor_args["data_sampling"] = sampling_params
+        constructor_args["sampling_params"] = sampling_params
 
         # Add any additional kwargs (loader-specific parameters)
         constructor_args.update(kwargs)

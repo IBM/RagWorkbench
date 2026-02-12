@@ -31,13 +31,13 @@ class KramabenchDataLoader(RagDataLoader):
     def __init__(
         self,
         split: Literal["train", "test"] | None = None,
-        data_sampling: DataSamplingParams | None = None,
+        sampling_params: DataSamplingParams | None = None,
         cache_dir: Path | None = None,
         verbose: bool = True,
         progress_every: int = 50,
     ):
-        if data_sampling is None:
-            data_sampling = DataSamplingParams()
+        if sampling_params is None:
+            sampling_params = DataSamplingParams()
 
         self.verbose = verbose
         self.progress_every = max(1, int(progress_every))
@@ -45,7 +45,7 @@ class KramabenchDataLoader(RagDataLoader):
         super().__init__(
             dataset_name=DatasetName.KRAMABENCH,
             split=split,
-            sampling_params=data_sampling,
+            sampling_params=sampling_params,
             cache_dir=cache_dir,
         )
 

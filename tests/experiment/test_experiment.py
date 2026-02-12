@@ -11,7 +11,7 @@ from ragbench.experiment import Experiment
 class EmptyIngestPipeline(IngestPipeline):
     def process(
         self,
-        dataset_name: DatasetName,
+        dataset_name: DatasetName | str,
         rag_corpus: RagCorpus,
         runtime_params: IngestRuntimeParams,
     ) -> list[IngestArtifact]:
@@ -21,7 +21,7 @@ class EmptyIngestPipeline(IngestPipeline):
 class EmptyInferencePipeline(InferencePipeline):
     def process(
         self,
-        dataset_name: DatasetName,
+        dataset_name: DatasetName | str,
         rag_benchmark: RagBenchmark,
         ingest_artifacts: list[IngestArtifact],
         runtime_params: InferenceRuntimeParams,

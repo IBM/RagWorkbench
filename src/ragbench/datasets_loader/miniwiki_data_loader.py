@@ -51,7 +51,7 @@ class MiniWikiDataLoader(RagDataLoader):
     def __init__(
         self,
         split: Literal["train", "test"] | None = None,
-        data_sampling: DataSamplingParams = DataSamplingParams(),
+        sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
     ):
         """
@@ -68,7 +68,7 @@ class MiniWikiDataLoader(RagDataLoader):
         logger.info(f"Initializing MiniWikiDataLoader with split='{split}'")
 
         super().__init__(
-            DatasetName.MINI_WIKI, split, data_sampling, cache_dir=cache_dir
+            DatasetName.MINI_WIKI, split, sampling_params, cache_dir=cache_dir
         )
 
     def _get_documents(self) -> list[DocumentObject]:
