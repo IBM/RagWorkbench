@@ -47,7 +47,8 @@ dependencies = [
     "datasets",
     "mlflow",
     "pandas-stubs",
-    "pandas"
+    "pandas",
+    "types-PyYAML"
 ]
 
 [project.optional-dependencies]
@@ -85,7 +86,7 @@ packages = ["src/ragbench"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py313"
+target-version = "py311"
 select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings

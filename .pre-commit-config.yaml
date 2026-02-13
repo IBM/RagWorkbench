@@ -54,5 +54,6 @@ repos:
           - types-requests
           - pandas-stubs
           - pandas
+          - types-PyYAML
         args: [--config-file=pyproject.toml, --explicit-package-bases]
         files: ^src/

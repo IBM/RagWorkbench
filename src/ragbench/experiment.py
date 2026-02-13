@@ -3,8 +3,8 @@ import uuid
 import mlflow
 import pandas as pd
 
-from ragbench.api.inference import InferencePipeline, InferenceRuntimeParams
-from ragbench.api.ingest import IngestPipeline, IngestRuntimeParams
+from ragbench.api.inference import InferencePipeline
+from ragbench.api.ingest import IngestPipeline
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models import RagBenchmarkEntry
 
@@ -22,17 +22,12 @@ class Experiment:
         self.ingest_pipeline = ingest_pipeline
         self.inference_pipeline = inference_pipeline
 
-    def run(
-        self,
-        ingest_runtime_params: IngestRuntimeParams,
-        inference_runtime_params: InferenceRuntimeParams,
-    ):
+    def run(self):
         experiment_id = f"{self.name}/{str(uuid.uuid4())}"
         mlflow.set_tracking_uri("sqlite:///mlflow.db")
         mlflow.set_experiment(experiment_id)
 
         # prepare the data
-        rag_corpus = self.data_loader.get_corpus()
         rag_benchmark = self.data_loader.get_benchmark()
         rag_benchmark_df = pd.DataFrame(
             entry.model_dump() for entry in rag_benchmark.get_benchmark_entries()
@@ -65,9 +60,7 @@ class Experiment:
 
             # run the ingest
             ingest_artifacts = self.ingest_pipeline.process(
-                dataset_name=self.data_loader.dataset_name,
-                rag_corpus=rag_corpus,
-                runtime_params=ingest_runtime_params,
+                data_loader=self.data_loader
             )
 
             # set the ingest artifacts for the inference pipeline
@@ -85,9 +78,7 @@ class Experiment:
                     entry = RagBenchmarkEntry.model_validate(row)
 
                     # run the inference
-                    result = self.inference_pipeline.process(
-                        benchmark_entry=entry, runtime_params=inference_runtime_params
-                    )
+                    result = self.inference_pipeline.process(benchmark_entry=entry)
 
                     # collect the result
                     results.append(result.model_dump())

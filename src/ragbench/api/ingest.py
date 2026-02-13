@@ -1,22 +1,31 @@
 from abc import ABC, abstractmethod
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
+from ragbench import RagDataLoader
 from ragbench.api.ingest_artifact import IngestArtifact
-from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
-from ragbench.datasets_loader.dataset_names import DatasetName
+
+
+class IngestParams(BaseModel):
+    pass
 
 
 class IngestRuntimeParams(BaseModel):
     pass
 
 
-class IngestPipeline(ABC):
+T = TypeVar("T", bound=IngestParams)
+
+
+class IngestPipeline(ABC, Generic[T]):
+
+    def __init__(self, params: T):
+        self.params = params
+
     @abstractmethod
     def process(
         self,
-        dataset_name: DatasetName | str,
-        rag_corpus: RagCorpus,
-        runtime_params: IngestRuntimeParams,
+        data_loader: RagDataLoader,
     ) -> list[IngestArtifact]:
         pass
