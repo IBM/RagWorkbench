@@ -41,7 +41,10 @@ class BoardRegistry:
         params: dict[str, Any],
     ):
         ingest_class, params_class = cls._ingest_pipelines[name]
-        return ingest_class(params_class.model_validate(params))
+        params_instance = params_class.model_validate(params)
+        ingest_instance = ingest_class()
+        ingest_instance.set_params(params_instance)
+        return ingest_instance
 
     @classmethod
     def create_inference_pipeline(
@@ -49,5 +52,8 @@ class BoardRegistry:
         name: str,
         params: dict[str, Any],
     ):
-        inference_class, inference_params = cls._inference_pipelines[name]
-        return inference_class(inference_params.model_validate(params))
+        inference_class, params_class = cls._inference_pipelines[name]
+        params_instance = params_class.model_validate(params)
+        inference_instance = inference_class()
+        inference_instance.set_params(params_instance)
+        return inference_instance
