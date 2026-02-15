@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -16,12 +15,9 @@ class InferenceRuntimeParams(BaseModel):
     pass
 
 
-T = TypeVar("T", bound=InferenceParams)
+class InferencePipeline(ABC):
 
-
-class InferencePipeline(ABC, Generic[T]):
-
-    def __init__(self, params: T):
+    def __init__(self, params: InferenceParams):
         self.params = params
 
     @abstractmethod

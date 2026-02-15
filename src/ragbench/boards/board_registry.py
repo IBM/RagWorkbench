@@ -1,33 +1,38 @@
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 
 from ragbench.api.inference import InferenceParams, InferencePipeline
 from ragbench.api.ingest import IngestParams, IngestPipeline
 
-U1 = TypeVar("U1", bound=IngestParams)
-U2 = TypeVar("U2", bound=InferenceParams)
+INGEST_T1 = TypeVar("INGEST_T1", bound=IngestPipeline)
+INGEST_T2 = TypeVar("INGEST_T2", bound=IngestParams)
+
+INFERENCE_T1 = TypeVar("INFERENCE_T1", bound=InferencePipeline)
+INFERENCE_T2 = TypeVar("INFERENCE_T2", bound=InferenceParams)
 
 
-class BoardRegistry(Generic[U1, U2]):
+class BoardRegistry:
 
     def __init__(self):
-        self.ingest_pipelines: dict[str, tuple[type[IngestPipeline[U1]], type[U1]]] = {}
+        self.ingest_pipelines: dict[
+            str, tuple[type[IngestPipeline], type[IngestParams]]
+        ] = {}
         self.inference_pipelines: dict[
-            str, tuple[type[InferencePipeline[U2]], type[U2]]
+            str, tuple[type[InferencePipeline], type[InferenceParams]]
         ] = {}
 
     def register_ingest(
         self,
         name: str,
-        ingest_class: type[IngestPipeline[U1]],
-        params_class: type[U1],
+        ingest_class: type[INGEST_T1],
+        params_class: type[INGEST_T2],
     ):
         self.ingest_pipelines[name] = (ingest_class, params_class)
 
     def register_inference(
         self,
         name: str,
-        inference_class: type[InferencePipeline[U2]],
-        params_class: type[U2],
+        inference_class: type[INFERENCE_T1],
+        params_class: type[INFERENCE_T2],
     ):
         self.inference_pipelines[name] = (inference_class, params_class)
 
@@ -44,5 +49,5 @@ class BoardRegistry(Generic[U1, U2]):
         name: str,
         params: dict[str, Any],
     ):
-        ingest_class, params_class = self.inference_pipelines[name]
-        return ingest_class(params_class(**params))
+        inference_class, inference_params = self.inference_pipelines[name]
+        return inference_class(inference_params(**params))

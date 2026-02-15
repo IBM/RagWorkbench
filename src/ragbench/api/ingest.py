@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
@@ -15,12 +14,9 @@ class IngestRuntimeParams(BaseModel):
     pass
 
 
-T = TypeVar("T", bound=IngestParams)
+class IngestPipeline(ABC):
 
-
-class IngestPipeline(ABC, Generic[T]):
-
-    def __init__(self, params: T):
+    def __init__(self, params: IngestParams):
         self.params = params
 
     @abstractmethod
