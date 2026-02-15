@@ -16,8 +16,9 @@ class IngestRuntimeParams(BaseModel):
 
 class IngestPipeline(ABC):
 
-    def __init__(self, params: IngestParams):
-        self.params = params
+    @abstractmethod
+    def __init__(self, _params: IngestParams) -> None:
+        pass
 
     @abstractmethod
     def process(
