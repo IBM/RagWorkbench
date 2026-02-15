@@ -17,9 +17,8 @@ class InferenceRuntimeParams(BaseModel):
 
 class InferencePipeline(ABC):
 
-    @abstractmethod
-    def set_params(self, params: InferenceParams) -> None:
-        pass
+    def __init__(self, params: InferenceParams):
+        self.params = params
 
     @abstractmethod
     def set_ingest_artifacts(self, ingest_artifacts: list[IngestArtifact]):
