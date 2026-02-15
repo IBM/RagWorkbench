@@ -31,12 +31,12 @@ class BoardGenerator:
         self.pipelines = []
         for config in self.board.configurations:
             # create the ingest instance
-            ingest_pipeline = BoardRegistry().create_ingest_pipeline(
+            ingest_pipeline = BoardRegistry.create_ingest_pipeline(
                 name=config.ingest.name, params=config.ingest.params
             )
 
             # create the inference instance
-            inference_pipeline = BoardRegistry().create_inference_pipeline(
+            inference_pipeline = BoardRegistry.create_inference_pipeline(
                 name=config.inference.name, params=config.inference.params
             )
 
