@@ -98,6 +98,7 @@ class Experiment:
                 model=model_fn,
                 data=rag_benchmark_df,
                 targets=None,  # we have multiple targets → so we handle them in evaluator
+                model_type="text",
                 evaluators=[multi_task_evaluator],
             )
 
