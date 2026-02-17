@@ -1,9 +1,10 @@
 import uuid
 
-import mlflow
+# import mlflow
 import pandas as pd
 
 from ragbench.api.inference import InferencePipeline
+from ragbench.api.inference_result import InferenceResult
 from ragbench.api.ingest import IngestPipeline
 from ragbench.datasets_loader import RagDataLoader
 
@@ -15,6 +16,7 @@ class Experiment:
         data_loader: RagDataLoader,
         ingest_pipeline: IngestPipeline,
         inference_pipeline: InferencePipeline,
+
     ):
         self.name = name
         self.data_loader = data_loader
@@ -22,40 +24,8 @@ class Experiment:
         self.inference_pipeline = inference_pipeline
 
     def run(self):
-        experiment_id = f"{self.name}/{str(uuid.uuid4())}"
-        mlflow.set_tracking_uri("sqlite:///mlflow.db")
-        mlflow.set_experiment(experiment_id)
-
         # prepare the data
         rag_benchmark = self.data_loader.get_benchmark()
-        # rag_benchmark_df = pd.DataFrame(
-        #     entry.model_dump() for entry in rag_benchmark.get_benchmark_entries()
-        # )
-        # dataset = mlflow.data.from_pandas(
-        #     rag_benchmark_df,
-        #     source="my source",
-        #     name=self.data_loader.dataset_name,
-        #     targets=None,
-        # )
-
-        # with mlflow.start_run():
-        #     mlflow.log_param("experiment.name", self.name)
-        #     mlflow.log_param("experiment.id", experiment_id)
-        #
-        #     # log the dataset
-        #     mlflow.log_input(dataset, context="inference")
-        #
-        #     # log the dataset properties
-        #     mlflow.log_param("dataset.name", self.data_loader.dataset_name)
-        #     mlflow.log_param("dataset.split", self.data_loader.split)
-        #     mlflow.log_param(
-        #         "dataset.question_limit",
-        #         self.data_loader.sampling_params.question_limit,
-        #     )
-        #     mlflow.log_param(
-        #         "dataset.document_factor",
-        #         self.data_loader.sampling_params.document_factor,
-        #     )
 
         # run the ingest
         ingest_artifacts = self.ingest_pipeline.process(data_loader=self.data_loader)
@@ -65,7 +35,7 @@ class Experiment:
 
         # ml-flow wrapper for the inference part
         # def model_fn(benchmark_df: pd.DataFrame) -> pd.DataFrame:
-        results = []
+        results : list[InferenceResult] = []
 
         # iterate the benchmark dataframe
         for entry in rag_benchmark.get_benchmark_entries():
@@ -79,8 +49,10 @@ class Experiment:
             results.append(result.model_dump())
         # Results contain a list of inference_results
 
+        # We must call evaluator on list of inference results
+
         # TODO : We must apply the metrics
-        # Look at evaluator.py from RagWorkbench - we want to run unitxt
+        # Look at evaluation.py from RagWorkbench - we want to run unitxt
         # Look at board_model.py from RagWorkbench -
 
         # We can return a kind of PatternResult class
@@ -99,7 +71,7 @@ class Experiment:
         # mlflow.evaluate(
         #     model=model_fn,
         #     data=rag_benchmark_df,
-        #     targets=None,  # we have multiple targets → so we handle them in evaluator
+        #     targets=None,  # we have multiple targets → so we handle them in evaluation
         #     model_type="text",
         #     evaluators=[multi_task_evaluator],
         # )
