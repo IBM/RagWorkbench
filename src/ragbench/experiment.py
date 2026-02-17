@@ -6,7 +6,6 @@ import pandas as pd
 from ragbench.api.inference import InferencePipeline
 from ragbench.api.ingest import IngestPipeline
 from ragbench.datasets_loader import RagDataLoader
-from ragbench.datasets_loader.data_models import RagBenchmarkEntry
 
 
 class Experiment:
@@ -59,14 +58,10 @@ class Experiment:
         #     )
 
         # run the ingest
-        ingest_artifacts = self.ingest_pipeline.process(
-            data_loader=self.data_loader
-        )
+        ingest_artifacts = self.ingest_pipeline.process(data_loader=self.data_loader)
 
         # set the ingest artifacts for the inference pipeline
-        self.inference_pipeline.set_ingest_artifacts(
-            ingest_artifacts=ingest_artifacts
-        )
+        self.inference_pipeline.set_ingest_artifacts(ingest_artifacts=ingest_artifacts)
 
         # ml-flow wrapper for the inference part
         # def model_fn(benchmark_df: pd.DataFrame) -> pd.DataFrame:
@@ -90,24 +85,23 @@ class Experiment:
 
         # We can return a kind of PatternResult class
 
-
         # return a new dataframe
         return pd.DataFrame(results)
 
-            # # ml-flow wrapper for evaluation
-            # def multi_task_evaluator(eval_df, predictions, targets):
-            #     return {
-            #         "mae_word_count": 0,
-            #         "sentiment_accuracy": 0,
-            #         "sentence_split_accuracy": 0,
-            #     }
-            #
-            # mlflow.evaluate(
-            #     model=model_fn,
-            #     data=rag_benchmark_df,
-            #     targets=None,  # we have multiple targets → so we handle them in evaluator
-            #     model_type="text",
-            #     evaluators=[multi_task_evaluator],
-            # )
+        # # ml-flow wrapper for evaluation
+        # def multi_task_evaluator(eval_df, predictions, targets):
+        #     return {
+        #         "mae_word_count": 0,
+        #         "sentiment_accuracy": 0,
+        #         "sentence_split_accuracy": 0,
+        #     }
+        #
+        # mlflow.evaluate(
+        #     model=model_fn,
+        #     data=rag_benchmark_df,
+        #     targets=None,  # we have multiple targets → so we handle them in evaluator
+        #     model_type="text",
+        #     evaluators=[multi_task_evaluator],
+        # )
 
-            # print("Run:", mlflow.active_run().info.run_id)
+        # print("Run:", mlflow.active_run().info.run_id)
