@@ -72,7 +72,7 @@ class Experiment:
             # back to python classes
             # entry = RagBenchmarkEntry.model_validate(row)
 
-            # run the inference
+            # run the inference process
             result = self.inference_pipeline.process(benchmark_entry=entry)
 
             # collect the result
