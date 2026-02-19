@@ -322,3 +322,14 @@ class AbstractFileSystemCache(ABC):
         sorted_dict_items = sorted(d.items())
         s = json.dumps(sorted_dict_items, default=fallback_serializer)
         return s
+
+    @staticmethod
+    def get_hash_list(lst: list[Any]) -> str:
+        serialized = []
+        for item in lst:
+            if isinstance(item, dict):
+                s = AbstractFileSystemCache._serialize_dict_to_json(item)
+                serialized.append(s)
+            else:
+                serialized.append(str(item))
+        return AbstractFileSystemCache.get_hash_string(" ".join(serialized))
