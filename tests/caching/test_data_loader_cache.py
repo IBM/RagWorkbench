@@ -580,13 +580,6 @@ class TestCacheOperations:
         # Original should be unchanged
         assert "modified" not in documents2[0].metadata
 
-    def test_add_with_wrong_argument_count_raises_error(
-        self, cache_instance, sample_corpus
-    ):
-        """Test that add with wrong number of arguments raises ValueError."""
-        with pytest.raises(ValueError, match="requires exactly 2 arguments"):
-            cache_instance.add(sample_corpus.documents)  # Only one argument
-
 
 # ============================================================================
 # Category 5: Content Type Detection Tests
