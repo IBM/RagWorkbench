@@ -1,15 +1,11 @@
 """Tests for AbstractFileSystemCache."""
 
 import json
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any
 
 import pytest
-
-# Add src to path to allow direct import without triggering ragbench.__init__
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from ragbench.caching.abstract_file_system_cache import AbstractFileSystemCache
 
