@@ -1,5 +1,8 @@
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any
+
+from ragbench.api.inference_result import InferenceResult
+from ragbench.evaluation.base_evaluation_metric import BaseEvaluationMetric
 
 
 class UnitxtEvaluationMetric(BaseEvaluationMetric):
@@ -8,7 +11,7 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
     def __init__(
         self,
         name: str,
-        metric_params: Dict[str, Any],
+        metric_params: dict[str, Any],
         **kwargs,
     ):
         super().__init__(name, metric_params)
@@ -19,13 +22,14 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
     def get_name(self) -> str:
         return self.name
 
-    def get_score_names(self) -> List[str]:
+    def get_score_names(self) -> list[str]:
         return [self.name] if len(self.sub_scores) == 0 else self.sub_scores
 
-    def compute(self, dataset: List[Dict[str, Any]]):
+    def compute(self, inference_result_list:list[InferenceResult]):
         metric_id = self.get_name()
         # load the metric and prepare the dataset
         metrics_operator = SequentialOperator(steps=[metric_id])
+        # We must create strings from GTContextID!
         multi_stream = MultiStream.from_iterables({"test": dataset}, copying=True)
 
         # compute the metric

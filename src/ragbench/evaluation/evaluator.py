@@ -7,6 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from ragbench.api.inference_result import InferenceResult
 from ragbench.datasets_loader.data_models import GroundTruthContextId, RagBenchmark, RagCorpus
 from ragbench.evaluation.base_evaluation_metric import BaseEvaluationMetric
 from ragbench.evaluation.evaluator_cache import EvaluatorCache
@@ -120,10 +121,11 @@ class Evaluator:
 
     def run_metrics(
         self,
-        dataset: list[dict[str, Any]],
+        inference_result_list: list[InferenceResult],
         evaluation_level: EvaluationLevel = EvaluationLevel.DOC_ID,
     ) -> dict[str, dict[str, float]]:
         """
+        TODO
         Example input:
             dataset = [
                 {"q_id": "1", "ground_truths": ["Joe Biden"], "answer": "Wrong Answer", },
@@ -141,37 +143,39 @@ class Evaluator:
             raise UnsupportedOperation(
                 f"Currently, we support evaluation at level of doc_id not `{evaluation_level}`"
             )
-        q_id_to_data = {entry["q_id"]: entry for entry in dataset}
-        dataset = self._gt_context_id_to_str(dataset, evaluation_level)
+        q_id_to_data : dict[str, InferenceResult] = {entry.question_id: entry for entry in inference_result_list}
+        #dataset = self._gt_context_id_to_str(dataset, evaluation_level)
         not_in_cache_qids = set(q_id_to_data.keys())
 
         # Result data structure
+        # TODO : MetricScore
         question_id_to_metric_scores: dict[str, dict[str, float]] = defaultdict(dict)
 
-        # We first look for the cache content
-        if self.evaluation_cache:
-            for q_id, d in q_id_to_data.items():
-                scores_dict: dict[str, float] = self.evaluation_cache.get(d)
-                if scores_dict is not None:
-                    # We check that we have all the score_names
-                    if not (
-                        score_name in scores_dict
-                        for score_name in self.full_score_names
-                    ):
-                        logger.error(
-                            "We do not have all the full_scores_names in the cache : {scores_dict.keys()} vs. {self.full_score_names}]"
-                        )
-                    else:
-                        not_in_cache_qids.remove(q_id)
-                        for full_score_name, score in scores_dict.items():
-                            question_id_to_metric_scores[q_id][full_score_name] = score
+        # TODO
+        # # We first look for the cache content
+        # if self.evaluation_cache:
+        #     for q_id, d in q_id_to_data.items():
+        #         scores_dict: dict[str, float] = self.evaluation_cache.get(d)
+        #         if scores_dict is not None:
+        #             # We check that we have all the score_names
+        #             if not (
+        #                 score_name in scores_dict
+        #                 for score_name in self.full_score_names
+        #             ):
+        #                 logger.error(
+        #                     "We do not have all the full_scores_names in the cache : {scores_dict.keys()} vs. {self.full_score_names}]"
+        #                 )
+        #             else:
+        #                 not_in_cache_qids.remove(q_id)
+        #                 for full_score_name, score in scores_dict.items():
+        #                     question_id_to_metric_scores[q_id][full_score_name] = score
 
-        not_in_cache_dataset = [d for d in dataset if d["q_id"] in not_in_cache_qids]
+        not_in_cache_inference_result_list : list[InferenceResult] = [d for d in inference_result_list if d.question_id in not_in_cache_qids]
 
         if len(not_in_cache_dataset) == 0:
             logger.info(f"Metric {self.metric} is skipped (loaded entirely from cache)")
         else:
-            metric_instance_scores = self.metric.compute(not_in_cache_dataset)
+            metric_instance_scores : dict[str, Any] = self.metric.compute(not_in_cache_inference_result_list)
 
             for score_name, scores in metric_instance_scores.items():
                 full_score_name = self.metric.full_score_name(score_name)
