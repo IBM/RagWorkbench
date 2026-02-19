@@ -3,8 +3,8 @@ Comprehensive tests for DataLoaderCache.
 
 Test Categories:
 1. Initialization & Configuration
-2. Serialization (RagCorpus to JSON)
-3. Deserialization (JSON to RagCorpus)
+2. Serialization (Document lists to JSON)
+3. Deserialization (JSON to Document lists)
 4. Cache Operations (add/get)
 5. Error Handling & Edge Cases
 6. Integration Tests
@@ -223,16 +223,16 @@ class TestInitialization:
 
 
 # ============================================================================
-# Category 2: Serialization Tests (RagCorpus → JSON)
+# Category 2: Serialization Tests (Document lists → JSON)
 # ============================================================================
 
 
 class TestSerialization:
-    """Tests for RagCorpus serialization to JSON."""
+    """Tests for document list serialization to JSON."""
 
-    def test_save_rag_corpus_basic(self, sample_corpus):
-        """Test serialization of simple corpus with one document."""
-        json_str = DataLoaderCache._save_rag_corpus_to_json(sample_corpus)
+    def test_save_documents_basic(self, sample_corpus):
+        """Test serialization of simple document list with one document."""
+        json_str = DataLoaderCache._save_documents_to_json(sample_corpus.documents)
 
         # Parse JSON
         data = json.loads(json_str)
@@ -248,17 +248,16 @@ class TestSerialization:
         assert "metadata" in doc
         assert "stream" in doc
 
-    def test_save_rag_corpus_multiple_documents(self, multi_doc_corpus):
-        """Test serialization of corpus with multiple documents."""
-        json_str = DataLoaderCache._save_rag_corpus_to_json(multi_doc_corpus)
+    def test_save_documents_multiple_documents(self, multi_doc_corpus):
+        """Test serialization of document list with multiple documents."""
+        json_str = DataLoaderCache._save_documents_to_json(multi_doc_corpus.documents)
         data = json.loads(json_str)
 
         assert len(data[_CacheKeys.DOCUMENTS]) == 3
 
-    def test_save_rag_corpus_preserves_metadata(self, sample_document):
+    def test_save_documents_preserves_metadata(self, sample_document):
         """Test that document metadata is preserved."""
-        corpus = RagCorpus(documents=[sample_document])
-        json_str = DataLoaderCache._save_rag_corpus_to_json(corpus)
+        json_str = DataLoaderCache._save_documents_to_json([sample_document])
         data = json.loads(json_str)
 
         doc = data[_CacheKeys.DOCUMENTS][0]
@@ -266,10 +265,9 @@ class TestSerialization:
         assert doc["metadata"]["author"] == "Test Author"
         assert doc["metadata"]["year"] == 2024
 
-    def test_save_rag_corpus_handles_binary_streams(self, binary_document):
+    def test_save_documents_handles_binary_streams(self, binary_document):
         """Test serialization with binary content."""
-        corpus = RagCorpus(documents=[binary_document])
-        json_str = DataLoaderCache._save_rag_corpus_to_json(corpus)
+        json_str = DataLoaderCache._save_documents_to_json([binary_document])
         data = json.loads(json_str)
 
         # Verify base64 encoding
@@ -280,102 +278,94 @@ class TestSerialization:
         decoded = base64.b64decode(stream_b64)
         assert decoded.startswith(b"\x25\x50\x44\x46")  # PDF header
 
-    def test_save_rag_corpus_handles_text_streams(self, sample_document):
+    def test_save_documents_handles_text_streams(self, sample_document):
         """Test serialization with text content."""
-        corpus = RagCorpus(documents=[sample_document])
-        json_str = DataLoaderCache._save_rag_corpus_to_json(corpus)
+        json_str = DataLoaderCache._save_documents_to_json([sample_document])
         data = json.loads(json_str)
 
         doc = data[_CacheKeys.DOCUMENTS][0]
         decoded = base64.b64decode(doc["stream"])
         assert b"This is a test document" in decoded
 
-    def test_save_rag_corpus_preserves_stream_position(self, sample_document):
+    def test_save_documents_preserves_stream_position(self, sample_document):
         """Test that stream position is restored after serialization."""
         # Set stream to middle position
         sample_document.stream.seek(10)
         original_position = sample_document.stream.tell()
 
-        corpus = RagCorpus(documents=[sample_document])
-        DataLoaderCache._save_rag_corpus_to_json(corpus)
+        DataLoaderCache._save_documents_to_json([sample_document])
 
         # Position should be restored
         assert sample_document.stream.tell() == original_position
 
-    def test_save_rag_corpus_handles_special_characters(self):
+    def test_save_documents_handles_special_characters(self):
         """Test document names and content with special characters."""
         doc = create_document(
             name="test_文档_🎉.txt",
             content="Content with unicode: 你好世界 🌍".encode(),
             mime_type="text/plain",
         )
-        corpus = RagCorpus(documents=[doc])
 
-        json_str = DataLoaderCache._save_rag_corpus_to_json(corpus)
+        json_str = DataLoaderCache._save_documents_to_json([doc])
         data = json.loads(json_str)
 
         assert data[_CacheKeys.DOCUMENTS][0]["name"] == "test_文档_🎉.txt"
 
 
 # ============================================================================
-# Category 3: Deserialization Tests (JSON → RagCorpus)
+# Category 3: Deserialization Tests (JSON → Document lists)
 # ============================================================================
 
 
 class TestDeserialization:
-    """Tests for loading RagCorpus from JSON."""
+    """Tests for loading document lists from JSON."""
 
-    def test_load_rag_corpus_basic(self, temp_cache_dir, sample_document):
+    def test_load_documents_basic(self, temp_cache_dir, sample_document):
         """Test loading simple valid JSON file."""
         # Create JSON file
-        corpus = RagCorpus(documents=[sample_document])
-        json_str = DataLoaderCache._save_rag_corpus_to_json(corpus)
+        json_str = DataLoaderCache._save_documents_to_json([sample_document])
 
         json_file = temp_cache_dir / "test_corpus.json"
         json_file.write_text(json_str, encoding="utf-8")
 
         # Load it back
-        loaded_corpus = DataLoaderCache._load_rag_corpus_from_json(json_file)
+        loaded_documents = DataLoaderCache._load_documents_from_json(json_file)
 
-        assert len(loaded_corpus.documents) == 1
-        assert loaded_corpus.documents[0].name == sample_document.name
-        assert loaded_corpus.documents[0].mime_type == sample_document.mime_type
+        assert len(loaded_documents) == 1
+        assert loaded_documents[0].name == sample_document.name
+        assert loaded_documents[0].mime_type == sample_document.mime_type
 
-    def test_load_rag_corpus_multiple_documents(self, temp_cache_dir, multi_doc_corpus):
+    def test_load_documents_multiple_documents(self, temp_cache_dir, multi_doc_corpus):
         """Test loading JSON with multiple documents."""
-        json_str = DataLoaderCache._save_rag_corpus_to_json(multi_doc_corpus)
+        json_str = DataLoaderCache._save_documents_to_json(multi_doc_corpus.documents)
         json_file = temp_cache_dir / "test_corpus.json"
         json_file.write_text(json_str, encoding="utf-8")
 
-        loaded_corpus = DataLoaderCache._load_rag_corpus_from_json(json_file)
+        loaded_documents = DataLoaderCache._load_documents_from_json(json_file)
 
-        assert len(loaded_corpus.documents) == 3
+        assert len(loaded_documents) == 3
 
-    def test_load_rag_corpus_preserves_metadata(self, temp_cache_dir, sample_document):
+    def test_load_documents_preserves_metadata(self, temp_cache_dir, sample_document):
         """Test that metadata is correctly restored."""
-        corpus = RagCorpus(documents=[sample_document])
-        json_str = DataLoaderCache._save_rag_corpus_to_json(corpus)
+        json_str = DataLoaderCache._save_documents_to_json([sample_document])
 
         json_file = temp_cache_dir / "test_corpus.json"
         json_file.write_text(json_str, encoding="utf-8")
 
-        loaded_corpus = DataLoaderCache._load_rag_corpus_from_json(json_file)
-        loaded_doc = loaded_corpus.documents[0]
+        loaded_documents = DataLoaderCache._load_documents_from_json(json_file)
+        loaded_doc = loaded_documents[0]
 
         assert loaded_doc.metadata == sample_document.metadata
 
-    def test_load_rag_corpus_reconstructs_streams(
-        self, temp_cache_dir, sample_document
-    ):
+    def test_load_documents_reconstructs_streams(self, temp_cache_dir, sample_document):
         """Test that streams are readable and contain correct content."""
-        corpus = RagCorpus(documents=[sample_document])
-        json_str = DataLoaderCache._save_rag_corpus_to_json(corpus)
+        json_str = DataLoaderCache._save_documents_to_json([sample_document])
 
         json_file = temp_cache_dir / "test_corpus.json"
         json_file.write_text(json_str, encoding="utf-8")
 
-        loaded_corpus = DataLoaderCache._load_rag_corpus_from_json(json_file)
-        loaded_stream = loaded_corpus.documents[0].stream
+        loaded_documents = DataLoaderCache._load_documents_from_json(json_file)
+        loaded_stream = loaded_documents[0].stream
 
         # Read content
         loaded_stream.seek(0)
@@ -386,31 +376,31 @@ class TestDeserialization:
 
         assert content == original_content
 
-    def test_load_rag_corpus_invalid_json_raises_error(self, temp_cache_dir):
+    def test_load_documents_invalid_json_raises_error(self, temp_cache_dir):
         """Test that malformed JSON raises InvalidCacheFileError."""
         json_file = temp_cache_dir / "invalid.json"
         json_file.write_text("{ invalid json }", encoding="utf-8")
 
         with pytest.raises(InvalidCacheFileError, match="Invalid JSON"):
-            DataLoaderCache._load_rag_corpus_from_json(json_file)
+            DataLoaderCache._load_documents_from_json(json_file)
 
-    def test_load_rag_corpus_missing_documents_field_raises_error(self, temp_cache_dir):
+    def test_load_documents_missing_documents_field_raises_error(self, temp_cache_dir):
         """Test that JSON without 'documents' key raises error."""
         json_file = temp_cache_dir / "missing_field.json"
         json_file.write_text('{"other_field": []}', encoding="utf-8")
 
         with pytest.raises(InvalidCacheFileError, match="missing required.*documents"):
-            DataLoaderCache._load_rag_corpus_from_json(json_file)
+            DataLoaderCache._load_documents_from_json(json_file)
 
-    def test_load_rag_corpus_empty_documents_raises_error(self, temp_cache_dir):
+    def test_load_documents_empty_documents_raises_error(self, temp_cache_dir):
         """Test that JSON with empty documents array raises error."""
         json_file = temp_cache_dir / "empty_docs.json"
         json_file.write_text('{"documents": []}', encoding="utf-8")
 
         with pytest.raises(InvalidCacheFileError, match="contains no documents"):
-            DataLoaderCache._load_rag_corpus_from_json(json_file)
+            DataLoaderCache._load_documents_from_json(json_file)
 
-    def test_load_rag_corpus_missing_required_field_raises_error(self, temp_cache_dir):
+    def test_load_documents_missing_required_field_raises_error(self, temp_cache_dir):
         """Test that document missing required field raises error."""
         json_file = temp_cache_dir / "missing_name.json"
         json_data = {
@@ -428,9 +418,9 @@ class TestDeserialization:
         with pytest.raises(
             InvalidCacheFileError, match="missing required field 'name'"
         ):
-            DataLoaderCache._load_rag_corpus_from_json(json_file)
+            DataLoaderCache._load_documents_from_json(json_file)
 
-    def test_load_rag_corpus_invalid_base64_raises_error(self, temp_cache_dir):
+    def test_load_documents_invalid_base64_raises_error(self, temp_cache_dir):
         """Test that corrupt base64 raises StreamSerializationError."""
         json_file = temp_cache_dir / "invalid_base64.json"
         json_data = {
@@ -446,7 +436,7 @@ class TestDeserialization:
         json_file.write_text(json.dumps(json_data), encoding="utf-8")
 
         with pytest.raises(StreamSerializationError, match="Failed to decode stream"):
-            DataLoaderCache._load_rag_corpus_from_json(json_file)
+            DataLoaderCache._load_documents_from_json(json_file)
 
 
 # ============================================================================
@@ -457,17 +447,17 @@ class TestDeserialization:
 class TestCacheOperations:
     """Tests for cache add/get operations."""
 
-    def test_add_and_get_corpus_and_benchmark(
+    def test_add_and_get_documents_and_benchmark(
         self, cache_instance, sample_corpus, sample_benchmark
     ):
-        """Test adding and retrieving both corpus and benchmark."""
-        cache_instance.add(sample_benchmark, sample_corpus)
+        """Test adding and retrieving both documents and benchmark."""
+        cache_instance.add(sample_benchmark, sample_corpus.documents)
 
-        loaded_corpus, loaded_benchmark = cache_instance.get()
+        loaded_documents, loaded_benchmark = cache_instance.get()
 
-        assert loaded_corpus is not None
+        assert loaded_documents is not None
         assert loaded_benchmark is not None
-        assert len(loaded_corpus.documents) == len(sample_corpus.documents)
+        assert len(loaded_documents) == len(sample_corpus.documents)
         assert len(loaded_benchmark.benchmark_entries) == len(
             sample_benchmark.benchmark_entries
         )
@@ -475,22 +465,22 @@ class TestCacheOperations:
     def test_add_creates_two_cache_files(
         self, cache_instance, sample_corpus, sample_benchmark
     ):
-        """Test that two JSON files are created (corpus + benchmark)."""
-        cache_instance.add(sample_benchmark, sample_corpus)
+        """Test that two JSON files are created (documents + benchmark)."""
+        cache_instance.add(sample_benchmark, sample_corpus.documents)
 
         json_files = list(cache_instance.cache_path.glob("*.json"))
         assert len(json_files) == 2
 
         # Check filenames contain proper keys
         filenames = [f.name for f in json_files]
-        assert any(_CacheKeys.RAG_CORPUS in name for name in filenames)
+        assert any(_CacheKeys.DOCUMENTS in name for name in filenames)
         assert any(_CacheKeys.RAG_BENCHMARK in name for name in filenames)
 
     def test_get_returns_none_when_cache_empty(self, cache_instance):
         """Test that get returns (None, None) on empty cache."""
-        corpus, benchmark = cache_instance.get()
+        documents, benchmark = cache_instance.get()
 
-        assert corpus is None
+        assert documents is None
         assert benchmark is None
 
     def test_cache_persistence_across_instances(
@@ -499,13 +489,13 @@ class TestCacheOperations:
         """Test that data persists across different instances."""
         # Add data with first instance
         cache1 = DataLoaderCache(temp_cache_dir, dataset_config)
-        cache1.add(sample_benchmark, sample_corpus)
+        cache1.add(sample_benchmark, sample_corpus.documents)
 
         # Create new instance and retrieve
         cache2 = DataLoaderCache(temp_cache_dir, dataset_config)
-        loaded_corpus, loaded_benchmark = cache2.get()
+        loaded_documents, loaded_benchmark = cache2.get()
 
-        assert loaded_corpus is not None
+        assert loaded_documents is not None
         assert loaded_benchmark is not None
 
     def test_cache_hit_and_miss_tracking(
@@ -518,7 +508,7 @@ class TestCacheOperations:
         assert stats["cache_miss"] == 0
 
         # Add items
-        cache_instance.add(sample_benchmark, sample_corpus)
+        cache_instance.add(sample_benchmark, sample_corpus.documents)
 
         # Get items (should be hits)
         cache_instance.get()
@@ -533,43 +523,42 @@ class TestCacheOperations:
     ):
         """Test that adding again overwrites previous data."""
         # Add first time
-        cache_instance.add(sample_benchmark, sample_corpus)
+        cache_instance.add(sample_benchmark, sample_corpus.documents)
 
-        # Create new corpus with different content
+        # Create new document list with different content
         new_doc = create_document(
             name="new_doc.txt",
             content=b"New content",
             mime_type="text/plain",
         )
-        new_corpus = RagCorpus(documents=[new_doc])
 
         # Add again
-        cache_instance.add(sample_benchmark, new_corpus)
+        cache_instance.add(sample_benchmark, [new_doc])
 
         # Get should return latest
-        loaded_corpus, _ = cache_instance.get()
-        assert loaded_corpus.documents[0].name == "new_doc.txt"
+        loaded_documents, _ = cache_instance.get()
+        assert loaded_documents[0].name == "new_doc.txt"
 
     def test_deepcopy_on_get(self, cache_instance, sample_corpus, sample_benchmark):
         """Test that get returns a deep copy."""
-        cache_instance.add(sample_benchmark, sample_corpus)
+        cache_instance.add(sample_benchmark, sample_corpus.documents)
 
         # Get and modify
-        corpus1, _ = cache_instance.get()
-        corpus1.documents[0].metadata["modified"] = True
+        documents1, _ = cache_instance.get()
+        documents1[0].metadata["modified"] = True
 
         # Get again
-        corpus2, _ = cache_instance.get()
+        documents2, _ = cache_instance.get()
 
         # Original should be unchanged
-        assert "modified" not in corpus2.documents[0].metadata
+        assert "modified" not in documents2[0].metadata
 
     def test_add_with_wrong_argument_count_raises_error(
         self, cache_instance, sample_corpus
     ):
         """Test that add with wrong number of arguments raises ValueError."""
         with pytest.raises(ValueError, match="requires exactly 2 arguments"):
-            cache_instance.add(sample_corpus)  # Only one argument
+            cache_instance.add(sample_corpus.documents)  # Only one argument
 
 
 # ============================================================================
@@ -580,17 +569,18 @@ class TestCacheOperations:
 class TestContentTypeDetection:
     """Tests for _read_content file type detection."""
 
-    def test_read_content_detects_corpus_file(
+    def test_read_content_detects_documents_file(
         self, temp_cache_dir, cache_instance, sample_corpus
     ):
-        """Test that file with 'rag_corpus' in name is detected."""
-        json_str = DataLoaderCache._save_rag_corpus_to_json(sample_corpus)
-        corpus_file = temp_cache_dir / "rag_corpus_test.json"
-        corpus_file.write_text(json_str, encoding="utf-8")
+        """Test that file with 'documents' in name is detected."""
+        json_str = DataLoaderCache._save_documents_to_json(sample_corpus.documents)
+        documents_file = temp_cache_dir / "documents_test.json"
+        documents_file.write_text(json_str, encoding="utf-8")
 
-        result = cache_instance._read_content(corpus_file)
+        result = cache_instance._read_content(documents_file)
 
-        assert isinstance(result, RagCorpus)
+        assert isinstance(result, list)
+        assert all(isinstance(doc, DocumentObject) for doc in result)
 
     def test_read_content_detects_benchmark_file(
         self, temp_cache_dir, cache_instance, sample_benchmark
@@ -621,13 +611,14 @@ class TestContentTypeDetection:
         self, temp_cache_dir, cache_instance, sample_corpus
     ):
         """Test that file detection is case-insensitive."""
-        json_str = DataLoaderCache._save_rag_corpus_to_json(sample_corpus)
-        corpus_file = temp_cache_dir / "RAG_CORPUS_test.json"
-        corpus_file.write_text(json_str, encoding="utf-8")
+        json_str = DataLoaderCache._save_documents_to_json(sample_corpus.documents)
+        documents_file = temp_cache_dir / "DOCUMENTS_test.json"
+        documents_file.write_text(json_str, encoding="utf-8")
 
-        result = cache_instance._read_content(corpus_file)
+        result = cache_instance._read_content(documents_file)
 
-        assert isinstance(result, RagCorpus)
+        assert isinstance(result, list)
+        assert all(isinstance(doc, DocumentObject) for doc in result)
 
 
 # ============================================================================
@@ -661,7 +652,7 @@ class TestIntegration:
         self, cache_instance, sample_document
     ):
         """Test complete round-trip with text documents."""
-        original_corpus = RagCorpus(documents=[sample_document])
+        original_documents = [sample_document]
         benchmark = RagBenchmark(
             benchmark_entries=[
                 RagBenchmarkEntry(
@@ -674,16 +665,14 @@ class TestIntegration:
         )
 
         # Add to cache
-        cache_instance.add(benchmark, original_corpus)
+        cache_instance.add(benchmark, original_documents)
 
         # Retrieve from cache
-        loaded_corpus, loaded_benchmark = cache_instance.get()
+        loaded_documents, loaded_benchmark = cache_instance.get()
 
-        # Verify corpus
-        assert len(loaded_corpus.documents) == len(original_corpus.documents)
-        assert_streams_equal(
-            loaded_corpus.documents[0].stream, original_corpus.documents[0].stream
-        )
+        # Verify documents
+        assert len(loaded_documents) == len(original_documents)
+        assert_streams_equal(loaded_documents[0].stream, original_documents[0].stream)
 
         # Verify benchmark
         assert len(loaded_benchmark.benchmark_entries) == 1
@@ -692,7 +681,7 @@ class TestIntegration:
         self, cache_instance, binary_document
     ):
         """Test round-trip with binary documents."""
-        original_corpus = RagCorpus(documents=[binary_document])
+        original_documents = [binary_document]
         benchmark = RagBenchmark(
             benchmark_entries=[
                 RagBenchmarkEntry(
@@ -703,25 +692,23 @@ class TestIntegration:
             ]
         )
 
-        cache_instance.add(benchmark, original_corpus)
-        loaded_corpus, _ = cache_instance.get()
+        cache_instance.add(benchmark, original_documents)
+        loaded_documents, _ = cache_instance.get()
 
-        assert_streams_equal(
-            loaded_corpus.documents[0].stream, original_corpus.documents[0].stream
-        )
+        assert_streams_equal(loaded_documents[0].stream, original_documents[0].stream)
 
     def test_round_trip_serialization_mixed_documents(
         self, cache_instance, multi_doc_corpus, sample_benchmark
     ):
         """Test round-trip with mix of text and binary documents."""
-        cache_instance.add(sample_benchmark, multi_doc_corpus)
-        loaded_corpus, _ = cache_instance.get()
+        cache_instance.add(sample_benchmark, multi_doc_corpus.documents)
+        loaded_documents, _ = cache_instance.get()
 
-        assert len(loaded_corpus.documents) == len(multi_doc_corpus.documents)
+        assert len(loaded_documents) == len(multi_doc_corpus.documents)
 
         # Verify each document
         for original, loaded in zip(
-            multi_doc_corpus.documents, loaded_corpus.documents, strict=True
+            multi_doc_corpus.documents, loaded_documents, strict=True
         ):
             assert original.name == loaded.name
             assert original.mime_type == loaded.mime_type
@@ -739,7 +726,6 @@ class TestIntegration:
                 "mixed": {"a": [1, 2], "b": {"c": "d"}},
             },
         )
-        corpus = RagCorpus(documents=[doc])
         benchmark = RagBenchmark(
             benchmark_entries=[
                 RagBenchmarkEntry(
@@ -748,10 +734,10 @@ class TestIntegration:
             ]
         )
 
-        cache_instance.add(benchmark, corpus)
-        loaded_corpus, _ = cache_instance.get()
+        cache_instance.add(benchmark, [doc])
+        loaded_documents, _ = cache_instance.get()
 
-        assert loaded_corpus.documents[0].metadata == doc.metadata
+        assert loaded_documents[0].metadata == doc.metadata
 
     def test_round_trip_preserves_stream_content(self, cache_instance):
         """Test that stream content is byte-for-byte identical."""
@@ -762,7 +748,6 @@ class TestIntegration:
             content=content,
             mime_type="application/octet-stream",
         )
-        corpus = RagCorpus(documents=[doc])
         benchmark = RagBenchmark(
             benchmark_entries=[
                 RagBenchmarkEntry(
@@ -771,16 +756,16 @@ class TestIntegration:
             ]
         )
 
-        cache_instance.add(benchmark, corpus)
-        loaded_corpus, _ = cache_instance.get()
+        cache_instance.add(benchmark, [doc])
+        loaded_documents, _ = cache_instance.get()
 
-        loaded_corpus.documents[0].stream.seek(0)
-        loaded_content = loaded_corpus.documents[0].stream.read()
+        loaded_documents[0].stream.seek(0)
+        loaded_content = loaded_documents[0].stream.read()
 
         assert loaded_content == content
 
     def test_large_corpus_performance(self, cache_instance):
-        """Test with large corpus (100+ documents)."""
+        """Test with large document list (100+ documents)."""
         large_corpus = create_corpus(100)
         benchmark = RagBenchmark(
             benchmark_entries=[
@@ -791,10 +776,10 @@ class TestIntegration:
         )
 
         # Should complete without errors
-        cache_instance.add(benchmark, large_corpus)
-        loaded_corpus, _ = cache_instance.get()
+        cache_instance.add(benchmark, large_corpus.documents)
+        loaded_documents, _ = cache_instance.get()
 
-        assert len(loaded_corpus.documents) == 100
+        assert len(loaded_documents) == 100
 
     def test_integration_with_benchmark_entries(self, cache_instance, sample_corpus):
         """Test that all benchmark fields are preserved."""
@@ -816,7 +801,7 @@ class TestIntegration:
             ]
         )
 
-        cache_instance.add(benchmark, sample_corpus)
+        cache_instance.add(benchmark, sample_corpus.documents)
         _, loaded_benchmark = cache_instance.get()
 
         entry = loaded_benchmark.benchmark_entries[0]

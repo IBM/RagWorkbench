@@ -86,7 +86,8 @@ class RagDataLoader(ABC):
                 cache_dir=cache_dir,
                 dataset_config_dict={
                     "split": self.split,
-                    "sampling_params": self.sampling_params.as_id(),
+                    # We do not cache the sampling params! We always cache the full collection
+                    # "sampling_params": self.sampling_params.as_id(),
                 },
             )
             cached_rag_corpus, cached_rag_benchmark = cache.get()
