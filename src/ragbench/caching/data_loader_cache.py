@@ -1,10 +1,10 @@
 """
-Data loader caching implementation for RAG benchmarks and corpora.
+Data loader caching implementation for RAG benchmarks and document lists.
 
 This module provides specialized caching for RAG (Retrieval-Augmented Generation)
 datasets, handling serialization of document streams and benchmark data to disk.
 It extends AbstractFileSystemCache to provide type-safe caching operations for
-RagCorpus and RagBenchmark objects.
+document lists and RagBenchmark objects.
 
 Key Features:
     - Base64 encoding of document streams for JSON serialization
@@ -17,8 +17,8 @@ Example:
     ...     cache_dir="./cache",
     ...     dataset_config_dict={"name": "my_dataset", "version": "1.0"}
     ... )
-    >>> cache.add(benchmark, corpus)
-    >>> loaded_corpus, loaded_benchmark = cache.get()
+    >>> cache.add(benchmark, documents)
+    >>> loaded_documents, loaded_benchmark = cache.get()
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from ragbench.caching.abstract_file_system_cache import AbstractFileSystemCache
-from ragbench.datasets_loader.data_models import DocumentObject, RagBenchmark, RagCorpus
+from ragbench.datasets_loader.data_models import DocumentObject, RagBenchmark
 
 
 class DataLoaderCacheError(Exception):
@@ -54,7 +54,6 @@ class StreamSerializationError(DataLoaderCacheError):
 class _CacheKeys:
     """Internal constants for cache file naming and JSON keys."""
 
-    RAG_CORPUS = "rag_corpus"
     RAG_BENCHMARK = "rag_benchmark"
     DOCUMENTS = "documents"
 
@@ -63,7 +62,7 @@ class DataLoaderCache(AbstractFileSystemCache):
     """
     File system cache for RAG data loaders.
 
-    Provides caching functionality for RagCorpus and RagBenchmark objects,
+    Provides caching functionality for document lists and RagBenchmark objects,
     with specialized handling for document streams and metadata.
     """
 
@@ -90,7 +89,7 @@ class DataLoaderCache(AbstractFileSystemCache):
         """
         Generate hash from parameters.
 
-        For DataLoaderCache, we use constant keys (rag_corpus, rag_benchmark)
+        For DataLoaderCache, we use constant keys (documents, rag_benchmark)
         rather than hashing, as we always store exactly two files per dataset.
 
         Args:
@@ -103,28 +102,25 @@ class DataLoaderCache(AbstractFileSystemCache):
         return str(args[0]) if args else ""
 
     @staticmethod
-    def _save_rag_corpus_to_json(rag_corpus: RagCorpus) -> str:
+    def _save_documents_to_json(documents: list[DocumentObject]) -> str:
         """
-        Serialize a RagCorpus to JSON format.
+        Serialize a list of DocumentObjects to JSON format.
 
         Converts document streams to base64-encoded strings for JSON serialization.
         Stream positions are preserved during serialization.
 
         Args:
-            rag_corpus: The RagCorpus instance to serialize.
+            documents: List of DocumentObject instances to serialize.
 
         Returns:
-            JSON string representation of the corpus.
+            JSON string representation of the document list.
 
         Raises:
             StreamSerializationError: If stream reading or encoding fails.
-            ValueError: If corpus contains no documents.
         """
-        if not rag_corpus.documents:
-            raise ValueError("Cannot serialize empty RagCorpus")
 
         serialized_docs = []
-        for doc in rag_corpus.documents:
+        for doc in documents:
             try:
                 # Save current position
                 current_position = doc.stream.tell()
@@ -172,9 +168,9 @@ class DataLoaderCache(AbstractFileSystemCache):
         return json.dumps(output, indent=2, ensure_ascii=False)
 
     @staticmethod
-    def _load_rag_corpus_from_json(file_path: Path) -> RagCorpus:
+    def _load_documents_from_json(file_path: Path) -> list[DocumentObject]:
         """
-        Load a RagCorpus from a JSON cache file.
+        Load a list of DocumentObjects from a JSON cache file.
 
         Deserializes document streams from base64-encoded strings and reconstructs
         DocumentObject instances with their metadata.
@@ -183,7 +179,7 @@ class DataLoaderCache(AbstractFileSystemCache):
             file_path: Path to the JSON cache file.
 
         Returns:
-            Reconstructed RagCorpus instance.
+            List of reconstructed DocumentObject instances.
 
         Raises:
             InvalidCacheFileError: If file format is invalid or required fields are missing.
@@ -249,9 +245,9 @@ class DataLoaderCache(AbstractFileSystemCache):
                     f"Failed to deserialize document {idx}: {e}"
                 ) from e
 
-        return RagCorpus(documents=documents)
+        return documents
 
-    def _read_content(self, file: Path) -> RagCorpus | RagBenchmark:
+    def _read_content(self, file: Path) -> list[DocumentObject] | RagBenchmark:
         """
         Read and deserialize content from a cache file.
 
@@ -262,7 +258,7 @@ class DataLoaderCache(AbstractFileSystemCache):
             file: Path to the cache file.
 
         Returns:
-            Either a RagCorpus or RagBenchmark instance.
+            Either a list of DocumentObjects or a RagBenchmark instance.
 
         Raises:
             InvalidCacheFileError: If file type cannot be determined or is invalid.
@@ -270,8 +266,8 @@ class DataLoaderCache(AbstractFileSystemCache):
         filename = file.name.lower()
 
         # Check for corpus file
-        if _CacheKeys.RAG_CORPUS in filename:
-            return DataLoaderCache._load_rag_corpus_from_json(file)
+        if _CacheKeys.DOCUMENTS in filename:
+            return DataLoaderCache._load_documents_from_json(file)
 
         # Check for benchmark file
         if _CacheKeys.RAG_BENCHMARK in filename:
@@ -287,7 +283,7 @@ class DataLoaderCache(AbstractFileSystemCache):
         # Unknown file type
         raise InvalidCacheFileError(
             f"Cannot determine cache file type from filename: '{file.name}'. "
-            f"Expected filename to contain '{_CacheKeys.RAG_CORPUS}' or "
+            f"Expected filename to contain '{_CacheKeys.DOCUMENTS}' or "
             f"'{_CacheKeys.RAG_BENCHMARK}'"
         )
 
@@ -297,7 +293,7 @@ class DataLoaderCache(AbstractFileSystemCache):
 
         Args:
             *args: Variable arguments, expected to be a single object
-                (RagCorpus or RagBenchmark) to serialize.
+                (list[DocumentObject] or RagBenchmark) to serialize.
 
         Returns:
             JSON string representation.
@@ -306,55 +302,55 @@ class DataLoaderCache(AbstractFileSystemCache):
             TypeError: If obj is not a supported type.
         """
         obj = args[0] if args else None
-        if isinstance(obj, RagCorpus):
-            return self._save_rag_corpus_to_json(rag_corpus=obj)
+        if isinstance(obj, list):
+            return self._save_documents_to_json(documents=obj)
         elif isinstance(obj, RagBenchmark):
             return obj.model_dump_json(indent=2)
         else:
             raise TypeError(
                 f"Unsupported type for serialization: {type(obj).__name__}. "
-                f"Expected RagCorpus or RagBenchmark"
+                f"Expected list[DocumentObject] or RagBenchmark"
             )
 
     def add(self, *args) -> None:
         """
-        Add a benchmark and corpus pair to the cache.
+        Add a benchmark and documents pair to the cache.
 
-        Both the RagBenchmark and RagCorpus are serialized and stored as
+        Both the RagBenchmark and document list are serialized and stored as
         separate cache files with standardized naming.
 
         Args:
-            *args: Expected to be (rag_benchmark, rag_corpus) tuple.
+            *args: Expected to be (rag_benchmark, documents) tuple.
                 rag_benchmark: The benchmark dataset to cache.
-                rag_corpus: The document corpus to cache.
+                documents: List of DocumentObject instances to cache.
 
         Raises:
-            StreamSerializationError: If corpus serialization fails.
-            ValueError: If corpus is empty or wrong number of arguments.
+            StreamSerializationError: If document serialization fails.
+            ValueError: If wrong number of arguments provided.
         """
         if len(args) != 2:
             raise ValueError(
-                f"add() requires exactly 2 arguments (rag_benchmark, rag_corpus), "
+                f"add() requires exactly 2 arguments (rag_benchmark, documents), "
                 f"got {len(args)}"
             )
-        rag_benchmark, rag_corpus = args
-        super().add(_CacheKeys.RAG_CORPUS, rag_corpus)
+        rag_benchmark, documents = args
+        super().add(_CacheKeys.DOCUMENTS, documents)
         super().add(_CacheKeys.RAG_BENCHMARK, rag_benchmark)
 
-    def get(self, item: Any | None = None) -> tuple[RagCorpus, RagBenchmark]:
+    def get(self, item: Any | None = None) -> tuple[list[DocumentObject], RagBenchmark]:
         """
-        Retrieve cached corpus and benchmark.
+        Retrieve cached documents and benchmark.
 
         Args:
             item: Unused parameter (maintained for interface compatibility).
 
         Returns:
-            Tuple of (RagCorpus, RagBenchmark) retrieved from cache.
+            Tuple of (list[DocumentObject], RagBenchmark) retrieved from cache.
             Returns None for each component if not found in cache.
 
         Raises:
             InvalidCacheFileError: If cached files are corrupted or invalid.
         """
-        cached_corpus, _ = super()._get(_CacheKeys.RAG_CORPUS)
+        documents, _ = super()._get(_CacheKeys.DOCUMENTS)
         cached_benchmark, _ = super()._get(_CacheKeys.RAG_BENCHMARK)
-        return cached_corpus, cached_benchmark  # type: ignore[return-value]
+        return documents, cached_benchmark  # type: ignore[return-value]
