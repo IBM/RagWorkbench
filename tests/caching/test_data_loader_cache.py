@@ -46,17 +46,12 @@ def temp_cache_dir():
 
 
 @pytest.fixture
-def dataset_config():
-    """Sample dataset configuration."""
-    return {"name": "test_dataset", "version": "1.0", "split": "train"}
-
-
-@pytest.fixture
-def cache_instance(temp_cache_dir, dataset_config):
+def cache_instance(temp_cache_dir):
     """Create DataLoaderCache instance."""
     return DataLoaderCache(
         cache_dir=temp_cache_dir,
-        dataset_config_dict=dataset_config,
+        dataset_name="test_dataset",
+        split="train",
     )
 
 
@@ -180,23 +175,23 @@ def assert_streams_equal(stream1: BytesIO, stream2: BytesIO):
 class TestInitialization:
     """Tests for cache initialization and configuration."""
 
-    def test_initialization_creates_cache_directory(
-        self, temp_cache_dir, dataset_config
-    ):
+    def test_initialization_creates_cache_directory(self, temp_cache_dir):
         """Test that initialization creates the cache directory."""
         cache = DataLoaderCache(
             cache_dir=temp_cache_dir,
-            dataset_config_dict=dataset_config,
+            dataset_name="test_dataset",
+            split="train",
         )
 
         assert cache.cache_path.exists()
         assert cache.cache_path.is_dir()
 
-    def test_initialization_with_dataset_config(self, temp_cache_dir, dataset_config):
+    def test_initialization_with_dataset_config(self, temp_cache_dir):
         """Test that config dict is properly hashed and used in path."""
         cache = DataLoaderCache(
             cache_dir=temp_cache_dir,
-            dataset_config_dict=dataset_config,
+            dataset_name="test_dataset",
+            split="train",
         )
 
         # Path should include data_loader and a hash
@@ -206,18 +201,19 @@ class TestInitialization:
 
     def test_cache_path_includes_dataset_hash(self, temp_cache_dir):
         """Test that different configs create different cache paths."""
-        config1 = {"name": "dataset1"}
-        config2 = {"name": "dataset2"}
-
-        cache1 = DataLoaderCache(temp_cache_dir, config1)
-        cache2 = DataLoaderCache(temp_cache_dir, config2)
+        cache1 = DataLoaderCache(temp_cache_dir, dataset_name="dataset1", split="train")
+        cache2 = DataLoaderCache(temp_cache_dir, dataset_name="dataset2", split="train")
 
         assert cache1.cache_path != cache2.cache_path
 
-    def test_same_config_reuses_same_path(self, temp_cache_dir, dataset_config):
+    def test_same_config_reuses_same_path(self, temp_cache_dir):
         """Test that same config uses same cache path."""
-        cache1 = DataLoaderCache(temp_cache_dir, dataset_config)
-        cache2 = DataLoaderCache(temp_cache_dir, dataset_config)
+        cache1 = DataLoaderCache(
+            temp_cache_dir, dataset_name="test_dataset", split="train"
+        )
+        cache2 = DataLoaderCache(
+            temp_cache_dir, dataset_name="test_dataset", split="train"
+        )
 
         assert cache1.cache_path == cache2.cache_path
 
@@ -484,15 +480,19 @@ class TestCacheOperations:
         assert benchmark is None
 
     def test_cache_persistence_across_instances(
-        self, temp_cache_dir, dataset_config, sample_corpus, sample_benchmark
+        self, temp_cache_dir, sample_corpus, sample_benchmark
     ):
         """Test that data persists across different instances."""
         # Add data with first instance
-        cache1 = DataLoaderCache(temp_cache_dir, dataset_config)
+        cache1 = DataLoaderCache(
+            temp_cache_dir, dataset_name="test_dataset", split="train"
+        )
         cache1.add(sample_benchmark, sample_corpus.documents)
 
         # Create new instance and retrieve
-        cache2 = DataLoaderCache(temp_cache_dir, dataset_config)
+        cache2 = DataLoaderCache(
+            temp_cache_dir, dataset_name="test_dataset", split="train"
+        )
         loaded_documents, loaded_benchmark = cache2.get()
 
         assert loaded_documents is not None

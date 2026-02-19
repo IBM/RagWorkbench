@@ -15,7 +15,8 @@ Key Features:
 Example:
     >>> cache = DataLoaderCache(
     ...     cache_dir="./cache",
-    ...     dataset_config_dict={"name": "my_dataset", "version": "1.0"}
+    ...     dataset_name="hotpot_qa",
+    ...     split="train"
     ... )
     >>> cache.add(benchmark, documents)
     >>> loaded_documents, loaded_benchmark = cache.get()
@@ -27,8 +28,9 @@ import base64
 import json
 from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
+from ragbench import DatasetName
 from ragbench.caching.abstract_file_system_cache import AbstractFileSystemCache
 from ragbench.datasets_loader.data_models import DocumentObject, RagBenchmark
 
@@ -69,20 +71,26 @@ class DataLoaderCache(AbstractFileSystemCache):
     def __init__(
         self,
         cache_dir: Path | str,
-        dataset_config_dict: dict,
+        dataset_name: DatasetName | str,
+        split: Literal["train", "test"] | None,
     ):
         """
         Initialize the data loader cache.
 
         Args:
             cache_dir: Base directory for cache storage.
-            dataset_config_dict: Configuration dictionary for the dataset,
-                used to generate a unique cache subdirectory.
+            dataset_name: Name of the dataset (e.g., "hotpot_qa", "narrative_qa").
+            split: Dataset split, either "train" or "test". Can be None for datasets
+                without splits.
         """
+        config_dict = {"dataset_name": str(dataset_name)}
+        if split is not None:
+            config_dict["split"] = split
+
         super().__init__(
             cache_dir,
             "data_loader",
-            config_dict={"dataset": dataset_config_dict},
+            config_dict=config_dict,
         )
 
     def _get_parameters_hash(self, *args) -> str:
