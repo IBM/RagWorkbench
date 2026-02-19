@@ -217,6 +217,33 @@ class TestInitialization:
 
         assert cache1.cache_path == cache2.cache_path
 
+    def test_initialization_with_none_split(self, temp_cache_dir):
+        """Test that split=None works correctly."""
+        cache = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="test_dataset",
+            split=None,
+        )
+
+        assert cache.cache_path.exists()
+        assert cache.cache_path.is_dir()
+
+    def test_different_splits_create_different_paths(self, temp_cache_dir):
+        """Test that different splits create different cache paths."""
+        cache_train = DataLoaderCache(
+            temp_cache_dir, dataset_name="test_dataset", split="train"
+        )
+        cache_test = DataLoaderCache(
+            temp_cache_dir, dataset_name="test_dataset", split="test"
+        )
+        cache_none = DataLoaderCache(
+            temp_cache_dir, dataset_name="test_dataset", split=None
+        )
+
+        assert cache_train.cache_path != cache_test.cache_path
+        assert cache_train.cache_path != cache_none.cache_path
+        assert cache_test.cache_path != cache_none.cache_path
+
 
 # ============================================================================
 # Category 2: Serialization Tests (Document lists → JSON)

@@ -30,9 +30,9 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, Literal
 
-from ragbench import DatasetName
 from ragbench.caching.abstract_file_system_cache import AbstractFileSystemCache
 from ragbench.datasets_loader.data_models import DocumentObject, RagBenchmark
+from ragbench.datasets_loader.dataset_names import DatasetName
 
 
 class DataLoaderCacheError(Exception):
@@ -342,8 +342,8 @@ class DataLoaderCache(AbstractFileSystemCache):
                 f"got {len(args)}"
             )
         rag_benchmark, documents = args
-        super().add(_CacheKeys.DOCUMENTS, documents)
         super().add(_CacheKeys.RAG_BENCHMARK, rag_benchmark)
+        super().add(_CacheKeys.DOCUMENTS, documents)
 
     def get(self, item: Any | None = None) -> tuple[list[DocumentObject], RagBenchmark]:
         """
