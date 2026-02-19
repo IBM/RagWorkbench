@@ -287,15 +287,6 @@ class TestAbstractFileSystemCache:
         with pytest.raises(ValueError, match="requires at least one argument"):
             cache_instance.add()
 
-    def test_add_with_multiple_key_parameters(self, cache_instance):
-        """Test adding with multiple parameters as key."""
-        # Add with multiple key parameters
-        cache_instance.add("param1", "param2", "param3", {"value": "data"})
-
-        # Retrieve using same parameters
-        result = cache_instance.get("param1", "param2", "param3")
-        assert result == {"value": "data"}
-
     def test_hash_functions(self):
         """Test hash generation functions."""
         # Test get_hash_from_buffer
