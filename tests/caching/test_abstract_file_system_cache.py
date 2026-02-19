@@ -1,11 +1,15 @@
 """Tests for AbstractFileSystemCache."""
 
 import json
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any
 
 import pytest
+
+# Add src to path to allow direct import without triggering ragbench.__init__
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from ragbench.caching.abstract_file_system_cache import AbstractFileSystemCache
 
@@ -284,8 +288,13 @@ class TestAbstractFileSystemCache:
 
     def test_add_with_no_arguments_raises_error(self, cache_instance):
         """Test that add with no arguments raises ValueError."""
-        with pytest.raises(ValueError, match="requires at least one argument"):
+        with pytest.raises(ValueError, match="requires at least 2 arguments"):
             cache_instance.add()
+
+    def test_add_with_one_argument_raises_error(self, cache_instance):
+        """Test that add with only one argument raises ValueError."""
+        with pytest.raises(ValueError, match="requires at least 2 arguments"):
+            cache_instance.add({"value": "only_one_arg"})
 
     def test_hash_functions(self):
         """Test hash generation functions."""

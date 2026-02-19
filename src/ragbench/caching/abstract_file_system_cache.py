@@ -192,10 +192,16 @@ class AbstractFileSystemCache(ABC):
         all preceding arguments are used to generate the cache key.
 
         Args:
-            *args: Parameters followed by the value to cache
+            *args: Parameters followed by the value to cache (minimum 2 arguments)
+
+        Raises:
+            ValueError: If fewer than 2 arguments are provided
         """
-        if len(args) < 1:
-            raise ValueError("add() requires at least one argument (the cached item)")
+        if len(args) < 2:
+            raise ValueError(
+                "add() requires at least 2 arguments: "
+                "one or more key parameters and the cached item"
+            )
 
         # Get all parameters except the last one
         key_args = args[:-1]
