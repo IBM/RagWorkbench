@@ -2,40 +2,43 @@ import json
 from pathlib import Path
 from typing import Any
 
+from ragbench.api.inference import InferenceParams
+from ragbench.api.inference_result import InferenceResult
 from ragbench.caching.abstract_file_system_cache import AbstractFileSystemCache
+from ragbench.datasets_loader.data_models import RagBenchmarkEntry
 
 
 class GenerationCache(AbstractFileSystemCache):
     def __init__(
         self,
         cache_dir: Path | str,
-        config_dict: dict[str, Any],
+        inference_params: InferenceParams,
     ):
         super().__init__(
             cache_dir,
             "generation",
-            config_dict=config_dict,
+            config_dict=inference_params.model_dump(),
         )
 
-    def _read_content(self, file: Path) -> dict[str, Any]:
+    def _read_content(self, file: Path) -> InferenceResult:
         cached_generation: dict[str, Any] = json.loads(file.read_text(encoding="utf-8"))
-        return cached_generation
+        return InferenceResult(**cached_generation)
 
-    def _content_to_json(self, generation_results: dict[str, Any]) -> str:
-        return json.dumps(generation_results, indent=4)
+    def _content_to_json(self, inference_result: InferenceResult) -> str:
+        return json.dumps(inference_result.model_dump(), indent=4)
 
-    def _get_parameters_hash(self, query: str | list[dict[str, Any]]) -> str:
-        return AbstractFileSystemCache.get_hash_list([query])
+    def _get_parameters_hash(self, benchmark_entry: RagBenchmarkEntry) -> str:
+        return AbstractFileSystemCache.get_hash_dict(benchmark_entry.model_dump())
 
     # We force signature
-    def get(self, query: str | list[dict[str, Any]]):
-        cached_value, cache_key = super()._get(query)
+    def get(self, benchmark_entry: RagBenchmarkEntry) -> InferenceResult | None:
+        cached_value, cache_key = super()._get(benchmark_entry)
         return cached_value
 
     # We force signature
     def add(
         self,
-        query: str | list[dict[str, Any]],
-        generation_results: dict[str, Any],
+        benchmark_entry: RagBenchmarkEntry,
+        inference_results: InferenceResult,
     ):
-        super().add(query, generation_results)
+        super().add(benchmark_entry, inference_results)
