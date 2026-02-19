@@ -4,9 +4,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Literal
 
-from ragbench.datasets_loader.data_loader_caching.data_loader_cache import (
-    DataLoaderCache,
-)
+from ragbench.caching.data_loader_cache import DataLoaderCache
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
 from ragbench.datasets_loader.data_models.rag_benchmark import (
@@ -66,65 +64,85 @@ class RagDataLoader(ABC):
             split: Dataset split to load ('train', 'test', or None for all).
             sampling_params: Parameters controlling question and document sampling.
                            Defaults to no sampling (all data included).
+            cache_dir: Optional directory for caching full (unsampled) dataset.
 
         Note:
             The initialization process:
-            1. Loads all documents and benchmark entries
-            2. Applies sampling based on sampling_params
-            3. Creates RagBenchmark and RagCorpus instances
-            4. Logs the final dataset size
+            1. Loads or retrieves all documents and benchmark entries (full dataset)
+            2. Caches the full dataset if not already cached (cache is independent of sampling)
+            3. Applies sampling based on sampling_params to the full dataset
+            4. Creates RagBenchmark and RagCorpus instances with sampled data
+            5. Logs the final dataset size
+
+            The cache stores the complete unsampled dataset, allowing different
+            sampling parameters to be applied without reloading the original data.
         """
         self.dataset_name: DatasetName | str = dataset_name
         self.split: Literal["train", "test"] | None = split
         self.sampling_params = sampling_params
-        cached_rag_corpus: RagCorpus | None = None
-        cached_rag_benchmark: RagBenchmark | None = None
-        cache = None
+
+        # Step 1: Load or retrieve full (unsampled) data
+        self.all_docs: list[DocumentObject]
+        all_benchmark_entries: list[RagBenchmarkEntry]
+
         if cache_dir is not None:
-            # there is a cache
+            # Initialize cache (only depends on dataset_name and split, not sampling_params)
             cache = DataLoaderCache(
                 cache_dir=cache_dir,
-                dataset_config_dict={
-                    "split": self.split,
-                    # We do not cache the sampling params! We always cache the full collection
-                    # "sampling_params": self.sampling_params.as_id(),
-                },
+                dataset_name=dataset_name,
+                split=split,
             )
-            cached_rag_corpus, cached_rag_benchmark = cache.get()
-        if cached_rag_corpus is not None and cached_rag_benchmark is not None:
-            self.rag_corpus = cached_rag_corpus
-            self.benchmark = cached_rag_benchmark
-            logger.debug(
-                f"Loaded from cache - {len(self.rag_corpus)} documents and {len(self.benchmark)}  "
-                f"labeled examples from '{dataset_name}', split '{split}'."
-            )
+            cached_documents, cached_benchmark = cache.get()
+
+            if cached_documents is not None and cached_benchmark is not None:
+                # Cache HIT: Use full unsampled data from cache
+                self.all_docs = cached_documents
+                all_benchmark_entries = cached_benchmark.benchmark_entries
+                logger.debug(
+                    f"Loaded from cache - {len(self.all_docs)} documents and "
+                    f"{len(all_benchmark_entries)} benchmark entries (full dataset) "
+                    f"from '{dataset_name}', split '{split}'."
+                )
+            else:
+                # Cache MISS: Load full data from source and cache it
+                self.all_docs = self._get_documents()
+                all_benchmark_entries = self._get_benchmark_entries(split=split)
+
+                # Cache the full unsampled data
+                full_benchmark = RagBenchmark(benchmark_entries=all_benchmark_entries)
+                cache.add(full_benchmark, self.all_docs)
+                logger.debug(
+                    f"Loaded from source and cached - {len(self.all_docs)} documents and "
+                    f"{len(all_benchmark_entries)} benchmark entries (full dataset) "
+                    f"from '{dataset_name}', split '{split}'."
+                )
         else:
-            self.all_docs: list[DocumentObject] = self._get_documents()
-            self.sampling_params = sampling_params
-
-            all_benchmark_entries: list[RagBenchmarkEntry] = (
-                self._get_benchmark_entries(split=split)
-            )
-
-            # Apply sampling to both benchmark entries and documents
-            sampled_benchmark_entries: list[RagBenchmarkEntry]
-            sampled_docs: list[DocumentObject]
-            sampled_benchmark_entries, sampled_docs = self._load_sample(
-                all_benchmark_entries, self.all_docs, sampling_params
-            )
-
-            # Create benchmark and corpus instances
-            self.benchmark: RagBenchmark = RagBenchmark(  # type: ignore[no-redef]
-                benchmark_entries=sampled_benchmark_entries
-            )
-            self.rag_corpus: RagCorpus = RagCorpus(documents=sampled_docs)  # type: ignore[no-redef]
-
+            # No cache: Load full data from source
+            self.all_docs = self._get_documents()
+            all_benchmark_entries = self._get_benchmark_entries(split=split)
             logger.debug(
-                f"Loaded {len(self.rag_corpus)} documents and {len(self.benchmark)} "
-                f"labeled examples from '{dataset_name}', split '{split}'."
+                f"Loaded from source (no cache) - {len(self.all_docs)} documents and "
+                f"{len(all_benchmark_entries)} benchmark entries (full dataset) "
+                f"from '{dataset_name}', split '{split}'."
             )
-            if cache is not None:
-                cache.add(self.benchmark, self.rag_corpus)
+
+        # Step 2: Apply sampling to the full dataset (always, regardless of cache hit/miss)
+        sampled_benchmark_entries: list[RagBenchmarkEntry]
+        sampled_docs: list[DocumentObject]
+        sampled_benchmark_entries, sampled_docs = self._load_sample(
+            all_benchmark_entries, self.all_docs, sampling_params
+        )
+
+        # Step 3: Create final benchmark and corpus instances with sampled data
+        self.benchmark: RagBenchmark = RagBenchmark(
+            benchmark_entries=sampled_benchmark_entries
+        )
+        self.rag_corpus: RagCorpus = RagCorpus(documents=sampled_docs)
+
+        logger.debug(
+            f"After sampling - {len(self.rag_corpus)} documents and "
+            f"{len(self.benchmark)} benchmark entries available for use."
+        )
 
     @abstractmethod
     def _get_documents(self) -> list[DocumentObject]:
