@@ -860,3 +860,233 @@ class TestExceptionClasses:
 
         with pytest.raises(DataLoaderCacheError):
             raise StreamSerializationError("Test error")
+
+
+# ============================================================================
+# Category 9: Cache Reuse with Different Sampling Tests
+# ============================================================================
+
+
+class TestCacheReuseWithDifferentSampling:
+    """Test that cache is reused when loading same dataset with different sampling."""
+
+    def test_cache_reuse_with_different_sampling_parameters(
+        self, temp_cache_dir, sample_corpus, sample_benchmark
+    ):
+        """
+        Test that the same dataset with different sampling configs reuses the cache.
+
+        This test verifies the key behavior: DataLoaderCache stores the FULL
+        unsampled dataset, independent of sampling parameters. When the same
+        dataset is loaded with different sampling configurations, the cache
+        should be reused.
+
+        Scenario:
+        1. Create cache instance #1 for dataset "test_dataset", split "train"
+        2. Add full dataset (benchmark + documents) to cache
+        3. Create cache instance #2 with SAME dataset/split
+        4. Retrieve data from second instance
+        5. Verify cache HIT occurred (data was reused, not reloaded)
+
+        This simulates what happens in RagDataLoader when:
+        - First call: DataSamplingParams(question_limit=5, seed=42)
+        - Second call: DataSamplingParams(question_limit=10, seed=99)
+        Both should use the same cached full dataset.
+        """
+        # Step 1: First cache instance (simulates first sampling config)
+        cache1 = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="test_dataset",
+            split="train",
+        )
+
+        # Step 2: Add full dataset to cache
+        cache1.add(sample_benchmark, sample_corpus.documents)
+
+        # Step 3: Verify initial state
+        stats1 = cache1.get_cache_stats()
+        assert stats1["total_entries"] == 2  # documents + benchmark
+
+        # Step 4: Second cache instance (simulates second sampling config)
+        # This should reuse the same cache directory because dataset_name and split match
+        cache2 = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="test_dataset",  # Same dataset
+            split="train",  # Same split
+        )
+
+        # Step 5: Retrieve from cache
+        loaded_documents, loaded_benchmark = cache2.get()
+
+        # Step 6: Verify cache HIT occurred
+        assert loaded_documents is not None, "Documents should be loaded from cache"
+        assert loaded_benchmark is not None, "Benchmark should be loaded from cache"
+
+        stats2 = cache2.get_cache_stats()
+        assert (
+            stats2["cache_hit"] == 2
+        ), "Should have 2 cache hits (documents + benchmark)"
+        assert stats2["cache_miss"] == 0, "Should have no cache misses"
+
+        # Step 7: Verify data integrity
+        assert len(loaded_documents) == len(
+            sample_corpus.documents
+        ), "All documents should be retrieved"
+        assert len(loaded_benchmark.benchmark_entries) == len(
+            sample_benchmark.benchmark_entries
+        ), "All benchmark entries should be retrieved"
+
+        # Step 8: Verify content matches original
+        assert loaded_documents[0].name == sample_corpus.documents[0].name
+        assert loaded_documents[0].mime_type == sample_corpus.documents[0].mime_type
+        assert (
+            loaded_benchmark.benchmark_entries[0].question_id
+            == sample_benchmark.benchmark_entries[0].question_id
+        )
+
+    def test_different_splits_create_different_caches(
+        self, temp_cache_dir, sample_corpus, sample_benchmark
+    ):
+        """
+        Test that different splits create separate cache directories.
+
+        When the split parameter differs, a different cache should be used,
+        resulting in a cache MISS on the second load.
+        """
+        # Cache for train split
+        cache_train = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="test_dataset",
+            split="train",
+        )
+        cache_train.add(sample_benchmark, sample_corpus.documents)
+
+        # Cache for test split (different split, same dataset)
+        cache_test = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="test_dataset",
+            split="test",
+        )
+
+        # Attempt to retrieve from test split cache
+        documents, benchmark = cache_test.get()
+
+        # Should be cache MISS because split is different
+        assert documents is None, "Should not find documents in different split cache"
+        assert benchmark is None, "Should not find benchmark in different split cache"
+
+        stats = cache_test.get_cache_stats()
+        assert stats["cache_miss"] == 2, "Should have 2 cache misses"
+        assert stats["cache_hit"] == 0, "Should have no cache hits"
+
+    def test_different_datasets_create_different_caches(
+        self, temp_cache_dir, sample_corpus, sample_benchmark
+    ):
+        """
+        Test that different datasets create separate cache directories.
+
+        When the dataset_name differs, a different cache should be used,
+        resulting in a cache MISS on the second load.
+        """
+        # Cache for dataset1
+        cache1 = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="dataset1",
+            split="train",
+        )
+        cache1.add(sample_benchmark, sample_corpus.documents)
+
+        # Cache for dataset2 (different dataset, same split)
+        cache2 = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="dataset2",
+            split="train",
+        )
+
+        # Attempt to retrieve from dataset2 cache
+        documents, benchmark = cache2.get()
+
+        # Should be cache MISS because dataset is different
+        assert documents is None, "Should not find documents in different dataset cache"
+        assert benchmark is None, "Should not find benchmark in different dataset cache"
+
+        stats = cache2.get_cache_stats()
+        assert stats["cache_miss"] == 2, "Should have 2 cache misses"
+        assert stats["cache_hit"] == 0, "Should have no cache hits"
+
+    def test_multiple_cache_instances_share_same_cache(
+        self, temp_cache_dir, sample_corpus, sample_benchmark
+    ):
+        """
+        Test that multiple cache instances with same config share the same cache.
+
+        This verifies the class-level cache mechanism that prevents reloading
+        the same cache directory multiple times.
+        """
+        # First instance
+        cache1 = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="test_dataset",
+            split="train",
+        )
+        cache1.add(sample_benchmark, sample_corpus.documents)
+
+        # Second instance (same config)
+        cache2 = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="test_dataset",
+            split="train",
+        )
+
+        # Third instance (same config)
+        cache3 = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="test_dataset",
+            split="train",
+        )
+
+        # All should retrieve the same data
+        docs1, bench1 = cache1.get()
+        docs2, bench2 = cache2.get()
+        docs3, bench3 = cache3.get()
+
+        assert docs1 is not None and docs2 is not None and docs3 is not None
+        assert bench1 is not None and bench2 is not None and bench3 is not None
+
+        # Verify they all have cache hits
+        assert cache1.get_cache_stats()["cache_hit"] == 2
+        assert cache2.get_cache_stats()["cache_hit"] == 2
+        assert cache3.get_cache_stats()["cache_hit"] == 2
+
+    def test_cache_reuse_with_none_split(
+        self, temp_cache_dir, sample_corpus, sample_benchmark
+    ):
+        """
+        Test cache reuse when split is None.
+
+        Datasets without splits should also benefit from cache reuse.
+        """
+        # First instance with split=None
+        cache1 = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="test_dataset",
+            split=None,
+        )
+        cache1.add(sample_benchmark, sample_corpus.documents)
+
+        # Second instance with split=None
+        cache2 = DataLoaderCache(
+            cache_dir=temp_cache_dir,
+            dataset_name="test_dataset",
+            split=None,
+        )
+
+        # Should retrieve from cache
+        documents, benchmark = cache2.get()
+
+        assert documents is not None
+        assert benchmark is not None
+
+        stats = cache2.get_cache_stats()
+        assert stats["cache_hit"] == 2
+        assert stats["cache_miss"] == 0
