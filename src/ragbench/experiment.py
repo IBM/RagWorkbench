@@ -1,9 +1,12 @@
+from typing import Any
+
 from ragbench.api.inference import InferencePipeline
 from ragbench.api.inference_result import InferenceResult
 from ragbench.api.ingest import IngestPipeline
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models import RagBenchmark
 from ragbench.eval import MetricDefinition
+from ragbench.eval.evaluator import Evaluator
 
 
 class Experiment:
@@ -22,8 +25,16 @@ class Experiment:
 
         self.metric_definitions: list[MetricDefinition] = eval_metrics
 
-    def run(self):
+    def run(self) -> tuple[list[InferenceResult], dict[str, dict[str, Any]]]:
+        """
+        Run the complete experiment: ingest, inference, and evaluation.
 
+        Returns:
+            A tuple containing:
+            - List of inference results
+            - Dictionary mapping metric IDs to their evaluation results, where each
+              evaluation result contains 'per_question' scores and aggregate 'statistics'
+        """
         # prepare the data
         rag_benchmark: RagBenchmark = self.data_loader.get_benchmark()
 
@@ -44,4 +55,28 @@ class Experiment:
             results.append(result)
 
         # Now run the evaluation via the evaluator code!
-        # TODO!
+        # Run evaluation for each metric
+        evaluation_results: dict[str, dict[str, Any]] = {}
+        for metric_def in self.metric_definitions:
+            # Create evaluator for this metric
+            evaluator = Evaluator(
+                metric_definition=metric_def,
+                rag_benchmark=rag_benchmark,
+                rag_corpus=self.data_loader.get_corpus(),
+            )
+
+            # Run metrics and get per-question scores
+            question_scores = evaluator.run_metrics(results)
+
+            # Compute aggregate statistics
+            metric_stats = evaluator.compute_stats_from_per_question_results(
+                question_scores
+            )
+
+            # Store results
+            evaluation_results[metric_def.metric_id] = {
+                "per_question": question_scores,
+                "statistics": metric_stats,
+            }
+
+        return results, evaluation_results
