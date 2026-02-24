@@ -1,27 +1,27 @@
-unitxt.context_correctness.retrieval_at_k:
-  metric_id: "metrics.rag.context_correctness.retrieval_at_k"
-  metric_params:
-    sub_scores: [ "match_at_1", "match_at_3", "match_at_5", "match_at_10", "match_at_20", "match_at_40" ]
-  metric_fields:
-      - "context_ids"
-      - "ground_truths_context_ids"
-  vendor: "unitxt"
-
-unitxt.context_correctness.mrr:
-  metric_id: "metrics.rag.context_correctness.mrr"
-  metric_params: {}
-  metric_fields:
-      - "context_ids"
-      - "ground_truths_context_ids"
-  vendor: "unitxt"
-
-unitxt.context_correctness.map:
-  metric_id: "metrics.rag.context_correctness.map"
-  metric_params: {}
-  metric_fields:
-      - "context_ids"
-      - "ground_truths_context_ids"
-  vendor: "unitxt"
+#unitxt.context_correctness.retrieval_at_k:
+#  metric_id: "metrics.rag.context_correctness.retrieval_at_k"
+#  metric_params:
+#    sub_scores: [ "match_at_1", "match_at_3", "match_at_5", "match_at_10", "match_at_20", "match_at_40" ]
+#  metric_fields:
+#      - "context_ids"
+#      - "ground_truths_context_ids"
+#  vendor: "unitxt"
+#
+#unitxt.context_correctness.mrr:
+#  metric_id: "metrics.rag.context_correctness.mrr"
+#  metric_params: {}
+#  metric_fields:
+#      - "context_ids"
+#      - "ground_truths_context_ids"
+#  vendor: "unitxt"
+#
+#unitxt.context_correctness.map:
+#  metric_id: "metrics.rag.context_correctness.map"
+#  metric_params: {}
+#  metric_fields:
+#      - "context_ids"
+#      - "ground_truths_context_ids"
+#  vendor: "unitxt"
 
 unitxt.answer_correctness:
     metric_id: "metrics.rag.answer_correctness"

@@ -6,6 +6,7 @@ from unitxt.operator import (  # type: ignore[import-not-found]
     SequentialOperator,
 )
 
+from ragbench.api.inference_result import InferenceResult
 from ragbench.eval.evaluation import BaseEvaluationMetric
 
 
@@ -29,10 +30,24 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
     def get_score_names(self) -> list[str]:
         return [self.name] if len(self.sub_scores) == 0 else self.sub_scores
 
-    def compute(self, dataset: list[dict[str, Any]]):
+    def compute(self, inference_result_list: list[InferenceResult]) -> dict:
         metric_id = self.get_name()
         # load the metric and prepare the dataset
         metrics_operator = SequentialOperator(steps=[metric_id])
+        dataset = [
+            # TODO !!!
+            # "context_ids",
+            # "contexts",
+            {
+                "q_id": r.question_id,
+                "question": r.question,
+                "answer": r.answer,
+                "ground_truths": r.ground_truth_answers,
+                "ground_truth_context_ids": r.ground_truth_context_ids,
+                # "contexts":
+            }
+            for r in inference_result_list
+        ]
         multi_stream = MultiStream.from_iterables({"test": dataset}, copying=True)
 
         # compute the metric

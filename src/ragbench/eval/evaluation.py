@@ -4,6 +4,8 @@ from typing import Any
 import numpy as np
 from scipy.stats import bootstrap  # type: ignore[import-not-found]
 
+from ragbench.api.inference_result import InferenceResult
+
 
 class EvaluationException(Exception):
     """
@@ -27,13 +29,13 @@ class BaseEvaluationMetric(ABC):
         self.metric_params = metric_params
 
     @abstractmethod
-    def compute(self, dataset: list[dict[str, Any]]):
+    def compute(self, inference_result_list: list[InferenceResult]):
         """
         Evaluate the RAGPattern.query() response against list of different metrics.
 
         Parameters
         ----------
-        dataset : List[Dict[str, Any]]
+        inference_result_list : List[InferenceResult]
             Dataset to preform the metric eval on.
 
         Returns

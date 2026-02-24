@@ -3,7 +3,7 @@ from ragbench.api.inference_result import InferenceResult
 from ragbench.api.ingest import IngestPipeline
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models import RagBenchmark
-from ragbench.eval import MetricDefinition, load_metric_definitions
+from ragbench.eval import MetricDefinition
 
 
 class Experiment:
@@ -13,22 +13,14 @@ class Experiment:
         data_loader: RagDataLoader,
         ingest_pipeline: IngestPipeline,
         inference_pipeline: InferencePipeline,
-        eval_metric_name: str,
+        eval_metrics: list[MetricDefinition],
     ):
         self.name = name
         self.data_loader = data_loader
         self.ingest_pipeline = ingest_pipeline
         self.inference_pipeline = inference_pipeline
 
-        config = load_metric_definitions()
-        metric_names: list[str] = config.get_metric_names()
-        assert (
-            eval_metric_name in metric_names
-        ), f"{eval_metric_name} not in {metric_names}"
-
-        self.metric_def: MetricDefinition = config.get_metric_definition(
-            eval_metric_name
-        )
+        self.metric_definitions: list[MetricDefinition] = eval_metrics
 
     def run(self):
 
