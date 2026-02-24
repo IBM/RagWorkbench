@@ -48,7 +48,9 @@ dependencies = [
     "mlflow",
     "pandas-stubs",
     "pandas",
-    "types-PyYAML"
+    "types-PyYAML",
+    "unitxt",
+    "scipy"
 ]
 
 [project.optional-dependencies]
