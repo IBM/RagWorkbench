@@ -45,7 +45,6 @@ dependencies = [
     "pandas",
     "gdown",
     "datasets",
-    "mlflow",
     "pandas-stubs",
     "pandas",
     "types-PyYAML",
