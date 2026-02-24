@@ -11,6 +11,7 @@ from ragbench.datasets_loader.data_models import (
     RagBenchmark,
     RagCorpus,
 )
+from ragbench.eval import MetricDefinition
 from ragbench.eval.evaluation import BaseEvaluationMetric
 from ragbench.eval.unitxt_evaluation import UnitxtEvaluationMetric
 
@@ -56,22 +57,22 @@ class Evaluator:
 
     def __init__(
         self,
-        metric_definition: dict,
+        metric_definition: MetricDefinition,
         rag_benchmark: RagBenchmark | None = None,
         rag_corpus: RagCorpus | None = None,
         cache_dir: Path | None = None,
     ):
 
         self.metric: BaseEvaluationMetric = self.evaluation_metric_factory[
-            metric_definition["vendor"]
+            metric_definition.vendor
         ](
-            name=metric_definition["metric_id"],
-            metric_params=metric_definition["metric_params"],
+            name=metric_definition.metric_id,
+            metric_params=metric_definition.metric_params,
             rag_benchmark=rag_benchmark,
             rag_corpus=rag_corpus,
         )
 
-        fields = metric_definition.get("metric_fields", None)
+        fields = metric_definition.metric_fields
 
         self.full_score_names: list[str] = [
             self.metric.full_score_name(metric_score)
@@ -83,10 +84,10 @@ class Evaluator:
             self.evaluation_cache = EvaluatorCache(
                 cache_dir=cache_dir,
                 config_params={
-                    "name": metric_definition["metric_id"],
-                    "metric_params": metric_definition["metric_params"],
+                    "name": metric_definition.metric_id,
+                    "metric_params": metric_definition.metric_params,
                 },
-                cache_key_fields=fields,
+                cache_key_fields=set(fields),
             )
 
     @staticmethod
