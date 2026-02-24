@@ -27,7 +27,7 @@ class Experiment:
         # prepare the data
         rag_benchmark: RagBenchmark = self.data_loader.get_benchmark()
 
-        # run the ingest
+        # run ingest
         ingest_artifacts = self.ingest_pipeline.process(data_loader=self.data_loader)
 
         # set the ingest artifacts for the inference pipeline
