@@ -1,0 +1,80 @@
+unitxt.context_correctness.retrieval_at_k:
+  metric_id: "metrics.rag.context_correctness.retrieval_at_k"
+  metric_params:
+    sub_scores: [ "match_at_1", "match_at_3", "match_at_5", "match_at_10", "match_at_20", "match_at_40" ]
+  metric_fields:
+      - "context_ids"
+      - "ground_truths_context_ids"
+  vendor: "unitxt"
+
+unitxt.context_correctness.mrr:
+  metric_id: "metrics.rag.context_correctness.mrr"
+  metric_params: {}
+  metric_fields:
+      - "context_ids"
+      - "ground_truths_context_ids"
+  vendor: "unitxt"
+
+unitxt.context_correctness.map:
+  metric_id: "metrics.rag.context_correctness.map"
+  metric_params: {}
+  metric_fields:
+      - "context_ids"
+      - "ground_truths_context_ids"
+  vendor: "unitxt"
+
+unitxt.answer_correctness:
+    metric_id: "metrics.rag.answer_correctness"
+    metric_params: {}
+    metric_fields:
+      - "ground_truths"
+      - "answer"
+    vendor: "unitxt"
+
+unitxt.answer_correctness.bert_score_recall:
+  metric_id: "metrics.rag.answer_correctness.bert_score_recall"
+  metric_params: {}
+  metric_fields:
+      - "answer"
+      - "ground_truths"
+  vendor: "unitxt"
+
+unitxt.answer_correctness.sentence_bert_mini_lm:
+  metric_id: "metrics.rag.answer_correctness.sentence_bert_mini_lm"
+  metric_params: {}
+  metric_fields:
+      - "answer"
+      - "ground_truths"
+  vendor: "unitxt"
+
+unitxt.answer_correctness.llmaaj_llama:
+  metric_id: "metrics.rag.external_rag.answer_correctness.llama_3_3_70b_instruct_watsonx_judge"
+  metric_params: {}
+  metric_fields:
+      - "answer"
+      - "ground_truths"
+  vendor: "unitxt"
+
+unitxt.answer_correctness.llmaaj_llama_rits:
+  metric_id: "metrics.rag.external_rag.answer_correctness.llama_3_3_70b_instruct_rits_judge"
+  metric_params: {}
+  metric_fields:
+      - "answer"
+      - "ground_truths"
+  vendor: "unitxt"
+
+unitxt.answer_correctness.llmaaj_llama4:
+  metric_id: "metrics.rag.external_rag.answer_correctness.llama_3_3_70b_instruct_watsonx_judge[inference_model=engines.classification.llama_3_3_70b_instruct_watsonx[model=watsonx/meta-llama/llama-4-maverick-17b-128e-instruct-fp8]]"
+  metric_params: {}
+  metric_fields:
+    - "answer"
+    - "ground_truths"
+  vendor: "unitxt"
+
+unitxt.answer_correctness.llmaaj_gpt:
+  metric_id: "metrics.rag.external_rag.answer_correctness.gpt_4o_azure_judge"
+  metric_params: {}
+  metric_fields:
+      - "answer"
+      - "ground_truths"
+  vendor: "unitxt"
