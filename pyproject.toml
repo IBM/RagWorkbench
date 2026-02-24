@@ -49,7 +49,9 @@ dependencies = [
     "pandas",
     "types-PyYAML",
     "unitxt",
-    "scipy"
+    "scipy",
+    # Needed by some metrics
+    "bert_score"
 ]
 
 [project.optional-dependencies]
