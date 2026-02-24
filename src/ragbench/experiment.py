@@ -86,7 +86,7 @@ class Experiment:
                 # return a new dataframe
                 return pd.DataFrame(results)
 
-            # ml-flow wrapper for evaluation
+            # ml-flow wrapper for eval
             def multi_task_evaluator(eval_df, predictions, targets):
                 return {
                     "mae_word_count": 0,
