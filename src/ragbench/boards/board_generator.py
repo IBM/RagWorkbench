@@ -10,6 +10,11 @@ import yaml
 from ragbench import DataLoaderFactory, Experiment
 from ragbench.boards.board_model import Board
 from ragbench.boards.board_registry import BoardRegistry
+from ragbench.eval import (
+    MetricDefinition,
+    MetricDefinitionsConfig,
+    load_metric_definitions,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +47,14 @@ class BoardGenerator:
 
             # save for later
             self.pipelines.append((ingest_pipeline, inference_pipeline))
+            metric_definition_config: MetricDefinitionsConfig = (
+                load_metric_definitions()
+            )
+
+            self.metric_definitions: list[MetricDefinition] = [
+                metric_definition_config.get_metric_definition(metric_name)
+                for metric_name in self.board.metrics
+            ]
 
         self.results = pd.DataFrame()
 
@@ -68,6 +81,7 @@ class BoardGenerator:
                     data_loader=data_loader,
                     ingest_pipeline=ingest_pipeline,
                     inference_pipeline=inference_pipeline,
+                    eval_metrics=self.metric_definitions,
                 )
 
                 experiment.run()
