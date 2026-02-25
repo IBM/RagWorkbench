@@ -8,6 +8,7 @@ import pandas as pd
 import yaml
 
 from ragbench import DataLoaderFactory, Experiment
+from ragbench.api.inference_result import InferenceResult
 from ragbench.boards.board_model import Board
 from ragbench.boards.board_registry import BoardRegistry
 from ragbench.eval import (
@@ -83,8 +84,12 @@ class BoardGenerator:
                     inference_pipeline=inference_pipeline,
                     eval_metrics=self.metric_definitions,
                 )
-
-                experiment.run()
+                inference_results: list[InferenceResult]
+                evaluation_results: dict[str, dict[str, float]]
+                inference_results, evaluation_results = experiment.run()
+                print(inference_results)
+                print("\n\n\n\n")
+                print(evaluation_results)
 
         #             df = pd.read_csv(results_path)
         #             df["board_configuration_seq"] = config_seq
