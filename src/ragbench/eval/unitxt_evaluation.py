@@ -35,7 +35,7 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
         # load the metric and prepare the dataset
         metrics_operator = SequentialOperator(steps=[metric_id])
         dataset = [
-            # TODO !!!
+            # TODO !!! Add these two fields for the recall metrics
             # "context_ids",
             # "contexts",
             {
