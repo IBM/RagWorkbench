@@ -66,7 +66,9 @@ class Experiment:
             )
 
             # Run metrics and get per-question scores
-            question_scores = evaluator.run_metrics(results)
+            question_scores: dict[str, dict[str, float]] = evaluator.run_metrics(
+                results
+            )
 
             # Compute aggregate statistics
             metric_stats = evaluator.compute_stats_from_per_question_results(
