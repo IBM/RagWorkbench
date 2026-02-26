@@ -118,20 +118,7 @@ class Evaluator:
         list_of_inference_results: list[InferenceResult],
         evaluation_level: EvaluationLevel = EvaluationLevel.DOC_ID,
     ) -> dict[str, dict[str, float]]:
-        """
-        Example input:
-            dataset = [
-                {"q_id": "1", "ground_truths": ["Joe Biden"], "answer": "Wrong Answer", },
-                { "q_id": "2", "ground_truths": ["Joe Biden"], "answer": "Joe Biden", # Correct answer }
-            ]
-        Example output:
-            {
-                '1': {'metrics.rag.answer_correctness': 0.0},
-                '2': {'metrics.rag.answer_correctness': 1.0}
-            }
-        """
 
-        # Auxiliary data structure
         if evaluation_level != EvaluationLevel.DOC_ID:
             raise UnsupportedOperation(
                 f"Currently, we support evaluation at level of doc_id not `{evaluation_level}`"
