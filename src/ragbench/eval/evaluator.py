@@ -129,10 +129,10 @@ class Evaluator:
                 metric_to_scores[full_metric_score].append(
                     evaluation_result[full_metric_score]
                 )
-        metric_stats = self.compute_stats(metric_to_scores)
+        metric_stats = self._compute_stats(metric_to_scores)
         return metric_stats
 
-    def compute_stats(
+    def _compute_stats(
         self, metric_to_scores: dict[str, list[float]]
     ) -> dict[str, dict[str, float]]:
         # compute the mean, ci_low, ci_high and coverage

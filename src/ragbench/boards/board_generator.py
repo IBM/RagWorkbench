@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pandas as pd
 import yaml
+from pandas import DataFrame
 
 from ragbench import DataLoaderFactory, Experiment
-from ragbench.api.inference_result import InferenceResult
 from ragbench.boards.board_model import Board
 from ragbench.boards.board_registry import BoardRegistry
 from ragbench.eval import (
@@ -57,7 +57,7 @@ class BoardGenerator:
                 for metric_name in self.board.metrics
             ]
 
-        self.results = pd.DataFrame()
+        self.results: DataFrame = pd.DataFrame()
 
     def process(self) -> None:
         # iterate over configurations and then over datasets
@@ -84,22 +84,21 @@ class BoardGenerator:
                     inference_pipeline=inference_pipeline,
                     eval_metrics=self.metric_definitions,
                 )
-                inference_results: list[InferenceResult]
                 evaluation_results: dict[str, dict[str, float]]
-                inference_results, evaluation_results = experiment.run()
-                print(inference_results)
-                print("\n\n\n\n")
+                _, evaluation_results = experiment.run()
                 print(evaluation_results)
 
-        #             df = pd.read_csv(results_path)
-        #             df["board_configuration_seq"] = config_seq
-        #             df["board_dataset_seq"] = dataset_seq
-        #             df["board_configuration_name"] = config.name
-        #             df["board_dataset_id"] = dataset.id
-        #             df["board_experiment_yaml"] = yaml.dump(full_config, sort_keys=False)
-        #             df["board_experiment_id"] = f"exp_{config_seq}_{dataset_seq}"
-        #
-        #             self.results.append(df)
+                # df = pd.read_csv(results_path)
+                # We need to add columns according to the metrics + the mean values
+        #         df["board_configuration_seq"] = config_seq
+        #         df["board_dataset_seq"] = dataset_seq
+        #         df["board_configuration_name"] = config.name
+        #         df["board_dataset_id"] = dataset.id
+        #         # We do not need the
+        #         # df["board_experiment_yaml"] = yaml.dump(full_config, sort_keys=False)
+        #         df["board_experiment_id"] = f"exp_{config_seq}_{dataset_seq}"
+        # #
+        #         self.results.append(df)
         #
         self.results = pd.DataFrame()
 
