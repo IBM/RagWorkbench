@@ -325,7 +325,9 @@ class TestLoadSampleStaticMethod:
                 question_id=f"q_{i}",
                 question=f"Question {i}",
                 ground_truth_answers=[f"Answer {i}"],
-                ground_truth_context_ids=[GroundTruthContextId(document_id=f"doc_{i}")],
+                ground_truths_context_ids=[
+                    GroundTruthContextId(document_id=f"doc_{i}")
+                ],
                 is_answerable=True,
             )
             for i in range(5)
@@ -357,7 +359,9 @@ class TestLoadSampleStaticMethod:
                 question_id=f"q_{i}",
                 question=f"Question {i}",
                 ground_truth_answers=[f"Answer {i}"],
-                ground_truth_context_ids=[GroundTruthContextId(document_id=f"doc_{i}")],
+                ground_truths_context_ids=[
+                    GroundTruthContextId(document_id=f"doc_{i}")
+                ],
                 is_answerable=True,
             )
             for i in range(10)
@@ -390,7 +394,7 @@ class TestLoadSampleStaticMethod:
                 question_id=f"q_{i}",
                 question=f"Question {i}",
                 ground_truth_answers=[f"Answer {i}"],
-                ground_truth_context_ids=[
+                ground_truths_context_ids=[
                     GroundTruthContextId(document_id=f"doc_{i % 5}")
                 ],  # 5 unique GT docs
                 is_answerable=True,
@@ -431,7 +435,9 @@ class TestLoadSampleStaticMethod:
                 question_id=f"q_{i}",
                 question=f"Question {i}",
                 ground_truth_answers=[f"Answer {i}"],
-                ground_truth_context_ids=[GroundTruthContextId(document_id=f"doc_{i}")],
+                ground_truths_context_ids=[
+                    GroundTruthContextId(document_id=f"doc_{i}")
+                ],
                 is_answerable=True,
             )
             for i in range(10)

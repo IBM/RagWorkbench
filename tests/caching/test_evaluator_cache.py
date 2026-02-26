@@ -75,7 +75,7 @@ def sample_inference_result():
         question_id="q1",
         question="What is the capital of France?",
         ground_truth_answers=["Paris"],
-        ground_truth_context_ids=[GroundTruthContextId(document_id="doc1", page=1)],
+        ground_truths_context_ids=[GroundTruthContextId(document_id="doc1", page=1)],
         is_answerable=True,
         answer="Paris is the capital of France.",
         context_ids=["doc1_page1", "doc2_page3"],
@@ -104,7 +104,7 @@ def complex_inference_result():
             "Interpreted language",
             "Object-oriented",
         ],
-        ground_truth_context_ids=[
+        ground_truths_context_ids=[
             GroundTruthContextId(document_id="doc1", page=5),
             GroundTruthContextId(document_id="doc2", page=10, table_id="t1"),
         ],
@@ -195,7 +195,7 @@ class TestInitialization:
             "question",
             "answer",
             "ground_truth_answers",
-            "ground_truth_context_ids",
+            "ground_truths_context_ids",
             "context_ids",
             "contexts",
         }

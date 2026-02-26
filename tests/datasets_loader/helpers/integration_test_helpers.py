@@ -230,11 +230,11 @@ class IntegrationTestHelpers:
         """
         for entry in benchmark.benchmark_entries:
             if expected_count is not None:
-                assert len(entry.ground_truth_context_ids) == expected_count, (
+                assert len(entry.ground_truths_context_ids) == expected_count, (
                     f"Question {entry.question_id} expected {expected_count} "
-                    f"ground truth contexts, got {len(entry.ground_truth_context_ids)}"
+                    f"ground truth contexts, got {len(entry.ground_truths_context_ids)}"
                 )
             else:
                 assert (
-                    len(entry.ground_truth_context_ids) > 0
+                    len(entry.ground_truths_context_ids) > 0
                 ), f"Question {entry.question_id} has no ground truth contexts"

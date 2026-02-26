@@ -89,7 +89,7 @@ class SecqueDataLoader(RagDataLoader):
                     question_id=str(row["QID"]),
                     question=str(row["Question"]),
                     ground_truth_answers=answers,
-                    ground_truth_context_ids=[ground_truth_context_id],
+                    ground_truths_context_ids=[ground_truth_context_id],
                 )
                 entries.append(entry)
         return entries

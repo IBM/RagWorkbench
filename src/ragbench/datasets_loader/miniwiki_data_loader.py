@@ -205,7 +205,7 @@ class MiniWikiDataLoader(RagDataLoader):
                 question_id=question_id,
                 question=question,
                 ground_truth_answers=ground_truth_answers,
-                ground_truth_context_ids=[],  # No context IDs in this dataset
+                ground_truths_context_ids=[],  # No context IDs in this dataset
                 is_answerable=True,  # All questions are answerable
             )
             all_entries.append(entry)

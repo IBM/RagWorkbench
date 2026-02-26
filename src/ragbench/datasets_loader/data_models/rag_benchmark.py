@@ -47,7 +47,7 @@ class RagBenchmarkEntry(BaseModel):
         question_id: Unique identifier for this question.
         question: The question text to be answered.
         ground_truth_answers: List of acceptable answer strings, or None if not applicable.
-        ground_truth_context_ids: References to document locations containing the answer.
+        ground_truths_context_ids: References to document locations containing the answer.
         is_answerable: Whether the question can be answered from the corpus.
         additional_information: Optional metadata for extended analysis.
     """
@@ -66,7 +66,7 @@ class RagBenchmarkEntry(BaseModel):
         description="List of acceptable ground truth answer strings. "
         "None if answers are not provided or question is unanswerable.",
     )
-    ground_truth_context_ids: list[GroundTruthContextId] = Field(
+    ground_truths_context_ids: list[GroundTruthContextId] = Field(
         frozen=True,
         default_factory=list,
         description="References to document locations containing the ground truth context. "
@@ -204,7 +204,7 @@ class RagBenchmark(BaseModel):
         entry: RagBenchmarkEntry
         for entry in rag_benchmark_entries:
             context: GroundTruthContextId
-            for context in entry.ground_truth_context_ids:
+            for context in entry.ground_truths_context_ids:
                 benchmark_doc_ids.add(context.document_id)
         return benchmark_doc_ids
 

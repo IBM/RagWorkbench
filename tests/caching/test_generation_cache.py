@@ -63,7 +63,7 @@ def sample_benchmark_entry():
         question_id="q1",
         question="What is the capital of France?",
         ground_truth_answers=["Paris"],
-        ground_truth_context_ids=[GroundTruthContextId(document_id="doc1", page=1)],
+        ground_truths_context_ids=[GroundTruthContextId(document_id="doc1", page=1)],
         is_answerable=True,
     )
 
@@ -88,7 +88,7 @@ def complex_benchmark_entry():
             "Interpreted language",
             "Object-oriented",
         ],
-        ground_truth_context_ids=[
+        ground_truths_context_ids=[
             GroundTruthContextId(document_id="doc1", page=5),
             GroundTruthContextId(document_id="doc2", page=10, table_id="t1"),
         ],
@@ -347,7 +347,7 @@ class TestDeserialization:
         loaded_result = cache_instance._read_content(json_file)
 
         assert len(loaded_result.ground_truth_answers) == 3
-        assert len(loaded_result.ground_truth_context_ids) == 2
+        assert len(loaded_result.ground_truths_context_ids) == 2
         assert loaded_result.additional_information["category"] == "programming"
 
     def test_read_content_with_ground_truth_context_ids(
@@ -360,8 +360,8 @@ class TestDeserialization:
 
         loaded_result = cache_instance._read_content(json_file)
 
-        assert len(loaded_result.ground_truth_context_ids) == 1
-        context_id = loaded_result.ground_truth_context_ids[0]
+        assert len(loaded_result.ground_truths_context_ids) == 1
+        context_id = loaded_result.ground_truths_context_ids[0]
         assert isinstance(context_id, GroundTruthContextId)
         assert context_id.document_id == "doc1"
         assert context_id.page == 1
@@ -680,7 +680,7 @@ class TestIntegration:
         assert loaded_result.question_id == complex_inference_result.question_id
         assert loaded_result.answer == complex_inference_result.answer
         assert len(loaded_result.ground_truth_answers) == 3
-        assert len(loaded_result.ground_truth_context_ids) == 2
+        assert len(loaded_result.ground_truths_context_ids) == 2
         assert loaded_result.additional_information["category"] == "programming"
 
     def test_round_trip_preserves_ground_truth_context_ids(
@@ -691,13 +691,13 @@ class TestIntegration:
         loaded_result = cache_instance.get(complex_benchmark_entry)
 
         # Verify first context ID
-        context1 = loaded_result.ground_truth_context_ids[0]
+        context1 = loaded_result.ground_truths_context_ids[0]
         assert context1.document_id == "doc1"
         assert context1.page == 5
         assert context1.table_id is None
 
         # Verify second context ID
-        context2 = loaded_result.ground_truth_context_ids[1]
+        context2 = loaded_result.ground_truths_context_ids[1]
         assert context2.document_id == "doc2"
         assert context2.page == 10
         assert context2.table_id == "t1"
@@ -789,7 +789,7 @@ class TestErrorHandling:
             question_id=sample_benchmark_entry.question_id,
             question="Different question?",  # Changed
             ground_truth_answers=sample_benchmark_entry.ground_truth_answers,
-            ground_truth_context_ids=sample_benchmark_entry.ground_truth_context_ids,
+            ground_truths_context_ids=sample_benchmark_entry.ground_truths_context_ids,
             is_answerable=sample_benchmark_entry.is_answerable,
         )
 

@@ -173,7 +173,7 @@ class OfficeQADataLoader(RagDataLoader):
             question_id=str(row["uid"]),
             question=str(row["question"]),
             ground_truth_answers=[str(row["answer"])],
-            ground_truth_context_ids=ground_truth_context_ids,
+            ground_truths_context_ids=ground_truth_context_ids,
             is_answerable=True,
         )
 

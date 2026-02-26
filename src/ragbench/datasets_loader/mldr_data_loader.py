@@ -121,7 +121,7 @@ class MLDRDataLoader(RagDataLoader):
             entry = RagBenchmarkEntry(
                 question_id=query_id,
                 question=question,
-                ground_truth_context_ids=gt_docs_ids,
+                ground_truths_context_ids=gt_docs_ids,
             )
             entries.append(entry)
         return entries

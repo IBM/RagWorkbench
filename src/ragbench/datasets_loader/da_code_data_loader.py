@@ -295,7 +295,7 @@ class DaCodeDataLoader(RagDataLoader):
                         task_id_to_task_cfgs[tid]["task_config"]["instruction"]
                     ),
                     ground_truth_answers=[],
-                    ground_truth_context_ids=ground_truth_context_ids,
+                    ground_truths_context_ids=ground_truth_context_ids,
                     additional_information={
                         "task_config": task_id_to_task_cfgs[tid]["task_config"],
                         "eval_config": task_id_to_eval_cfgs[tid],

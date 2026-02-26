@@ -94,7 +94,7 @@ class NarrativeQaDataLoader(RagDataLoader):
                 question_id=question_id,
                 question=question,
                 ground_truth_answers=answers,
-                ground_truth_context_ids=[
+                ground_truths_context_ids=[
                     GroundTruthContextId(document_id=str(document_id))
                 ],
             )

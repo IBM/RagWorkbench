@@ -219,7 +219,7 @@ class KramabenchDataLoader(RagDataLoader):
                                 question_id=json_content["id"],
                                 question=json_content["query"],
                                 ground_truth_answers=[str(json_content["answer"])],
-                                ground_truth_context_ids=ground_truth_context_id_lst,
+                                ground_truths_context_ids=ground_truth_context_id_lst,
                                 is_answerable=True,
                                 additional_information={
                                     "answer_type": json_content.get("answer_type"),

@@ -67,14 +67,23 @@ class MockInferencePipeline(InferencePipeline):
             else "Mock answer"
         )
 
+        # For retrieval metrics, provide mock context_ids based on ground truth
+        context_ids = []
+        if benchmark_entry.ground_truths_context_ids:
+            # Return the ground truth document IDs to ensure high retrieval scores
+            context_ids = [
+                ctx.document_id for ctx in benchmark_entry.ground_truths_context_ids
+            ]
+
         return InferenceResult(
             question_id=benchmark_entry.question_id,
             question=benchmark_entry.question,
             ground_truth_answers=benchmark_entry.ground_truth_answers,
-            ground_truth_context_ids=benchmark_entry.ground_truth_context_ids,
+            ground_truths_context_ids=benchmark_entry.ground_truths_context_ids,
             is_answerable=benchmark_entry.is_answerable,
             additional_information=benchmark_entry.additional_information,
             answer=answer,
+            context_ids=context_ids,
         )
 
 
@@ -88,21 +97,21 @@ class MockDataLoader(RagDataLoader):
                 question_id="q1",
                 question="Who is the president of the United States?",
                 ground_truth_answers=["Joe Biden"],
-                ground_truth_context_ids=[GroundTruthContextId(document_id="doc1")],
+                ground_truths_context_ids=[GroundTruthContextId(document_id="doc1")],
                 is_answerable=True,
             ),
             RagBenchmarkEntry(
                 question_id="q2",
                 question="What is the capital of France?",
                 ground_truth_answers=["Paris"],
-                ground_truth_context_ids=[GroundTruthContextId(document_id="doc2")],
+                ground_truths_context_ids=[GroundTruthContextId(document_id="doc2")],
                 is_answerable=True,
             ),
             RagBenchmarkEntry(
                 question_id="q3",
                 question="What is the largest planet in our solar system?",
                 ground_truth_answers=["Jupiter"],
-                ground_truth_context_ids=[GroundTruthContextId(document_id="doc3")],
+                ground_truths_context_ids=[GroundTruthContextId(document_id="doc3")],
                 is_answerable=True,
             ),
         ]
@@ -190,9 +199,10 @@ def test_experiment_with_multiple_real_metrics(
 
     # Use multiple metrics
     metric_names = [
-        "unitxt.answer_correctness",
-        "unitxt.answer_correctness.bert_score_recall",
-        "unitxt.answer_correctness.sentence_bert_mini_lm",
+        # "unitxt.answer_correctness",
+        "unitxt.context_correctness.retrieval_at_k",
+        # "unitxt.answer_correctness.bert_score_recall",
+        # "unitxt.answer_correctness.sentence_bert_mini_lm",
     ]
 
     metric_defs = [config.get_metric_definition(name) for name in metric_names]

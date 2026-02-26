@@ -147,7 +147,7 @@ class TestRagBenchmark:
             RagBenchmarkEntry(
                 question_id="q_1",
                 question="Question 1?",
-                ground_truth_context_ids=[
+                ground_truths_context_ids=[
                     GroundTruthContextId(document_id="doc_a"),
                     GroundTruthContextId(document_id="doc_b"),
                 ],
@@ -155,7 +155,7 @@ class TestRagBenchmark:
             RagBenchmarkEntry(
                 question_id="q_2",
                 question="Question 2?",
-                ground_truth_context_ids=[
+                ground_truths_context_ids=[
                     GroundTruthContextId(document_id="doc_b"),  # Duplicate
                     GroundTruthContextId(document_id="doc_c"),
                 ],
@@ -170,7 +170,7 @@ class TestRagBenchmark:
         entry = RagBenchmarkEntry(
             question_id="q_no_context",
             question="Question without context?",
-            ground_truth_context_ids=[],
+            ground_truths_context_ids=[],
         )
         benchmark = RagBenchmark(benchmark_entries=[entry])
 
@@ -183,13 +183,13 @@ class TestRagBenchmark:
             RagBenchmarkEntry(
                 question_id="q_1",
                 question="Answerable?",
-                ground_truth_context_ids=[GroundTruthContextId(document_id="doc_1")],
+                ground_truths_context_ids=[GroundTruthContextId(document_id="doc_1")],
                 is_answerable=True,
             ),
             RagBenchmarkEntry(
                 question_id="q_2",
                 question="Unanswerable?",
-                ground_truth_context_ids=[],
+                ground_truths_context_ids=[],
                 is_answerable=False,
             ),
         ]
@@ -279,7 +279,7 @@ class TestRagBenchmark:
             RagBenchmarkEntry(
                 question_id=f"q_{i}",
                 question=f"Question {i}?",
-                ground_truth_context_ids=[],
+                ground_truths_context_ids=[],
             )
             for i in range(5)
         ]
@@ -294,7 +294,7 @@ class TestRagBenchmark:
         entry = RagBenchmarkEntry(
             question_id="q_multi",
             question="Multi-context question?",
-            ground_truth_context_ids=contexts,
+            ground_truths_context_ids=contexts,
         )
         benchmark = RagBenchmark(benchmark_entries=[entry])
 
