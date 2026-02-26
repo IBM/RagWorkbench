@@ -198,7 +198,7 @@ class BioasqDataLoader(RagDataLoader):
                 question_id=question_id,
                 question=question,
                 ground_truth_answers=[answer],  # Wrap single answer in list
-                ground_truth_context_ids=ground_truth_context_ids,
+                ground_truths_context_ids=ground_truth_context_ids,
                 is_answerable=True,  # All BioASQ questions are answerable
                 additional_information={
                     "source": "bioasq",

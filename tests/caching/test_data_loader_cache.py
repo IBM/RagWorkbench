@@ -109,14 +109,18 @@ def sample_benchmark():
             question_id="q1",
             question="What is the capital of France?",
             ground_truth_answers=["Paris"],
-            ground_truth_context_ids=[GroundTruthContextId(document_id="doc1", page=1)],
+            ground_truths_context_ids=[
+                GroundTruthContextId(document_id="doc1", page=1)
+            ],
             is_answerable=True,
         ),
         RagBenchmarkEntry(
             question_id="q2",
             question="Who invented the telephone?",
             ground_truth_answers=["Alexander Graham Bell", "Bell"],
-            ground_truth_context_ids=[GroundTruthContextId(document_id="doc2", page=5)],
+            ground_truths_context_ids=[
+                GroundTruthContextId(document_id="doc2", page=5)
+            ],
             is_answerable=True,
         ),
     ]
@@ -809,7 +813,7 @@ class TestIntegration:
                     question_id="q1",
                     question="What is X?",
                     ground_truth_answers=["Answer 1", "Answer 2"],
-                    ground_truth_context_ids=[
+                    ground_truths_context_ids=[
                         GroundTruthContextId(document_id="doc1", page=5, table_id="t1")
                     ],
                     is_answerable=True,
@@ -828,8 +832,8 @@ class TestIntegration:
         assert entry.question_id == "q1"
         assert entry.question == "What is X?"
         assert entry.ground_truth_answers == ["Answer 1", "Answer 2"]
-        assert len(entry.ground_truth_context_ids) == 1
-        assert entry.ground_truth_context_ids[0].page == 5
+        assert len(entry.ground_truths_context_ids) == 1
+        assert entry.ground_truths_context_ids[0].page == 5
         assert entry.additional_information["category"] == "science"
 
 

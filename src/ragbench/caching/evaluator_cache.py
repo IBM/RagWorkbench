@@ -21,7 +21,7 @@ class EvaluatorCache(AbstractFileSystemCache):
                 "question",
                 "answer",
                 "ground_truth_answers",
-                "ground_truth_context_ids",
+                "ground_truths_context_ids",
                 "context_ids",
                 "contexts",
             }

@@ -103,7 +103,7 @@ def sample_benchmark_entry():
         question_id="q1",
         question="What is the capital of France?",
         ground_truth_answers=["Paris"],
-        ground_truth_context_ids=[GroundTruthContextId(document_id="doc1", page=1)],
+        ground_truths_context_ids=[GroundTruthContextId(document_id="doc1", page=1)],
         is_answerable=True,
     )
 
@@ -467,13 +467,13 @@ class TestEdgeCases:
         entry = RagBenchmarkEntry(
             question_id="q1",
             question="Test question?",
-            ground_truth_context_ids=[],
+            ground_truths_context_ids=[],
             is_answerable=True,
         )
 
         result = pipeline_with_cache.process(entry)
         assert result is not None
-        assert len(result.ground_truth_context_ids) == 0
+        assert len(result.ground_truths_context_ids) == 0
 
     def test_process_with_complex_additional_information(self, pipeline_with_cache):
         """Test processing entry with complex additional information."""
@@ -502,7 +502,7 @@ class TestEdgeCases:
             question_id="q_complex",
             question="Complex question?",
             ground_truth_answers=["Answer 1", "Answer 2"],
-            ground_truth_context_ids=[
+            ground_truths_context_ids=[
                 GroundTruthContextId(document_id="doc1", page=5, table_id="t1")
             ],
             is_answerable=True,
@@ -515,8 +515,8 @@ class TestEdgeCases:
         assert result.question_id == entry.question_id
         assert result.question == entry.question
         assert result.ground_truth_answers == entry.ground_truth_answers
-        assert len(result.ground_truth_context_ids) == 1
-        assert result.ground_truth_context_ids[0].document_id == "doc1"
+        assert len(result.ground_truths_context_ids) == 1
+        assert result.ground_truths_context_ids[0].document_id == "doc1"
         assert result.is_answerable == entry.is_answerable
         assert result.additional_information == entry.additional_information
 

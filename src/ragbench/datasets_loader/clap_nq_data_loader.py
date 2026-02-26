@@ -235,7 +235,7 @@ class ClapNqDataLoader(RagDataLoader):
                         question_id=question_id,
                         question=question,
                         ground_truth_answers=ground_truth_answers,
-                        ground_truth_context_ids=ground_truth_context_ids,
+                        ground_truths_context_ids=ground_truth_context_ids,
                         is_answerable=True,  # All CLAP-NQ questions are answerable
                     )
                     entries.append(entry)

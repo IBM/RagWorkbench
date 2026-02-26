@@ -100,7 +100,7 @@ class DabStepDataLoader(RagDataLoader):
                     question_id=str(row["task_id"]),
                     question=str(row["question"]),
                     ground_truth_answers=ground_truth_answers,
-                    ground_truth_context_ids=[],
+                    ground_truths_context_ids=[],
                     additional_information={
                         "guidelines": row["guidelines"],
                         "level": row["level"],

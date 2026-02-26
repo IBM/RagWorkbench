@@ -108,7 +108,7 @@ class HotpotQaDataLoader(RagDataLoader):
             question_id=row["id"],
             question=row["question"],
             ground_truth_answers=[row["answer"]],
-            ground_truth_context_ids=ground_truth_context_ids_list,
+            ground_truths_context_ids=ground_truth_context_ids_list,
             is_answerable=True,
         )
 

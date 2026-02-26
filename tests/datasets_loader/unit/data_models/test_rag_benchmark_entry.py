@@ -29,7 +29,7 @@ class TestRagBenchmarkEntry:
             question_id="q_1",
             question="What is the answer?",
             ground_truth_answers=["Answer 1", "Answer 2"],
-            ground_truth_context_ids=[context_id],
+            ground_truths_context_ids=[context_id],
             is_answerable=True,
             additional_information={"category": "factual", "difficulty": "easy"},
         )
@@ -37,7 +37,7 @@ class TestRagBenchmarkEntry:
         assert entry.question_id == "q_1"
         assert entry.question == "What is the answer?"
         assert entry.ground_truth_answers == ["Answer 1", "Answer 2"]
-        assert len(entry.ground_truth_context_ids) == 1
+        assert len(entry.ground_truths_context_ids) == 1
         assert entry.is_answerable is True
         assert entry.additional_information == {
             "category": "factual",
@@ -54,7 +54,7 @@ class TestRagBenchmarkEntry:
         assert entry.question_id == "q_2"
         assert entry.question == "Another question?"
         assert entry.ground_truth_answers is None
-        assert entry.ground_truth_context_ids == []
+        assert entry.ground_truths_context_ids == []
         assert entry.is_answerable is True  # Default value
         assert entry.additional_information is None
 
@@ -64,13 +64,13 @@ class TestRagBenchmarkEntry:
             question_id="q_4",
             question="What is the weather today?",
             ground_truth_answers=None,
-            ground_truth_context_ids=[],
+            ground_truths_context_ids=[],
             is_answerable=False,
         )
 
         assert entry.is_answerable is False
         assert entry.ground_truth_answers is None
-        assert entry.ground_truth_context_ids == []
+        assert entry.ground_truths_context_ids == []
 
     def test_multiple_ground_truth_contexts(self):
         """Test entry with multiple ground truth context references."""
@@ -82,13 +82,13 @@ class TestRagBenchmarkEntry:
         entry = RagBenchmarkEntry(
             question_id="q_5",
             question="Multi-document question?",
-            ground_truth_context_ids=contexts,
+            ground_truths_context_ids=contexts,
         )
 
-        assert len(entry.ground_truth_context_ids) == 3
-        assert entry.ground_truth_context_ids[0].document_id == "doc_1"
-        assert entry.ground_truth_context_ids[1].document_id == "doc_2"
-        assert entry.ground_truth_context_ids[2].document_id == "doc_3"
+        assert len(entry.ground_truths_context_ids) == 3
+        assert entry.ground_truths_context_ids[0].document_id == "doc_1"
+        assert entry.ground_truths_context_ids[1].document_id == "doc_2"
+        assert entry.ground_truths_context_ids[2].document_id == "doc_3"
 
     # ============================================================================
     # Section 4: Ground Truth Answers

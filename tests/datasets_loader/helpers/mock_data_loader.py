@@ -103,7 +103,7 @@ class MockRagDataLoader(RagDataLoader):
                 question_id=f"mock_q_{i}",
                 question=f"Mock question {i} about document {i % num_gt_docs}?",
                 ground_truth_answers=[f"Mock answer {i}"],
-                ground_truth_context_ids=[GroundTruthContextId(document_id=doc_id)],
+                ground_truths_context_ids=[GroundTruthContextId(document_id=doc_id)],
                 is_answerable=True,
             )
             entries.append(entry)

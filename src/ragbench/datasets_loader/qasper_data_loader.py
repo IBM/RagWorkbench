@@ -125,7 +125,7 @@ class QasperQaDataLoader(RagDataLoader):
                         question_id=str(question_id),
                         question=str(question),
                         ground_truth_answers=answers_list,
-                        ground_truth_context_ids=[
+                        ground_truths_context_ids=[
                             GroundTruthContextId(document_id=doc_id)
                         ],
                     )

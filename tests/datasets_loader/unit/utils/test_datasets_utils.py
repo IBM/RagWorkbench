@@ -210,7 +210,7 @@ class TestGetBenchmarkSplit:
             question_id="q_single",
             question="Single question?",
             ground_truth_answers=["Answer"],
-            ground_truth_context_ids=[GroundTruthContextId(document_id="doc_1")],
+            ground_truths_context_ids=[GroundTruthContextId(document_id="doc_1")],
         )
         entries = [entry]
 
@@ -229,13 +229,13 @@ class TestGetBenchmarkSplit:
                 question_id="q_1",
                 question="Question 1?",
                 ground_truth_answers=["Answer 1"],
-                ground_truth_context_ids=[GroundTruthContextId(document_id="doc_1")],
+                ground_truths_context_ids=[GroundTruthContextId(document_id="doc_1")],
             ),
             RagBenchmarkEntry(
                 question_id="q_2",
                 question="Question 2?",
                 ground_truth_answers=["Answer 2"],
-                ground_truth_context_ids=[GroundTruthContextId(document_id="doc_2")],
+                ground_truths_context_ids=[GroundTruthContextId(document_id="doc_2")],
             ),
         ]
 
