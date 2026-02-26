@@ -84,8 +84,14 @@ class BoardGenerator:
                     inference_pipeline=inference_pipeline,
                     eval_metrics=self.metric_definitions,
                 )
-                evaluation_results: dict[str, dict[str, float]]
+                evaluation_results: dict
                 _, evaluation_results = experiment.run()
+                for metric_name in evaluation_results.keys():
+                    metric_stats: dict[str, float] = evaluation_results[metric_name][
+                        "statistics"
+                    ][metric_name]
+                    columns = [f"{metric_name}_{k}" for k in metric_stats]
+                    print(columns)
                 print(evaluation_results)
 
                 # df = pd.read_csv(results_path)
