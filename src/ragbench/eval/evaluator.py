@@ -123,32 +123,32 @@ class Evaluator:
             raise UnsupportedOperation(
                 f"Currently, we support evaluation at level of doc_id not `{evaluation_level}`"
             )
-        question_id_to_inference_results_lst: dict[str, InferenceResult] = {
+        question_id_to_inference_results_dict: dict[str, InferenceResult] = {
             entry.question_id: entry for entry in list_of_inference_results
         }
         # dataset = self._gt_context_id_to_str(dataset, evaluation_level)
-        not_in_cache_qids: set[str] = set(question_id_to_inference_results_lst.keys())
+        not_in_cache_qids: set[str] = set(question_id_to_inference_results_dict.keys())
 
         # Result data structure
         question_id_to_metric_scores: dict[str, dict[str, float]] = defaultdict(dict)
 
-        # # We first look for the cache content
-        # if self.evaluation_cache:
-        #     for q_id, d in q_id_to_data.items():
-        #         scores_dict: dict[str, float] = self.evaluation_cache.get(d)
-        #         if scores_dict is not None:
-        #             # We check that we have all the score_names
-        #             if not (
-        #                 score_name in scores_dict
-        #                 for score_name in self.full_score_names
-        #             ):
-        #                 logger.error(
-        #                     "We do not have all the full_scores_names in the cache : {scores_dict.keys()} vs. {self.full_score_names}]"
-        #                 )
-        #             else:
-        #                 not_in_cache_qids.remove(q_id)
-        #                 for full_score_name, score in scores_dict.items():
-        #                     question_id_to_metric_scores[q_id][full_score_name] = score
+        # We first look for the cache content
+        if self.evaluation_cache:
+            for q_id, inference_res in question_id_to_inference_results_dict.items():
+                scores_dict: dict[str, float] = self.evaluation_cache.get(inference_res)
+                if scores_dict is not None:
+                    # We check that we have all the score_names
+                    if not (
+                        score_name in scores_dict
+                        for score_name in self.full_score_names
+                    ):
+                        logger.error(
+                            "We do not have all the full_scores_names in the cache : {scores_dict.keys()} vs. {self.full_score_names}]"
+                        )
+                    else:
+                        not_in_cache_qids.remove(q_id)
+                        for full_score_name, score in scores_dict.items():
+                            question_id_to_metric_scores[q_id][full_score_name] = score
 
         not_in_cache_dataset: list[InferenceResult] = [
             d for d in list_of_inference_results if d.question_id in not_in_cache_qids
@@ -164,13 +164,13 @@ class Evaluator:
                 for q_id, score in scores.items():
                     question_id_to_metric_scores[q_id][full_score_name] = score
 
-            # if self.evaluation_cache:
-            #     for q_id in not_in_cache_qids:
-            #         metric_scores = question_id_to_metric_scores[q_id]
-            #         evaluation_dict = q_id_to_data[q_id]
-            #         self.evaluation_cache.add(
-            #             evaluation_dict=evaluation_dict, score_dict=metric_scores
-            #         )
+            if self.evaluation_cache:
+                for q_id in not_in_cache_qids:
+                    metric_scores = question_id_to_metric_scores[q_id]
+                    inference_res = question_id_to_inference_results_dict[q_id]
+                    self.evaluation_cache.add(
+                        inference_result=inference_res, score_dict=metric_scores
+                    )
         return question_id_to_metric_scores
 
     def compute_stats_from_per_question_results(
