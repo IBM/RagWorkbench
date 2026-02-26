@@ -32,7 +32,9 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
     def get_score_names(self) -> list[str]:
         return [self.name] if len(self.sub_scores) == 0 else self.sub_scores
 
-    def compute(self, inference_result_list: list[InferenceResult]) -> dict:
+    def compute(
+        self, inference_result_list: list[InferenceResult]
+    ) -> dict[str, dict[str, float]]:
         metric_id = self.get_name()
         # load the metric and prepare the dataset
         metrics_operator = SequentialOperator(steps=[metric_id])

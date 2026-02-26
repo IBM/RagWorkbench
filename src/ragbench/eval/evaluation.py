@@ -32,7 +32,9 @@ class BaseEvaluationMetric(ABC):
         self.evaluation_level = evaluation_level
 
     @abstractmethod
-    def compute(self, inference_result_list: list[InferenceResult]):
+    def compute(
+        self, inference_result_list: list[InferenceResult]
+    ) -> dict[str, dict[str, float]]:
         """
         Evaluate the RAGPattern.query() response against list of different metrics.
 
