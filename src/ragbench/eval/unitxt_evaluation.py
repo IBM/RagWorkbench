@@ -44,6 +44,8 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
                 "answer": r.answer,
                 "ground_truths": r.ground_truth_answers,
                 "ground_truth_context_ids": r.ground_truth_context_ids,
+                "contexts": r.contexts,
+                "context_ids": r.context_ids,
                 # "contexts":
             }
             for r in inference_result_list
