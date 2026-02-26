@@ -1,51 +1,20 @@
 import logging
 from collections import defaultdict
-from enum import StrEnum, auto
 from io import UnsupportedOperation
 from pathlib import Path
-from typing import Any
 
 from ragbench.api.inference_result import InferenceResult
 from ragbench.caching.evaluator_cache import EvaluatorCache
 from ragbench.datasets_loader.data_models import (
-    GroundTruthContextId,
     RagBenchmark,
     RagCorpus,
 )
 from ragbench.eval import MetricDefinition
 from ragbench.eval.evaluation import BaseEvaluationMetric
+from ragbench.eval.evaluation_level import EvaluationLevel
 from ragbench.eval.unitxt_evaluation import UnitxtEvaluationMetric
 
 logger = logging.getLogger(__name__)
-
-
-class EvaluationLevel(StrEnum):
-    DOC_ID = auto()
-    PAGE_ID = auto()
-    TABLE_ID = auto()
-
-    def gt_context_id_to_str(self, gt_context_id: GroundTruthContextId):
-        match self:
-            case EvaluationLevel.DOC_ID:
-                return gt_context_id.document_id
-            case EvaluationLevel.PAGE_ID:
-                if gt_context_id.page is None:
-                    raise Exception(
-                        f"gt_context_id does not contain page info `{gt_context_id}`"
-                    )
-                return f"{gt_context_id.document_id}_page-{gt_context_id.page}"
-            case EvaluationLevel.TABLE_ID:
-                if gt_context_id.page is None:
-                    raise Exception(
-                        f"gt_context_id does not contain page info `{gt_context_id}`"
-                    )
-                if gt_context_id.table_id is None:
-                    raise Exception(
-                        f"gt_context_id does not contain table info `{gt_context_id}`"
-                    )
-                return f"{gt_context_id.document_id}_page-{gt_context_id.page}_table-{gt_context_id.table_id}"
-            case _:
-                raise Exception(f"Unknown stage {self.name}")
 
 
 class Evaluator:
@@ -90,28 +59,6 @@ class Evaluator:
                 },
                 cache_key_fields=set(fields),
             )
-
-    @staticmethod
-    def _gt_context_id_to_str(
-        dataset: list[dict[str, Any]],
-        evaluation_level: EvaluationLevel = EvaluationLevel.DOC_ID,
-    ) -> list[dict[str, Any]]:
-        result = []
-
-        for d in dataset:
-            if "ground_truths_context_ids" in d:
-                d["ground_truths_context_ids"] = [
-                    (
-                        evaluation_level.gt_context_id_to_str(
-                            gt_context_id=ground_truth_context_id
-                        )
-                        if isinstance(ground_truth_context_id, GroundTruthContextId)
-                        else ground_truth_context_id
-                    )
-                    for ground_truth_context_id in d["ground_truths_context_ids"]
-                ]
-            result.append(d)
-        return result
 
     def run_metrics(
         self,
