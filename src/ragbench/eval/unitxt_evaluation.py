@@ -43,7 +43,6 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
                 "question": r.question,
                 "answer": r.answer,
                 "ground_truths": r.ground_truth_answers,
-                # Convert GroundTruthContextId objects to list of document IDs for unitxt
                 "ground_truths_context_ids": (
                     [ctx.document_id for ctx in r.ground_truths_context_ids]
                     if r.ground_truths_context_ids

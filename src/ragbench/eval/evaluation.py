@@ -5,6 +5,7 @@ import numpy as np
 from scipy.stats import bootstrap  # type: ignore[import-not-found]
 
 from ragbench.api.inference_result import InferenceResult
+from ragbench.eval.evaluation_level import EvaluationLevel
 
 
 class EvaluationException(Exception):
@@ -23,10 +24,12 @@ class BaseEvaluationMetric(ABC):
         self,
         name: str,
         metric_params: dict[str, Any],
+        evaluation_level: EvaluationLevel = EvaluationLevel.DOC_ID,
         **kwargs,
     ):
         self.name = name
         self.metric_params = metric_params
+        self.evaluation_level = evaluation_level
 
     @abstractmethod
     def compute(self, inference_result_list: list[InferenceResult]):
