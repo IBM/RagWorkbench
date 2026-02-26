@@ -8,6 +8,7 @@ from unitxt.operator import (  # type: ignore[import-not-found]
 
 from ragbench.api.inference_result import InferenceResult
 from ragbench.eval.evaluation import BaseEvaluationMetric
+from ragbench.eval.evaluation_level import EvaluationLevel
 
 
 class UnitxtEvaluationMetric(BaseEvaluationMetric):
@@ -17,9 +18,10 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
         self,
         name: str,
         metric_params: dict[str, Any],
+        evaluation_level: EvaluationLevel = EvaluationLevel.DOC_ID,
         **kwargs,
     ):
-        super().__init__(name, metric_params)
+        super().__init__(name, metric_params, evaluation_level)
         self.sub_scores = (
             metric_params["sub_scores"] if "sub_scores" in metric_params.keys() else []
         )
@@ -43,11 +45,10 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
                 "question": r.question,
                 "answer": r.answer,
                 "ground_truths": r.ground_truth_answers,
-                "ground_truths_context_ids": (
-                    [ctx.document_id for ctx in r.ground_truths_context_ids]
-                    if r.ground_truths_context_ids
-                    else []
-                ),
+                "ground_truths_context_ids": [
+                    self.evaluation_level.gt_context_id_to_str(gt_context_id)
+                    for gt_context_id in r.ground_truths_context_ids
+                ],
                 "contexts": r.contexts,
                 "context_ids": r.context_ids,
                 # "contexts":
