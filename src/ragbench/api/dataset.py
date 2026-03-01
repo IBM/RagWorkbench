@@ -11,23 +11,23 @@ class Dataset(BaseModel):
     split: Literal["train", "test"] | None = None
     sampling: DataSamplingParams = DataSamplingParams()
 
-    def id(self) -> str:
-        """
-        Generate a unique identifier for this dataset configuration.
+    def _format_dataset_name(self):
+        if isinstance(self.name, DatasetName):
+            dataset_name = self.name.value
+        else:
+            dataset_name = self.name
+        return dataset_name
 
-        Combines the dataset name, split, and sampling parameters into a
-        single string that uniquely identifies this dataset configuration.
+    def id(self):
+        dataset_name = self._format_dataset_name()
 
-        Returns:
-            A string identifier, e.g. 'bioasq_test_q-50_seed-43' or 'bioasq_test'.
-        """
-        parts: list[str] = [str(self.name)]
+        dataset_id = f"name-{dataset_name}"
 
-        if self.split is not None:
-            parts.append(self.split)
+        if self.split:
+            dataset_id += f"_split-{self.split}"
 
-        sampling_id = self.sampling.as_id()
-        if sampling_id:
-            parts.append(sampling_id)
+        sample_id = self.sampling.as_id()
+        if sample_id:
+            dataset_id += f"_{sample_id}"
 
-        return "_".join(parts)
+        return dataset_id
