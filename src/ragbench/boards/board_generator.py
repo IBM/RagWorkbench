@@ -61,6 +61,7 @@ class BoardGenerator:
 
     def process(self) -> None:
         # iterate over configurations and then over datasets
+        results_list = []
         for config_seq, config in enumerate(self.board.configurations):
             logger.info(
                 f"Running configuration: {config.name} ({config_seq+1}/{len(self.board.configurations)})"
@@ -90,23 +91,23 @@ class BoardGenerator:
                     metric_stats: dict[str, float] = evaluation_results[metric_name][
                         "statistics"
                     ][metric_name]
-                    columns = [f"{metric_name}_{k}" for k in metric_stats]
-                    print(columns)
-                print(evaluation_results)
+                    df = pd.DataFrame(
+                        [{f"{metric_name}_{k}": v for k, v in metric_stats.items()}]
+                    )
 
-                # df = pd.read_csv(results_path)
-                # We need to add columns according to the metrics + the mean values
-        #         df["board_configuration_seq"] = config_seq
-        #         df["board_dataset_seq"] = dataset_seq
-        #         df["board_configuration_name"] = config.name
-        #         df["board_dataset_id"] = dataset.id
-        #         # We do not need the
-        #         # df["board_experiment_yaml"] = yaml.dump(full_config, sort_keys=False)
-        #         df["board_experiment_id"] = f"exp_{config_seq}_{dataset_seq}"
-        # #
-        #         self.results.append(df)
+                    # df = pd.read_csv(results_path)
+                    # We need to add columns according to the metrics + the mean values
+                    df["board_configuration_seq"] = config_seq
+                    df["board_dataset_seq"] = dataset_seq
+                    df["board_configuration_name"] = config.name
+                    df["board_dataset_id"] = dataset.id()
+                    # We do not need the
+                    # df["board_experiment_yaml"] = yaml.dump(full_config, sort_keys=False)
+                    df["board_experiment_id"] = f"exp_{config_seq}_{dataset_seq}"
+                    #
+                    results_list.append(df)
         #
-        self.results = pd.DataFrame()
+        self.results = pd.concat(results_list)
 
     def export_results(self) -> None:
         os.makedirs(self.output_path, exist_ok=True)
