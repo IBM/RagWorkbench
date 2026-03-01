@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel
 
 from ragbench import DatasetName
 from ragbench.datasets_loader.data_models import DataSamplingParams
@@ -11,7 +11,6 @@ class Dataset(BaseModel):
     split: Literal["train", "test"] | None = None
     sampling: DataSamplingParams = DataSamplingParams()
 
-    @computed_field
     def id(self) -> str:
         """
         Generate a unique identifier for this dataset configuration.
