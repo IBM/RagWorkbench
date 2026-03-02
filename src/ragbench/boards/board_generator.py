@@ -104,11 +104,12 @@ class BoardGenerator:
                     ]
                 )
                 for metric_name in evaluation_results.keys():
-                    metric_stats: dict[str, float] = evaluation_results[metric_name][
+                    metric_stats: dict[str, dict] = evaluation_results[metric_name][
                         "statistics"
-                    ][metric_name]
-                    for k, v in metric_stats.items():
-                        config_dataset_df[f"{metric_name}_{k}"] = v
+                    ]
+                    for sub_metric_name in metric_stats.keys():
+                        for k, v in metric_stats[sub_metric_name].items():
+                            config_dataset_df[f"{sub_metric_name}_{k}"] = v
 
                 results_list.append(config_dataset_df)
         #
