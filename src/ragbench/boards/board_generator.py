@@ -92,26 +92,24 @@ class BoardGenerator:
                 )
                 evaluation_results: dict
                 _, evaluation_results = experiment.run()
+                config_dataset_df: pd.DataFrame = pd.DataFrame()
+                config_dataset_df["board_configuration_seq"] = config_seq
+                config_dataset_df["board_dataset_seq"] = dataset_seq
+                config_dataset_df["board_configuration_name"] = config.name
+                config_dataset_df["board_dataset_id"] = dataset.id()
+                # We do not need the
+                # df["board_experiment_yaml"] = yaml.dump(full_config, sort_keys=False)
+                config_dataset_df["board_experiment_id"] = (
+                    f"exp_{config_seq}_{dataset_seq}"
+                )
                 for metric_name in evaluation_results.keys():
                     metric_stats: dict[str, float] = evaluation_results[metric_name][
                         "statistics"
                     ][metric_name]
-                    df = pd.DataFrame(
-                        [{f"{metric_name}_{k}": v for k, v in metric_stats.items()}]
-                    )
+                    for k, v in metric_stats.items():
+                        config_dataset_df[f"{metric_name}_{k}"] = v
 
-                    # df = pd.read_csv(results_path)
-                    # TODO ASSAF - How do I add here the info that misses???
-                    # We need to add columns according to the metrics + the mean values
-                    df["board_configuration_seq"] = config_seq
-                    df["board_dataset_seq"] = dataset_seq
-                    df["board_configuration_name"] = config.name
-                    df["board_dataset_id"] = dataset.id()
-                    # We do not need the
-                    # df["board_experiment_yaml"] = yaml.dump(full_config, sort_keys=False)
-                    df["board_experiment_id"] = f"exp_{config_seq}_{dataset_seq}"
-                    #
-                    results_list.append(df)
+                results_list.append(config_dataset_df)
         #
         self.results = pd.concat(results_list)
 
