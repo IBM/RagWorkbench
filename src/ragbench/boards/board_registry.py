@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, TypeVar
 
 from ragbench.api.inference import InferenceParams, InferencePipeline
@@ -48,6 +49,9 @@ class BoardRegistry:
         cls,
         name: str,
         params: dict[str, Any],
+        cache_dir: Path | None = None,
     ):
         inference_class, inference_params = cls._inference_pipelines[name]
-        return inference_class(inference_params.model_validate(params))
+        return inference_class(
+            inference_params.model_validate(params), cache_dir=cache_dir
+        )

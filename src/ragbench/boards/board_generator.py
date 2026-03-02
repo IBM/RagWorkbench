@@ -26,8 +26,10 @@ class BoardGenerator:
     RESULTS_CSV = "results.csv"
 
     def __init__(self, board_path: Path):
-        self.input_path = board_path
-        self.output_path = board_path / "output"
+        self.input_path: Path = board_path
+        self.output_path: Path = board_path / "output"
+        self.cache_dir: Path = board_path / "cache"
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         yaml_file = self.input_path / self.BOARD_YAML
         with yaml_file.open("r") as f:
@@ -40,10 +42,11 @@ class BoardGenerator:
             ingest_pipeline = BoardRegistry.create_ingest_pipeline(
                 name=config.ingest.name, params=config.ingest.params
             )
-
             # create the inference instance
             inference_pipeline = BoardRegistry.create_inference_pipeline(
-                name=config.inference.name, params=config.inference.params
+                name=config.inference.name,
+                params=config.inference.params,
+                cache_dir=self.cache_dir,
             )
 
             # save for later
@@ -76,6 +79,7 @@ class BoardGenerator:
                     dataset_name=dataset.name,
                     split=dataset.split,
                     sampling_params=dataset.sampling,
+                    cache_dir=self.cache_dir,
                 )
 
                 experiment = Experiment(
@@ -84,6 +88,7 @@ class BoardGenerator:
                     ingest_pipeline=ingest_pipeline,
                     inference_pipeline=inference_pipeline,
                     eval_metrics=self.metric_definitions,
+                    cache_dir=self.cache_dir,
                 )
                 evaluation_results: dict
                 _, evaluation_results = experiment.run()
@@ -121,12 +126,12 @@ class BoardGenerator:
     #     return BoardResults(board=self.board, results=self.results)
 
     def clean_output(self):
-        path = self.output_path / "output"
+        path = self.output_path
         if os.path.exists(path):
             shutil.rmtree(path)
 
     def clean_cache(self):
-        path = self.output_path / "cache"
+        path = self.cache_dir
         if os.path.exists(path):
             shutil.rmtree(path)
 

@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 from ragbench.api.inference import InferencePipeline
@@ -17,11 +18,13 @@ class Experiment:
         ingest_pipeline: IngestPipeline,
         inference_pipeline: InferencePipeline,
         eval_metrics: list[MetricDefinition],
+        cache_dir: Path | None = None,
     ):
         self.name = name
         self.data_loader = data_loader
         self.ingest_pipeline = ingest_pipeline
         self.inference_pipeline = inference_pipeline
+        self.cache_dir = cache_dir
 
         self.metric_definitions: list[MetricDefinition] = eval_metrics
 
@@ -49,7 +52,7 @@ class Experiment:
         for benchmark_entry in rag_benchmark.get_benchmark_entries():
             # run the inference
             result: InferenceResult = self.inference_pipeline.process(
-                benchmark_entry=benchmark_entry
+                benchmark_entry=benchmark_entry,
             )
             # collect the result
             results.append(result)
@@ -63,6 +66,7 @@ class Experiment:
                 metric_definition=metric_def,
                 rag_benchmark=rag_benchmark,
                 rag_corpus=self.data_loader.get_corpus(),
+                cache_dir=self.cache_dir,
             )
 
             # Run metrics and get per-question scores
