@@ -20,7 +20,7 @@ class EvaluatorCache(AbstractFileSystemCache):
             self.cache_key_fields = {
                 "question",
                 "answer",
-                "ground_truth_answers",
+                "ground_truths",
                 "ground_truths_context_ids",
                 "context_ids",
                 "contexts",
