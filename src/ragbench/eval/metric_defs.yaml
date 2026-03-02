@@ -27,7 +27,7 @@ unitxt.answer_correctness:
     metric_id: "metrics.rag.answer_correctness"
     metric_params: {}
     metric_fields:
-      - "ground_truths"
+      - "ground_truth_answers"
       - "answer"
     vendor: "unitxt"
 
@@ -36,7 +36,7 @@ unitxt.answer_correctness.bert_score_recall:
   metric_params: {}
   metric_fields:
       - "answer"
-      - "ground_truths"
+      - "ground_truth_answers"
   vendor: "unitxt"
 
 unitxt.answer_correctness.sentence_bert_mini_lm:
@@ -44,7 +44,7 @@ unitxt.answer_correctness.sentence_bert_mini_lm:
   metric_params: {}
   metric_fields:
       - "answer"
-      - "ground_truths"
+      - "ground_truth_answers"
   vendor: "unitxt"
 
 unitxt.answer_correctness.llmaaj_llama:
@@ -52,7 +52,7 @@ unitxt.answer_correctness.llmaaj_llama:
   metric_params: {}
   metric_fields:
       - "answer"
-      - "ground_truths"
+      - "ground_truth_answers"
   vendor: "unitxt"
 
 unitxt.answer_correctness.llmaaj_llama_rits:
@@ -60,7 +60,7 @@ unitxt.answer_correctness.llmaaj_llama_rits:
   metric_params: {}
   metric_fields:
       - "answer"
-      - "ground_truths"
+      - "ground_truth_answers"
   vendor: "unitxt"
 
 unitxt.answer_correctness.llmaaj_llama4:
@@ -68,7 +68,7 @@ unitxt.answer_correctness.llmaaj_llama4:
   metric_params: {}
   metric_fields:
     - "answer"
-    - "ground_truths"
+    - "ground_truth_answers"
   vendor: "unitxt"
 
 unitxt.answer_correctness.llmaaj_gpt:
@@ -76,5 +76,5 @@ unitxt.answer_correctness.llmaaj_gpt:
   metric_params: {}
   metric_fields:
       - "answer"
-      - "ground_truths"
+      - "ground_truth_answers"
   vendor: "unitxt"
