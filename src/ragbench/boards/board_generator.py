@@ -96,6 +96,7 @@ class BoardGenerator:
                     )
 
                     # df = pd.read_csv(results_path)
+                    # TODO ASSAF - How do I add here the info that misses???
                     # We need to add columns according to the metrics + the mean values
                     df["board_configuration_seq"] = config_seq
                     df["board_dataset_seq"] = dataset_seq
