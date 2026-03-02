@@ -92,15 +92,16 @@ class BoardGenerator:
                 )
                 evaluation_results: dict
                 _, evaluation_results = experiment.run()
-                config_dataset_df: pd.DataFrame = pd.DataFrame()
-                config_dataset_df["board_configuration_seq"] = config_seq
-                config_dataset_df["board_dataset_seq"] = dataset_seq
-                config_dataset_df["board_configuration_name"] = config.name
-                config_dataset_df["board_dataset_id"] = dataset.id()
-                # We do not need the
-                # df["board_experiment_yaml"] = yaml.dump(full_config, sort_keys=False)
-                config_dataset_df["board_experiment_id"] = (
-                    f"exp_{config_seq}_{dataset_seq}"
+                config_dataset_df = pd.DataFrame(
+                    [
+                        {
+                            "board_configuration_seq": config_seq,
+                            "board_dataset_seq": dataset_seq,
+                            "board_configuration_name": config.name,
+                            "board_dataset_id": dataset.id(),
+                            "board_experiment_id": f"exp_{config_seq}_{dataset_seq}",
+                        }
+                    ]
                 )
                 for metric_name in evaluation_results.keys():
                     metric_stats: dict[str, float] = evaluation_results[metric_name][
