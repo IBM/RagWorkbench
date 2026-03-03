@@ -38,8 +38,6 @@ class Evaluator:
         ](
             name=metric_definition.metric_id,
             metric_params=metric_definition.metric_params,
-            rag_benchmark=rag_benchmark,
-            rag_corpus=rag_corpus,
         )
 
         fields = metric_definition.metric_fields
