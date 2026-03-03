@@ -28,8 +28,9 @@ import base64
 import json
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.caching.abstract_file_system_cache import AbstractFileSystemCache
 from ragbench.datasets_loader.data_models import DocumentObject, RagBenchmark
 from ragbench.datasets_loader.dataset_names import DatasetName
@@ -72,7 +73,7 @@ class DataLoaderCache(AbstractFileSystemCache):
         self,
         cache_dir: Path | str,
         dataset_name: DatasetName | str,
-        split: Literal["train", "test"] | None,
+        split: DatasetSplit | None,
     ):
         """
         Initialize the data loader cache.

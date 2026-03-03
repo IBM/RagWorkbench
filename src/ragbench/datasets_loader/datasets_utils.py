@@ -11,10 +11,11 @@ import base64
 import mimetypes
 import random
 from dataclasses import dataclass
-from typing import Any, Literal, cast
+from typing import Any, cast
 
 import requests
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmarkEntry
 
 # Default train/test split ratio
@@ -25,7 +26,7 @@ DEFAULT_SPLIT_SEED = 42
 
 def get_benchmark_split(
     benchmark_entries: list[RagBenchmarkEntry],
-    split: Literal["train", "test"] | None,
+    split: DatasetSplit | None,
     train_ratio: float = DEFAULT_TRAIN_RATIO,
     seed: int = DEFAULT_SPLIT_SEED,
 ) -> list[RagBenchmarkEntry]:

@@ -6,10 +6,11 @@ import logging
 import mimetypes
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Literal, cast
+from typing import cast
 
 from huggingface_hub import HfFileSystem  # type: ignore[import-not-found]
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 class KramabenchDataLoader(RagDataLoader):
     def __init__(
         self,
-        split: Literal["train", "test"] | None = None,
+        split: DatasetSplit | None = None,
         sampling_params: DataSamplingParams | None = None,
         cache_dir: Path | None = None,
         verbose: bool = True,
@@ -150,7 +151,7 @@ class KramabenchDataLoader(RagDataLoader):
         return gt_str
 
     def _get_benchmark_entries(
-        self, split: Literal["train", "test"] | None
+        self, split: DatasetSplit | None
     ) -> list[RagBenchmarkEntry]:
         all_docs_names: list[str] = [d.name for d in self.all_docs]
         benchmark_entries: list[RagBenchmarkEntry] = []

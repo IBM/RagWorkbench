@@ -1,12 +1,12 @@
 import io
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Literal
 
 import pandas as pd
 from datasets import load_dataset  # type: ignore[import-not-found]
 from huggingface_hub import HfFileSystem  # type: ignore[import-not-found]
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
@@ -20,7 +20,7 @@ NUMBER_OF_THREADS = 2
 class DabStepDataLoader(RagDataLoader):
     def __init__(
         self,
-        split: Literal["train", "test"] | None = None,
+        split: DatasetSplit | None = None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
         verbose: bool = True,
@@ -77,7 +77,7 @@ class DabStepDataLoader(RagDataLoader):
         return documents
 
     def _get_benchmark_entries(
-        self, split: Literal["train", "test"] | None
+        self, split: DatasetSplit | None
     ) -> list[RagBenchmarkEntry]:
         test_df: pd.DataFrame = load_dataset(
             path="adyen/DABstep", name="tasks", split="default"
