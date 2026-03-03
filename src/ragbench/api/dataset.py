@@ -1,4 +1,4 @@
-from typing import Literal
+from enum import StrEnum, auto
 
 from pydantic import BaseModel
 
@@ -6,9 +6,14 @@ from ragbench import DatasetName
 from ragbench.datasets_loader.data_models import DataSamplingParams
 
 
+class DatasetSplit(StrEnum):
+    TRAIN = auto()  # automatically becomes "train"
+    TEST = auto()  # automatically becomes "test"
+
+
 class Dataset(BaseModel):
     name: DatasetName | str
-    split: Literal["train", "test"] | None = None
+    split: DatasetSplit | None = None
     sampling: DataSamplingParams = DataSamplingParams()
 
     def _format_dataset_name(self):
@@ -24,7 +29,7 @@ class Dataset(BaseModel):
         dataset_id = f"name-{dataset_name}"
 
         if self.split:
-            dataset_id += f"_split-{self.split}"
+            dataset_id += f"_split-{self.split.value}"
 
         sample_id = self.sampling.as_id()
         if sample_id:
