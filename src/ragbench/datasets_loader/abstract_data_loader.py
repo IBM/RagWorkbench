@@ -42,7 +42,7 @@ class RagDataLoader(ABC):
         ...         return [...]
         >>> loader = MyDataLoader(
         ...     dataset_name=DatasetName.AI_ARXIV,
-        ...     split="test",
+        ...     split=DatasetSplit("test"),
         ...     sampling_params=DataSamplingParams(question_limit=100)
         ... )
         >>> corpus = loader.get_corpus()
