@@ -129,7 +129,7 @@ class ClapNqDataLoader(RagDataLoader):
         documents: list[DocumentObject] = []
         for row in passages_data:
             # Extract fields from the row
-            doc_id = str(row["id"])
+            doc_id = f"{str(row['id'])}.txt"
             text = row["text"]
             title = row.get("title", "")
 
