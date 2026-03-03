@@ -70,19 +70,18 @@ class Experiment:
             )
 
             # Run metrics and get per-question scores
-            question_scores: dict[str, dict[str, float]] = evaluator.run_metrics(
-                results
-            )
+            eval_results = evaluator.run_metrics(results)
 
             # Compute aggregate statistics
             metric_stats = evaluator.compute_stats_from_per_question_results(
-                question_scores
+                eval_results
             )
 
-            # Store results
+            # Store results (convert to dict for backward compatibility)
             evaluation_results[metric_def.metric_id] = {
-                "per_question": question_scores,
+                "per_question": eval_results.to_dict(),
                 "statistics": metric_stats,
+                "cache_hit_rate": eval_results.cache_hit_rate,
             }
 
         return results, evaluation_results
