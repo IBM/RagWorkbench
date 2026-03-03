@@ -1,10 +1,10 @@
 import hashlib
 import io
 from pathlib import Path
-from typing import Literal
 
 from datasets import load_dataset  # type: ignore[import-not-found]
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
@@ -18,7 +18,7 @@ from ragbench.datasets_loader.dataset_names import DatasetName
 class SecqueDataLoader(RagDataLoader):
     def __init__(
         self,
-        split: Literal["train", "test"] | None,
+        split: DatasetSplit | None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
     ):
@@ -58,7 +58,7 @@ class SecqueDataLoader(RagDataLoader):
         ]
 
     def _get_benchmark_entries(
-        self, split: Literal["train", "test"] | None
+        self, split: DatasetSplit | None
     ) -> list[RagBenchmarkEntry]:
         if split is not None:
             df_train = self.hf_dataset_df.sample(frac=0.7, random_state=42)

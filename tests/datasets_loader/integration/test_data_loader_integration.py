@@ -10,10 +10,11 @@ DataLoaderFactory, ensuring consistent behavior and data integrity across
 all datasets.
 """
 
-from typing import Any, Literal
+from typing import Any
 
 import pytest
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.data_loader_factory import DataLoaderFactory
 from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
@@ -27,7 +28,7 @@ from tests.datasets_loader.helpers.integration_test_helpers import (
 DATASET_NAMES: list[str] = [d.value for d in DatasetName]
 
 
-def _create_loader_fixture(dataset_name: str, split: Literal["train", "test"]) -> Any:
+def _create_loader_fixture(dataset_name: str, split: DatasetSplit) -> Any:
     """
     Factory function to create loader fixtures dynamically using DataLoaderFactory.
 
@@ -53,9 +54,9 @@ def _create_loader_fixture(dataset_name: str, split: Literal["train", "test"]) -
 for dataset_name in DATASET_NAMES:
     for split_value in ["train", "test"]:
         fixture_name = f"{dataset_name}_{split_value}_loader"
-        # Cast to Literal type for type checker
-        split_literal: Literal["train", "test"] = split_value  # type: ignore[assignment]
-        globals()[fixture_name] = _create_loader_fixture(dataset_name, split_literal)
+        # Convert string to DatasetSplit enum
+        split_enum: DatasetSplit = DatasetSplit(split_value)
+        globals()[fixture_name] = _create_loader_fixture(dataset_name, split_enum)
 
 
 @pytest.mark.integration
@@ -81,10 +82,10 @@ class TestDataLoaderIntegration:
     - Maintain efficient testing with class-scoped fixtures
     """
 
-    @pytest.mark.parametrize("split", ["train", "test"])
+    @pytest.mark.parametrize("split", [DatasetSplit.TRAIN, DatasetSplit.TEST])
     def test_ground_truth_documents_exist_in_corpus(
         self,
-        split: Literal["train", "test"],
+        split: DatasetSplit,
         loader_name: str,
         request: pytest.FixtureRequest,
     ) -> None:

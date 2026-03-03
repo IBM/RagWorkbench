@@ -1,10 +1,10 @@
 import io
 from pathlib import Path
-from typing import Literal
 
 import pandas as pd
 from datasets import load_dataset  # type: ignore[import-not-found]
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
@@ -18,7 +18,7 @@ from ragbench.datasets_loader.dataset_names import DatasetName
 class MLDRDataLoader(RagDataLoader):
     def __init__(
         self,
-        split: Literal["train", "test"] | None,
+        split: DatasetSplit | None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
     ):
@@ -98,7 +98,7 @@ class MLDRDataLoader(RagDataLoader):
         return document_objects
 
     def _get_benchmark_entries(
-        self, split: Literal["train", "test"] | None
+        self, split: DatasetSplit | None
     ) -> list[RagBenchmarkEntry]:
         if split is None:
             df: pd.DataFrame = pd.concat([self.train_df, self.test_df], axis=0)

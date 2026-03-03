@@ -2,8 +2,8 @@ import logging
 import random
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Literal
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.caching.data_loader_cache import DataLoaderCache
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
@@ -52,7 +52,7 @@ class RagDataLoader(ABC):
     def __init__(
         self,
         dataset_name: DatasetName | str,
-        split: Literal["train", "test"] | None,
+        split: DatasetSplit | None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
     ):
@@ -78,7 +78,7 @@ class RagDataLoader(ABC):
             sampling parameters to be applied without reloading the original data.
         """
         self.dataset_name: DatasetName | str = dataset_name
-        self.split: Literal["train", "test"] | None = split
+        self.split: DatasetSplit | None = split
         self.sampling_params = sampling_params
 
         # Step 1: Load or retrieve full (unsampled) data
@@ -162,7 +162,7 @@ class RagDataLoader(ABC):
 
     @abstractmethod
     def _get_benchmark_entries(
-        self, split: Literal["train", "test"] | None
+        self, split: DatasetSplit | None
     ) -> list[RagBenchmarkEntry]:
         """
         Retrieve all benchmark entries from the dataset.
