@@ -7,8 +7,9 @@ based on the dataset name, simplifying the process of loading different RAG benc
 
 import logging
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.bioasq_data_loader import BioasqDataLoader
 from ragbench.datasets_loader.clap_nq_data_loader import ClapNqDataLoader
@@ -302,7 +303,7 @@ class DataLoaderFactory:
     def create_loader(
         cls,
         dataset_name: DatasetName | str,
-        split: Literal["train", "test"] | None = None,
+        split: DatasetSplit | None = None,
         sampling_params: DataSamplingParams | None = None,
         cache_dir: Path | None = None,
         **kwargs: Any,

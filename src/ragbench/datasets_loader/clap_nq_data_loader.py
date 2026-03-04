@@ -13,11 +13,11 @@ import csv
 import logging
 from io import BytesIO, StringIO
 from pathlib import Path
-from typing import Literal
 
 import requests
 from datasets import load_dataset  # type: ignore[import-not-found]
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
@@ -60,7 +60,7 @@ class ClapNqDataLoader(RagDataLoader):
 
     def __init__(
         self,
-        split: Literal["train", "test"] | None = None,
+        split: DatasetSplit | None = None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
     ):
@@ -146,7 +146,7 @@ class ClapNqDataLoader(RagDataLoader):
         return documents
 
     def _get_benchmark_entries(
-        self, split: Literal["train", "test"] | None
+        self, split: DatasetSplit | None
     ) -> list[RagBenchmarkEntry]:
         """
         Load question-answer pairs from the CLAP-NQ dataset.

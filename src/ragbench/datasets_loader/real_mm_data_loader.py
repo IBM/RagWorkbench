@@ -14,10 +14,10 @@ import logging
 import mimetypes
 from io import BytesIO
 from pathlib import Path
-from typing import Literal
 
 from datasets import load_dataset  # type: ignore[import-not-found]
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
@@ -72,7 +72,7 @@ class RealMMRagDataLoader(RagDataLoader):
     def __init__(
         self,
         dataset_name: DatasetName,
-        split: Literal["train", "test"] | None = None,
+        split: DatasetSplit | None = None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
     ):
@@ -197,7 +197,7 @@ class RealMMRagDataLoader(RagDataLoader):
         return documents
 
     def _get_benchmark_entries(
-        self, split: Literal["train", "test"] | None
+        self, split: DatasetSplit | None
     ) -> list[RagBenchmarkEntry]:
         """
         Load question-answer pairs from the RealMM dataset.

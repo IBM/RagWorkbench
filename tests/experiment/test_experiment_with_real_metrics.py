@@ -9,10 +9,10 @@ This test module validates the complete experiment workflow including:
 """
 
 from io import BytesIO
-from typing import Literal
 
 import pytest
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.api.inference import InferenceParams, InferencePipeline
 from ragbench.api.inference_result import InferenceResult
 from ragbench.api.ingest import IngestParams, IngestPipeline
@@ -145,7 +145,7 @@ class MockDataLoader(RagDataLoader):
         return self._documents
 
     def _get_benchmark_entries(
-        self, split: Literal["train", "test"] | None
+        self, split: DatasetSplit | None
     ) -> list[RagBenchmarkEntry]:
         """Return the mock benchmark entries."""
         return self._benchmark_entries

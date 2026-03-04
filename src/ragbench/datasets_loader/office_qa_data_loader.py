@@ -1,11 +1,11 @@
 import io
 from pathlib import Path
-from typing import Literal
 from zipfile import ZipFile
 
 import pandas as pd
 import requests
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
@@ -33,7 +33,7 @@ class OfficeQADataLoader(RagDataLoader):
 
     def __init__(
         self,
-        split: Literal["train", "test"] | None,
+        split: DatasetSplit | None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
     ):
@@ -140,9 +140,7 @@ class OfficeQADataLoader(RagDataLoader):
 
         return docs
 
-    def _get_split_dataframe(
-        self, split: Literal["train", "test"] | None
-    ) -> pd.DataFrame:
+    def _get_split_dataframe(self, split: DatasetSplit | None) -> pd.DataFrame:
         """Get the appropriate dataframe for the given split."""
         if split is None:
             return self.total_df
@@ -178,7 +176,7 @@ class OfficeQADataLoader(RagDataLoader):
         )
 
     def _get_benchmark_entries(
-        self, split: Literal["train", "test"] | None
+        self, split: DatasetSplit | None
     ) -> list[RagBenchmarkEntry]:
         """
         Create benchmark entries from the dataset.

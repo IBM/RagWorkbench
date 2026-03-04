@@ -8,10 +8,11 @@ import zipfile
 from collections import defaultdict
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 import gdown  # type: ignore[import-not-found]
 
+from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
 from ragbench.datasets_loader.data_models.document_object import DocumentObject
@@ -92,7 +93,7 @@ class DaCodeDataLoader(RagDataLoader):
 
     def __init__(
         self,
-        split: Literal["train", "test"] | None,
+        split: DatasetSplit | None,
         cache_dir: Path | None = None,
         *,
         sampling_params: DataSamplingParams | None = None,
@@ -195,7 +196,7 @@ class DaCodeDataLoader(RagDataLoader):
     # Benchmark entries
     # -------------------------------------------------------------------------
     def _get_benchmark_entries(
-        self, split: Literal["train", "test"] | None
+        self, split: DatasetSplit | None
     ) -> list[RagBenchmarkEntry]:
         skip_names = {".DS_Store", "DS_Store"}
 

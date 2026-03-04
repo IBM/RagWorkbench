@@ -1,15 +1,32 @@
-from typing import Literal
+from enum import StrEnum, auto
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
-from ragbench import DatasetName
 from ragbench.datasets_loader.data_models import DataSamplingParams
+from ragbench.datasets_loader.dataset_names import DatasetName
+
+
+class DatasetSplit(StrEnum):
+    TRAIN = auto()  # automatically becomes "train"
+    TEST = auto()  # automatically becomes "test"
 
 
 class Dataset(BaseModel):
     name: DatasetName | str
-    split: Literal["train", "test"] | None = None
+    split: DatasetSplit | None = None
     sampling: DataSamplingParams = DataSamplingParams()
+
+    @field_validator("split", mode="before")
+    @classmethod
+    def convert_split_to_enum(cls, v):
+        """Convert string to DatasetSplit enum if needed."""
+        if v is None:
+            return v
+        if isinstance(v, str):
+            # Convert string to DatasetSplit enum
+            # This handles both lowercase and uppercase strings
+            return DatasetSplit(v.lower())
+        return v
 
     def _format_dataset_name(self):
         if isinstance(self.name, DatasetName):
@@ -24,7 +41,7 @@ class Dataset(BaseModel):
         dataset_id = f"name-{dataset_name}"
 
         if self.split:
-            dataset_id += f"_split-{self.split}"
+            dataset_id += f"_split-{self.split.value}"
 
         sample_id = self.sampling.as_id()
         if sample_id:
