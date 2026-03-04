@@ -14,30 +14,34 @@ INFERENCE_T2 = TypeVar("INFERENCE_T2", bound=InferenceParams)
 def ingest_pipeline(name: str, params_class: type[IngestParams]):
     """
     Decorator to register an ingest pipeline with the BoardRegistry.
-    
+
     Usage:
         @ingest_pipeline(name="my_pipeline", params_class=MyIngestParams)
         class MyIngest(IngestPipeline):
             ...
     """
+
     def decorator(cls: type[IngestPipeline]) -> type[IngestPipeline]:
         BoardRegistry.register_ingest(name, cls, params_class)
         return cls
+
     return decorator
 
 
 def inference_pipeline(name: str, params_class: type[InferenceParams]):
     """
     Decorator to register an inference pipeline with the BoardRegistry.
-    
+
     Usage:
         @inference_pipeline(name="my_pipeline", params_class=MyInferenceParams)
         class MyInference(InferencePipeline):
             ...
     """
+
     def decorator(cls: type[InferencePipeline]) -> type[InferencePipeline]:
         BoardRegistry.register_inference(name, cls, params_class)
         return cls
+
     return decorator
 
 
@@ -77,7 +81,7 @@ class BoardRegistry:
                 f"Available pipelines: {list(cls._ingest_pipelines.keys())}. "
                 f"Make sure the pipeline module is imported and decorated with @ingest_pipeline."
             )
-        
+
         ingest_class, params_class = cls._ingest_pipelines[name]
         return ingest_class(params_class.model_validate(params))
 
@@ -94,7 +98,7 @@ class BoardRegistry:
                 f"Available pipelines: {list(cls._inference_pipelines.keys())}. "
                 f"Make sure the pipeline module is imported and decorated with @inference_pipeline."
             )
-        
+
         inference_class, inference_params = cls._inference_pipelines[name]
         return inference_class(
             inference_params.model_validate(params), cache_dir=cache_dir
