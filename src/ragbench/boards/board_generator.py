@@ -143,6 +143,10 @@ class BoardGenerator:
         #
         self.results = pd.concat(results_list)
 
+        # Export results and markdown at the end of processing
+        self.export_results()
+        self.export_md()
+
     def _export_inference_results_csv(
         self,
         inference_results: list[InferenceResult],
