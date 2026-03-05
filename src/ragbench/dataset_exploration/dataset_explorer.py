@@ -65,9 +65,9 @@ def main_page():
             ui.button("Reset All Filters", on_click=lambda: reset_filters()).props(
                 "outline flat"
             )
-            include_private_datasets_check_box = ui.checkbox(
-                "Include private datasets"
-            ).classes("text-grey-6")
+            # include_private_datasets_check_box = ui.checkbox(
+            #     "Include private datasets"
+            # ).classes("text-grey-6")
             count_label = ui.label("").classes("text-lg text-gray-700")
 
         # ───── Global Search Bar ─────
@@ -118,8 +118,8 @@ def main_page():
                     )
                 ]
             # Private datasets filter
-            if not include_private_datasets_check_box.value:  # type: ignore[attr-defined]
-                filtered = [r for r in filtered if not r.is_private_dataset]
+            # if not include_private_datasets_check_box.value:  # type: ignore[attr-defined]
+            #     filtered = [r for r in filtered if not r.is_private_dataset]
 
             # Global search
             search_term = (
@@ -439,7 +439,7 @@ def main_page():
             structure_select,
             modality_select,
             search_input,
-            include_private_datasets_check_box,
+            # include_private_datasets_check_box,
         ]:
             control.on("update:model-value", update_table)
 
