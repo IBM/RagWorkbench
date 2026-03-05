@@ -50,6 +50,7 @@ dependencies = [
     "types-PyYAML",
     "unitxt",
     "scipy",
+    "nicegui",
     # Needed by some metrics
     "bert_score"
 ]
@@ -138,7 +139,7 @@ strict_equality = true
 
 # Per-module overrides for untyped libraries
 [[tool.mypy.overrides]]
-module = ["mlflow.*"]
+module = ["mlflow.*", "nicegui.*"]
 ignore_missing_imports = true
 
 [tool.black]
