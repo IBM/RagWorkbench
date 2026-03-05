@@ -11,7 +11,7 @@ class DatasetName(str, Enum):
     The @unique decorator ensures no duplicate values exist.
 
     Attributes:
-        AI_ARXIV: ArXiv AI papers dataset identifier.
+        AIT_QA: AIT QA (AI and Technology Question Answering) dataset identifier.
         BIOASQ: BioASQ biomedical question answering dataset identifier.
         CLAP_NQ: CLAP-NQ dataset identifier.
         DA_CODE: DA-Code dataset identifier.
@@ -38,6 +38,7 @@ class DatasetName(str, Enum):
         True
     """
 
+    AIT_QA = "ait_qa"
     BIOASQ = "bioasq"
     CLAP_NQ = "clap_nq"
     DA_CODE = "da_code"
