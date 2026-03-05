@@ -51,6 +51,7 @@ dependencies = [
     "unitxt",
     "scipy",
     "nicegui",
+    "python-dotenv",
     # Needed by some metrics
     "bert_score"
 ]
