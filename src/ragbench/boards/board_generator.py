@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import shutil
@@ -9,6 +10,7 @@ import yaml
 from pandas import DataFrame
 
 from ragbench import DataLoaderFactory, Experiment
+from ragbench.api.inference_result import InferenceResult
 from ragbench.boards.board_model import Board
 from ragbench.boards.board_registry import BoardRegistry
 from ragbench.eval import (
@@ -90,8 +92,34 @@ class BoardGenerator:
                     eval_metrics=self.metric_definitions,
                     cache_dir=self.cache_dir,
                 )
+
+                # Run experiment and capture both inference and evaluation results
+                inference_results: list[InferenceResult]
                 evaluation_results: dict
-                _, evaluation_results = experiment.run()
+                inference_results, evaluation_results = experiment.run()
+
+                # Export inference results to CSV for this experiment
+                experiment_id = f"exp_{config_seq}_{dataset_seq}"
+                self._export_inference_results_csv(
+                    inference_results,
+                    experiment_id,
+                    config_seq,
+                    dataset_seq,
+                    config.name,
+                    dataset.id(),
+                )
+
+                # Export combined results to JSON for this experiment
+                self._export_combined_results_json(
+                    inference_results,
+                    evaluation_results,
+                    experiment_id,
+                    config_seq,
+                    dataset_seq,
+                    config.name,
+                    dataset.id(),
+                )
+
                 config_dataset_df = pd.DataFrame(
                     [
                         {
@@ -114,6 +142,87 @@ class BoardGenerator:
                 results_list.append(config_dataset_df)
         #
         self.results = pd.concat(results_list)
+
+    def _export_inference_results_csv(
+        self,
+        inference_results: list[InferenceResult],
+        experiment_id: str,
+        config_seq: int,
+        dataset_seq: int,
+        config_name: str,
+        dataset_id: str,
+    ) -> None:
+        """Export inference results to a CSV file for a single experiment."""
+        os.makedirs(self.output_path, exist_ok=True)
+
+        inference_data = []
+        for inf_result in inference_results:
+            inference_dict = {
+                "board_configuration_seq": config_seq,
+                "board_dataset_seq": dataset_seq,
+                "board_configuration_name": config_name,
+                "board_dataset_id": dataset_id,
+                "board_experiment_id": experiment_id,
+                "question_id": inf_result.question_id,
+                "question": inf_result.question,
+                "answer": inf_result.answer,
+                "ground_truth_answers": (
+                    str(inf_result.ground_truth_answers)
+                    if inf_result.ground_truth_answers
+                    else None
+                ),
+                "is_answerable": inf_result.is_answerable,
+                "context_ids": (
+                    str(inf_result.context_ids) if inf_result.context_ids else None
+                ),
+                "num_contexts": len(inf_result.contexts) if inf_result.contexts else 0,
+            }
+            inference_data.append(inference_dict)
+
+        inference_df = pd.DataFrame(inference_data)
+        csv_filename = f"inference_results_{experiment_id}.csv"
+        inference_df.to_csv(self.output_path / csv_filename, index=False)
+        logger.info(f"Exported inference results to {self.output_path / csv_filename}")
+
+    def _export_combined_results_json(
+        self,
+        inference_results: list[InferenceResult],
+        evaluation_results: dict,
+        experiment_id: str,
+        config_seq: int,
+        dataset_seq: int,
+        config_name: str,
+        dataset_id: str,
+    ) -> None:
+        """Export combined inference and evaluation results to a JSON file for a single experiment."""
+        os.makedirs(self.output_path, exist_ok=True)
+
+        combined_data = {
+            "board_configuration_seq": config_seq,
+            "board_dataset_seq": dataset_seq,
+            "board_configuration_name": config_name,
+            "board_dataset_id": dataset_id,
+            "board_experiment_id": experiment_id,
+            "inference_results": [
+                {
+                    "question_id": inf_result.question_id,
+                    "question": inf_result.question,
+                    "answer": inf_result.answer,
+                    "ground_truth_answers": inf_result.ground_truth_answers,
+                    "is_answerable": inf_result.is_answerable,
+                    "context_ids": inf_result.context_ids,
+                    "contexts": inf_result.contexts,
+                    "trajectory": inf_result.trajectory,
+                }
+                for inf_result in inference_results
+            ],
+            "evaluation_results": evaluation_results,
+        }
+
+        json_filename = f"combined_results_{experiment_id}.json"
+        with open(self.output_path / json_filename, "w") as f:
+            json.dump(combined_data, f, indent=2)
+        logger.info(f"Exported combined results to {self.output_path / json_filename}")
 
     def export_results(self) -> None:
         os.makedirs(self.output_path, exist_ok=True)
