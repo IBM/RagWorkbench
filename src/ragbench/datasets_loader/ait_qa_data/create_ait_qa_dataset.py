@@ -21,7 +21,10 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from .config import get_ait_qa_data_dir, get_ait_qa_documents_dir
+from ragbench.datasets_loader.ait_qa_data.config import (
+    get_ait_qa_data_dir,
+    get_ait_qa_documents_dir,
+)
 
 # Suppress SSL warnings when verify=False is used
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
@@ -81,7 +84,8 @@ def create_ait_qa_dataset() -> None:
     url_to_output_file: dict[str, str] = {
         "https://web.archive.org/web/20220629112311/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NYSE_ALK_2017.pdf": "Alaska-2017.pdf",
         "https://web.archive.org/web/20220629112336/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NYSE_ALK_2018.pdf": "Alaska-2018.pdf",
-        "https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2017.pdf": "AmericanAirlines-2017.pdf",
+        "https://web.archive.org/web/20240626083628/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2017.pdf": "AmericanAirlines-2017.pdf",
+        # "https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2017.pdf": "AmericanAirlines-2017.pdf.bck",
         "https://web.archive.org/web/20240802123343/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2018.pdf": "AmericanAirlines-2018.pdf",
         "https://web.archive.org/web/20240626051553/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2019.pdf": "AmericanAirlines-2019.pdf",
         "https://web.archive.org/web/20250726023255/https://www.annualreports.com/HostedData/AnnualReportArchive/d/NYSE_DAL_2017.pdf": "Delta-2017.pdf",
