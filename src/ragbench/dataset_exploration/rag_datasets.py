@@ -25,23 +25,6 @@ _DATASETS: list[DatasetRecord] = [
         train_size=1954,
         test_size=300,
     ),
-    # DatasetRecord(
-    #     name=DatasetName.AI_ARXIV,
-    #     domain=DatasetDomain.SCIENTIFIC_PAPERS,
-    #     retrieval_hops=DatasetRetrievalHops.SINGLE_HOP,
-    #     answer_scope=DatasetAnswerScope.PASSAGE,
-    #     question_context_dependency=DatasetQuestionContextDependency.UNCONTEXTUALIZED,
-    #     targeted_modalities=[DatasetTargetModality.TEXT],
-    #     document_structure_format=DatasetDocumentStructureFormat.UNSTRUCTURED,
-    #     description="""This dataset was derived from the ARAGOG benchmark (https://github.com/predlico/ARAGOG) of technical QA pairs over a corpus of machine learning papers from ArXiv.
-    # This benchmark includes 107 QA pairs, without corresponding gold document labels.
-    # As gold documents are not annotated in ARAGOG dataset, we added such labels where they could be found, obtaining 71 answerable QA pairs out of 107.
-    # We use an enriched version of the benchmark. We, manually, added the ground-truth-contexts in the benchmark, and we limited the questions to the documents belonging to version https://huggingface.co/datasets/jamescalam/ai-arxiv2 (the version https://huggingface.co/datasets/jamescalam/ai-arxiv is not allowed by Legal)""",
-    #     url="https://ibm.ent.box.com/file/1636760643755",
-    #     corpus_size=2673,
-    #     train_size=41,
-    #     test_size=30,
-    # ),
     DatasetRecord(
         name=DatasetName.MINI_WIKI,
         domain=DatasetDomain.WIKIPEDIA,
@@ -56,20 +39,6 @@ _DATASETS: list[DatasetRecord] = [
         train_size=663,
         test_size=255,
     ),
-    # DatasetRecord(
-    #     name=DatasetName.WIKIMULTIHOPQA,
-    #     domain=DatasetDomain.WIKIPEDIA,
-    #     retrieval_hops=DatasetRetrievalHops.MULTI_HOP,
-    #     answer_scope=DatasetAnswerScope.PASSAGE,
-    #     question_context_dependency=DatasetQuestionContextDependency.UNCONTEXTUALIZED,
-    #     targeted_modalities=[DatasetTargetModality.TEXT],
-    #     document_structure_format=DatasetDocumentStructureFormat.UNSTRUCTURED,
-    #     description="""2WikiMultihopQA: A Dataset for Comprehensive Evaluation of Reasoning Steps - https://github.com/Alab-NII/2wikimultihop  - A multi-hop question answering (QA) dataset aims to test reasoning and inference skills by requiring a model to read multiple paragraphs to answer a given question. However, current datasets do not provide a complete explanation for the reasoning process from the question to the answer. Further, previous studies revealed that many examples in existing multi-hop datasets do not require multi-hop reasoning to answer a question. In this study, we present a new multi-hop QA dataset, called 2WikiMultiHopQA, which uses structured and unstructured data. In our dataset, we introduce the evidence information containing a reasoning path for multi-hop questions. The evidence information has two benefits: (i) providing a comprehensive explanation for predictions and (ii) evaluating the reasoning skills of a model. We carefully design a pipeline and a set of templates when generating a question-answer pair that guarantees the multi-hop steps and the quality of the questions. We also exploit the structured format in Wikidata and use logical rules to create questions that are natural but still require multi-hop reasoning.""",
-    #     url="https://huggingface.co/datasets/xanhho/2WikiMultihopQA",
-    #     corpus_size=384857,
-    #     train_size=126021,
-    #     test_size=54009,
-    # ),
     DatasetRecord(
         name=DatasetName.BIOASQ,
         domain=DatasetDomain.SCIENTIFIC_PAPERS,
@@ -237,20 +206,6 @@ _DATASETS: list[DatasetRecord] = [
         train_size=0,
         test_size=500,
     ),
-    # DatasetRecord(
-    #     name=DatasetName.ARROW_PUBLIC,
-    #     domain=DatasetDomain.FINANCIAL,
-    #     retrieval_hops=DatasetRetrievalHops.SINGLE_HOP,
-    #     answer_scope=DatasetAnswerScope.PASSAGE,
-    #     question_context_dependency=DatasetQuestionContextDependency.UNCONTEXTUALIZED,
-    #     targeted_modalities=[DatasetTargetModality.TABLE],
-    #     document_structure_format=DatasetDocumentStructureFormat.UNSTRUCTURED,
-    #     description="""This dataset is comprised of SEC filings of Airline companies, and questions along with short answers on these reports. Most of the questions address tabular data.""",
-    #     corpus_size=30,
-    #     train_size=29,
-    #     test_size=21,
-    #     is_private_dataset=False,
-    # ),
     DatasetRecord(
         name=DatasetName.OFFICEQA,
         domain=DatasetDomain.FINANCIAL,
@@ -281,143 +236,20 @@ _DATASETS: list[DatasetRecord] = [
         test_size=21,
         is_private_dataset=False,
     ),
-    # DatasetRecord(
-    #     name=DatasetName.SYNTHETIC_CLIENT_WINS,
-    #     domain=DatasetDomain.SALES,
-    #     retrieval_hops=DatasetRetrievalHops.SINGLE_HOP,
-    #     answer_scope=DatasetAnswerScope.CORPUS,
-    #     question_context_dependency=DatasetQuestionContextDependency.UNCONTEXTUALIZED,
-    #     targeted_modalities=[DatasetTargetModality.TEXT],
-    #     document_structure_format=DatasetDocumentStructureFormat.STRUCTURED,
-    #     subsets=[
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_AGG_WITH_2_STRUCT_FILTERS,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_AGG_WITH_2_STRUCT_FILTERS_EXACT,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_AGG_WITH_FIRST_STRUCT_THEN_SEMANTIC_EXACT,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_DATA_AGG_WITH_SEMANTIC_FILTER,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_DATA_AGG_WITH_SEMANTIC_FILTER_EXACT,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_DATA_AGG_WITH_STRUCT_AND_SEMANTIC_FILTER,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_DATA_AGG_WITH_STRUCT_AND_SEMANTIC_FILTER_EXACT,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_DATA_AGG_WITH_STRUCT_FILTER,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_DATA_AGG_WITH_STRUCT_FILTER_EXACT,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_DATA_AGG_WITH_STRUCT_GROUPBY_EXACT,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_DATA_LIST_WITH_2_STRUCT_FILTERS,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_DATA_LIST_WITH_SEMANTIC_FILTER,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_DATA_LIST_WITH_STRUCT_AND_SEMANTIC_FILTER,
-    #         DatasetName.SYNTHETIC_CLIENT_WINS_DATA_LIST_WITH_STRUCT_FILTER,
-    #     ],
-    #     description="A synthetic dataset containing information about MFC client wins, including details about the client, the industry, the geographic location, the deal size, and the products and services involved.",  # TODO - To complete
-    #     corpus_size=119,
-    #     train_size=1233,
-    #     test_size=528,
-    # ),
-    # DatasetRecord(
-    #     name=DatasetName.AIT_QA_CURATED_DOCUMENTS_MD,
-    #     domain=DatasetDomain.FINANCIAL,
-    #     retrieval_hops=DatasetRetrievalHops.SINGLE_HOP,
-    #     answer_scope=DatasetAnswerScope.PASSAGE,
-    #     question_context_dependency=DatasetQuestionContextDependency.UNCONTEXTUALIZED,
-    #     targeted_modalities=[DatasetTargetModality.TEXT, DatasetTargetModality.TABLE],
-    #     document_structure_format=DatasetDocumentStructureFormat.UNSTRUCTURED,
-    #     description="Recent advances in transformers have enabled Table Question Answering (Table QA) systems to achieve high accuracy and SOTA results on open domain datasets like WikiTableQuestions and WikiSQL. Such transformers are frequently pre-trained on open-domain content such as Wikipedia, where they effectively encode questions and corresponding tables from Wikipedia as seen in Table QA dataset. However, web tables in Wikipedia are notably flat in their layout, with the first row as the sole column header. The layout lends to a relational view of tables where each row is a tuple. Whereas, tables in domain-specific business or scientific documents often have a much more complex layout, including hierarchical row and column headers, in addition to having specialized vocabulary terms from that domain. To address this problem, we introduce the domain-specific Table QA dataset AITQA (Airline Industry Table QA). The dataset consists of 515 questions authored by human annotators on 116 tables extracted from public U.S. SEC filings (SEC Filings publicly available at: https://www.sec.gov/edgar.shtml) of major airline companies for the fiscal years 2017-2019. We also provide annotations pertaining to the nature of questions, marking those that require hierarchical headers, domain-specific terminology, and paraphrased forms. Our zero-shot baseline evaluation of three transformer-based SOTA Table QA methods - TaPAS (end-to-end), TaBERT (semantic parsing-based), and RCI (row-column encoding-based) - clearly exposes the limitation of these methods in this practical setting, with the best accuracy at just 51.8% (RCI). We also present pragmatic table pre-processing steps used to pivot and project these complex tables into a layout suitable for the SOTA Table QA models\n\n"
-    #     "This version is a curated version containing the following changes:\n"
-    #     "1 - Documents: AIT_QA has only tables, AIT_QA_curated has SEC filing pages as documents. Split to pages. Format markdown.\n"
-    #     "2 - Questions: All questions in AIT_QA_curated are decontextualized.\n"
-    #     "3 - GT answers : Some answers were corrected for AIT_QA curated.\n"
-    #     "4 - GT retrieval: In AIT_QA only a single table, in AIT_QA_curated can be multiple pages.\n",
-    #     url="https://github.com/IBM/AITQA",
-    #     corpus_size=1937,
-    #     train_size=360,
-    #     test_size=155,
-    # ),
-    # DatasetRecord(
-    #     name=DatasetName.AIT_QA_CURATED_FULL_PDF,
-    #     domain=DatasetDomain.FINANCIAL,
-    #     retrieval_hops=DatasetRetrievalHops.SINGLE_HOP,
-    #     answer_scope=DatasetAnswerScope.PASSAGE,
-    #     question_context_dependency=DatasetQuestionContextDependency.UNCONTEXTUALIZED,
-    #     targeted_modalities=[DatasetTargetModality.TEXT, DatasetTargetModality.TABLE],
-    #     document_structure_format=DatasetDocumentStructureFormat.UNSTRUCTURED,
-    #     description="Recent advances in transformers have enabled Table Question Answering (Table QA) systems to achieve high accuracy and SOTA results on open domain datasets like WikiTableQuestions and WikiSQL. Such transformers are frequently pre-trained on open-domain content such as Wikipedia, where they effectively encode questions and corresponding tables from Wikipedia as seen in Table QA dataset. However, web tables in Wikipedia are notably flat in their layout, with the first row as the sole column header. The layout lends to a relational view of tables where each row is a tuple. Whereas, tables in domain-specific business or scientific documents often have a much more complex layout, including hierarchical row and column headers, in addition to having specialized vocabulary terms from that domain. To address this problem, we introduce the domain-specific Table QA dataset AITQA (Airline Industry Table QA). The dataset consists of 515 questions authored by human annotators on 116 tables extracted from public U.S. SEC filings (SEC Filings publicly available at: https://www.sec.gov/edgar.shtml) of major airline companies for the fiscal years 2017-2019. We also provide annotations pertaining to the nature of questions, marking those that require hierarchical headers, domain-specific terminology, and paraphrased forms. Our zero-shot baseline evaluation of three transformer-based SOTA Table QA methods - TaPAS (end-to-end), TaBERT (semantic parsing-based), and RCI (row-column encoding-based) - clearly exposes the limitation of these methods in this practical setting, with the best accuracy at just 51.8% (RCI). We also present pragmatic table pre-processing steps used to pivot and project these complex tables into a layout suitable for the SOTA Table QA models\n\n"
-    #     "This version is a curated version containing the following changes:\n"
-    #     "1 - Questions: All questions in AIT_QA_curated are decontextualized.\n"
-    #     "2 - GT answers : Some answers were corrected for AIT_QA curated.\n"
-    #     "3 - GT retrieval: In AIT_QA only a single table, in AIT_QA_curated can be multiple pages.\n",
-    #     url="https://github.com/IBM/AITQA",
-    #     corpus_size=1937,
-    #     train_size=360,
-    #     test_size=155,
-    # ),
-    # DatasetRecord(
-    #     name=DatasetName.AIT_QA_CURATED_FULL_MD,
-    #     domain=DatasetDomain.FINANCIAL,
-    #     retrieval_hops=DatasetRetrievalHops.SINGLE_HOP,
-    #     answer_scope=DatasetAnswerScope.PASSAGE,
-    #     question_context_dependency=DatasetQuestionContextDependency.UNCONTEXTUALIZED,
-    #     targeted_modalities=[DatasetTargetModality.TEXT, DatasetTargetModality.TABLE],
-    #     document_structure_format=DatasetDocumentStructureFormat.UNSTRUCTURED,
-    #     description="Recent advances in transformers have enabled Table Question Answering (Table QA) systems to achieve high accuracy and SOTA results on open domain datasets like WikiTableQuestions and WikiSQL. Such transformers are frequently pre-trained on open-domain content such as Wikipedia, where they effectively encode questions and corresponding tables from Wikipedia as seen in Table QA dataset. However, web tables in Wikipedia are notably flat in their layout, with the first row as the sole column header. The layout lends to a relational view of tables where each row is a tuple. Whereas, tables in domain-specific business or scientific documents often have a much more complex layout, including hierarchical row and column headers, in addition to having specialized vocabulary terms from that domain. To address this problem, we introduce the domain-specific Table QA dataset AITQA (Airline Industry Table QA). The dataset consists of 515 questions authored by human annotators on 116 tables extracted from public U.S. SEC filings (SEC Filings publicly available at: https://www.sec.gov/edgar.shtml) of major airline companies for the fiscal years 2017-2019. We also provide annotations pertaining to the nature of questions, marking those that require hierarchical headers, domain-specific terminology, and paraphrased forms. Our zero-shot baseline evaluation of three transformer-based SOTA Table QA methods - TaPAS (end-to-end), TaBERT (semantic parsing-based), and RCI (row-column encoding-based) - clearly exposes the limitation of these methods in this practical setting, with the best accuracy at just 51.8% (RCI). We also present pragmatic table pre-processing steps used to pivot and project these complex tables into a layout suitable for the SOTA Table QA models\n\n"
-    #     "This version is a curated version containing the following changes:\n"
-    #     "1 - Format markdown\n"
-    #     "2 - Questions: All questions in AIT_QA_curated are decontextualized.\n"
-    #     "3 - GT answers : Some answers were corrected for AIT_QA curated.\n"
-    #     "4 - GT retrieval: In AIT_QA only a single table, in AIT_QA_curated can be multiple pages.\n",
-    #     url="https://github.com/IBM/AITQA",
-    #     corpus_size=1937,
-    #     train_size=360,
-    #     test_size=155,
-    # ),
-    # DatasetRecord(
-    #     name=DatasetName.AIT_QA_CURATED_FULL_HTML,
-    #     domain=DatasetDomain.FINANCIAL,
-    #     retrieval_hops=DatasetRetrievalHops.SINGLE_HOP,
-    #     answer_scope=DatasetAnswerScope.PASSAGE,
-    #     question_context_dependency=DatasetQuestionContextDependency.UNCONTEXTUALIZED,
-    #     targeted_modalities=[DatasetTargetModality.TEXT, DatasetTargetModality.TABLE],
-    #     document_structure_format=DatasetDocumentStructureFormat.UNSTRUCTURED,
-    #     description="Recent advances in transformers have enabled Table Question Answering (Table QA) systems to achieve high accuracy and SOTA results on open domain datasets like WikiTableQuestions and WikiSQL. Such transformers are frequently pre-trained on open-domain content such as Wikipedia, where they effectively encode questions and corresponding tables from Wikipedia as seen in Table QA dataset. However, web tables in Wikipedia are notably flat in their layout, with the first row as the sole column header. The layout lends to a relational view of tables where each row is a tuple. Whereas, tables in domain-specific business or scientific documents often have a much more complex layout, including hierarchical row and column headers, in addition to having specialized vocabulary terms from that domain. To address this problem, we introduce the domain-specific Table QA dataset AITQA (Airline Industry Table QA). The dataset consists of 515 questions authored by human annotators on 116 tables extracted from public U.S. SEC filings (SEC Filings publicly available at: https://www.sec.gov/edgar.shtml) of major airline companies for the fiscal years 2017-2019. We also provide annotations pertaining to the nature of questions, marking those that require hierarchical headers, domain-specific terminology, and paraphrased forms. Our zero-shot baseline evaluation of three transformer-based SOTA Table QA methods - TaPAS (end-to-end), TaBERT (semantic parsing-based), and RCI (row-column encoding-based) - clearly exposes the limitation of these methods in this practical setting, with the best accuracy at just 51.8% (RCI). We also present pragmatic table pre-processing steps used to pivot and project these complex tables into a layout suitable for the SOTA Table QA models\n\n"
-    #     "This version is a curated version containing the following changes:\n"
-    #     "1 - Format html\n"
-    #     "2 - Questions: All questions in AIT_QA_curated are decontextualized.\n"
-    #     "3 - GT answers : Some answers were corrected for AIT_QA curated.\n"
-    #     "4 - GT retrieval: In AIT_QA only a single table, in AIT_QA_curated can be multiple pages.\n",
-    #     url="https://github.com/IBM/AITQA",
-    #     corpus_size=1937,
-    #     train_size=360,
-    #     test_size=155,
-    # ),
-    # DatasetRecord(
-    #     name=DatasetName.AIT_QA_HTML_CURATED,
-    #     domain=DatasetDomain.FINANCIAL,
-    #     retrieval_hops=DatasetRetrievalHops.SINGLE_HOP,
-    #     answer_scope=DatasetAnswerScope.PASSAGE,
-    #     question_context_dependency=DatasetQuestionContextDependency.UNCONTEXTUALIZED,
-    #     targeted_modalities=[DatasetTargetModality.TEXT, DatasetTargetModality.TABLE],
-    #     document_structure_format=DatasetDocumentStructureFormat.UNSTRUCTURED,
-    #     description="Recent advances in transformers have enabled Table Question Answering (Table QA) systems to achieve high accuracy and SOTA results on open domain datasets like WikiTableQuestions and WikiSQL. Such transformers are frequently pre-trained on open-domain content such as Wikipedia, where they effectively encode questions and corresponding tables from Wikipedia as seen in Table QA dataset. However, web tables in Wikipedia are notably flat in their layout, with the first row as the sole column header. The layout lends to a relational view of tables where each row is a tuple. Whereas, tables in domain-specific business or scientific documents often have a much more complex layout, including hierarchical row and column headers, in addition to having specialized vocabulary terms from that domain. To address this problem, we introduce the domain-specific Table QA dataset AITQA (Airline Industry Table QA). The dataset consists of 515 questions authored by human annotators on 116 tables extracted from public U.S. SEC filings (SEC Filings publicly available at: https://www.sec.gov/edgar.shtml) of major airline companies for the fiscal years 2017-2019. We also provide annotations pertaining to the nature of questions, marking those that require hierarchical headers, domain-specific terminology, and paraphrased forms. Our zero-shot baseline evaluation of three transformer-based SOTA Table QA methods - TaPAS (end-to-end), TaBERT (semantic parsing-based), and RCI (row-column encoding-based) - clearly exposes the limitation of these methods in this practical setting, with the best accuracy at just 51.8% (RCI). We also present pragmatic table pre-processing steps used to pivot and project these complex tables into a layout suitable for the SOTA Table QA models\n\n"
-    #     "This version is a curated version containing the following changes:"
-    #     "1 - Documents: AIT_QA has only tables, AIT_QA_curated has SEC filing pages as documents. In their original HTML format.\n"
-    #     "2 - Questions: All questions in AIT_QA_curated are decontextualized.\n"
-    #     "3 - GT answers : Some answers were corrected for AIT_QA curated.\n"
-    #     "4 - GT retrieval: In AIT_QA only a single table, in AIT_QA_curated can be multiple pages.\n",
-    #     url="https://github.com/IBM/AITQA",
-    #     corpus_size=15,
-    #     train_size=360,
-    #     test_size=155,
-    # ),
-    # DatasetRecord(
-    #     name=DatasetName.MULTIHIERTT_CURATED,
-    #     domain=DatasetDomain.FINANCIAL,
-    #     retrieval_hops=DatasetRetrievalHops.MULTI_HOP,
-    #     answer_scope=DatasetAnswerScope.PASSAGE,
-    #     question_context_dependency=DatasetQuestionContextDependency.UNCONTEXTUALIZED,
-    #     targeted_modalities=[DatasetTargetModality.TEXT, DatasetTargetModality.TABLE],
-    #     document_structure_format=DatasetDocumentStructureFormat.UNSTRUCTURED,
-    #     description="Numerical reasoning over hybrid data containing both textual and tabular content (e.g., financial reports) has recently attracted much attention in the NLP community. However, existing question answering (QA) benchmarks over hybrid data only include a single flat table in each document and thus lack examples of multi-step numerical reasoning across multiple hierarchical tables. To facilitate data analytical progress, we construct a new large-scale benchmark, MultiHiertt, with QA pairs over Multi Hierarchical Tabular and Textual data. MultiHiertt is built from a wealth of financial reports and has the following unique characteristics: 1) each document contain multiple tables and longer unstructured texts; 2) most of tables contained are hierarchical; 3) the reasoning process required for each question is more complex and challenging than existing benchmarks; and 4) fine-grained annotations of reasoning processes and supporting facts are provided to reveal complex numerical reasoning. We further introduce a novel QA model termed MT2Net, which first applies facts retrieving to extract relevant supporting facts from both tables and text and then uses a reasoning module to perform symbolic reasoning over retrieved facts. We conduct comprehensive experiments on various baselines. The experimental results show that MultiHiertt presents a strong challenge for existing baselines whose results lag far behind the performance of human experts. The dataset and code are publicly available at https://github.com/psunlpgroup/MultiHiertt.",
-    #     url="https://huggingface.co/datasets/yilunzhao/MultiHiertt",
-    #     corpus_size=9902,
-    #     train_size=624,
-    #     test_size=305,
-    # ),
+    DatasetRecord(
+        name=DatasetName.AIT_QA,
+        domain=DatasetDomain.FINANCIAL,
+        retrieval_hops=DatasetRetrievalHops.SINGLE_HOP,
+        answer_scope=DatasetAnswerScope.PASSAGE,
+        question_context_dependency=DatasetQuestionContextDependency.UNCONTEXTUALIZED,
+        targeted_modalities=[DatasetTargetModality.TEXT, DatasetTargetModality.TABLE],
+        document_structure_format=DatasetDocumentStructureFormat.UNSTRUCTURED,
+        description="A version of the https://huggingface.co/datasets/ibm-research/AITQARetrieval dataset.\n"
+        "In this version, the pdf format is used",
+        corpus_size=1937,
+        train_size=360,
+        test_size=155,
+    ),
     DatasetRecord(
         name=DatasetName.SECQUE,
         domain=DatasetDomain.FINANCIAL,
