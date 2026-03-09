@@ -180,5 +180,3 @@ def create_ait_qa_dataset() -> None:
 
 if __name__ == "__main__":
     create_ait_qa_dataset()
-
-# Made with Bob
