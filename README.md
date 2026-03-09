@@ -7,7 +7,7 @@ A comprehensive benchmarking framework for Retrieval-Augmented Generation (RAG) 
 
 ## Overview
 
-RAGBench is a powerful Python framework designed to evaluate and benchmark RAG systems across multiple datasets and metrics. It provides a unified interface for loading diverse RAG benchmarks, running inference pipelines, and computing comprehensive evaluation metrics.
+RAGWorkbench is a powerful Python framework designed to evaluate and benchmark RAG systems across multiple datasets and metrics. It provides a unified interface for loading diverse RAG benchmarks, running inference pipelines, and computing comprehensive evaluation metrics.
 
 ### Key Features
 
@@ -103,7 +103,7 @@ results, evaluation = experiment.run()
 
 ## Supported Datasets
 
-RAGBench supports 18+ benchmark datasets across various domains:
+RAGWorkbench supports 18+ benchmark datasets across various domains:
 
 | Dataset | Domain | Retrieval Hops | Modalities |
 |---------|--------|----------------|------------|
@@ -143,7 +143,7 @@ for entry in benchmark.get_benchmark_entries():
 
 ## Evaluation Metrics
 
-RAGBench provides comprehensive evaluation metrics through integration with Unitxt:
+RAGWorkbench provides comprehensive evaluation metrics through integration with Unitxt:
 
 ### Context Correctness Metrics
 
