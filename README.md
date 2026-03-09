@@ -1,4 +1,4 @@
-# RAGBench
+# RAGWorkbench
 
 A comprehensive benchmarking framework for Retrieval-Augmented Generation (RAG) systems.
 
@@ -27,14 +27,14 @@ RAGBench is a powerful Python framework designed to evaluate and benchmark RAG s
 ### Basic Installation
 
 ```bash
-pip install ragbench
+pip install .
 ```
 
 ### Development Installation
 
 ```bash
-git clone https://github.com/yourusername/ragbench.git
-cd ragbench
+git clone https://github.com/IBM/RagWorkbench.git
+cd RagWorkbench
 pip install -e ".[dev]"
 ```
 
@@ -42,13 +42,13 @@ pip install -e ".[dev]"
 
 ```bash
 # For documentation
-pip install ragbench[docs]
+pip install .[docs]
 
 # For examples
-pip install ragbench[examples]
+pip install .[examples]
 
 # Install all optional dependencies
-pip install ragbench[all]
+pip install .[all]
 ```
 
 ## Quick Start
@@ -176,7 +176,7 @@ custom_metric = MetricDefinition(
 
 ## Caching System
 
-RAGBench includes a sophisticated caching system to speed up experiments:
+RagWorkbench includes a sophisticated caching system to speed up experiments:
 
 ```python
 from pathlib import Path
@@ -201,7 +201,7 @@ The caching system supports:
 
 ## Dataset Explorer
 
-RAGBench includes an interactive web-based dataset explorer:
+RagWorkbench includes an interactive web-based dataset explorer:
 
 ```bash
 python -m ragbench.dataset_exploration.dataset_explorer
@@ -278,19 +278,6 @@ We welcome contributions! Please see our contributing guidelines for more detail
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-## Citation
-
-If you use RAGBench in your research, please cite:
-
-```bibtex
-@software{ragbench2024,
-  title = {RAGBench: A Comprehensive Benchmarking Framework for RAG Systems},
-  author = {Orbach, Matan and Toledo, Assaf, Boni, Odellia and Sznajder, Benjamin},
-  year = {2024},
-  url = {https://github.com/yourusername/ragbench}
-}
-```
-
 ## Authors
 
 - **Matan Orbach** - [matano@il.ibm.com](mailto:matano@il.ibm.com)
@@ -307,9 +294,6 @@ If you use RAGBench in your research, please cite:
 ## Support
 
 For questions, issues, or feature requests, please:
-- Open an issue on [GitHub Issues](https://github.com/yourusername/ragbench/issues)
-- Check the [documentation](https://github.com/yourusername/ragbench#readme)
+- Open an issue on [GitHub Issues](https://github.com/IBM/RagWorkbench/issues)
 
 ---
-
-**Note**: RAGBench is under active development. APIs may change between versions.
