@@ -52,6 +52,11 @@ dependencies = [
     "scipy",
     "nicegui",
     "python-dotenv",
+    "trafilatura",
+    "selenium",
+    "webdriver_manager",
+    "playwright",
+    "requests_html",
     # Needed by some metrics
     "bert_score"
 ]
