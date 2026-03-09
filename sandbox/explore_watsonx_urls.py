@@ -3,6 +3,7 @@ Script to explore watsonxDocsQA dataset URLs and find their archived versions fr
 Processes ALL URLs from the dataset with progress saving for resumability.
 """
 
+import argparse
 import json
 import os
 import random
@@ -207,6 +208,16 @@ def save_progress(progress_file, processed_indices, results):
 
 
 def main():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description="Explore watsonxDocsQA dataset URLs and find their archived versions from 2021-2023."
+    )
+    parser.add_argument(
+        "--retry_access_failed",
+        action="store_true",
+        help="Retry URLs that previously failed to access web.archive.org",
+    )
+    args = parser.parse_args()
 
     progress_file = "watsonx_urls_progress.json"
 
@@ -224,6 +235,32 @@ def main():
         print(
             f"Resuming from previous run. Already processed {len(processed_indices)} URLs."
         )
+
+    # Handle retry_access_failed flag
+    if args.retry_access_failed:
+        # Find indices with access_failed status
+        failed_indices = {
+            result["index"]
+            for result in results
+            if result["archive_status"] == "access_failed"
+        }
+
+        if failed_indices:
+            print(
+                f"\n--retry_access_failed flag detected: Will retry {len(failed_indices)} URLs that previously failed to access web.archive.org"
+            )
+            # Remove failed indices from processed set so they'll be retried
+            processed_indices -= failed_indices
+            # Remove failed results from results list
+            results = [
+                result
+                for result in results
+                if result["archive_status"] != "access_failed"
+            ]
+        else:
+            print(
+                "\n--retry_access_failed flag detected but no failed URLs found to retry"
+            )
 
     # Collect all entries
     print("Collecting all dataset entries...")
