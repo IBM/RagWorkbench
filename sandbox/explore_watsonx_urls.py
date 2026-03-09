@@ -26,6 +26,14 @@ def get_wayback_snapshots(url, from_year=2021, to_year=2023, max_retries=2):
     Get available snapshots from Wayback Machine for a given URL and date range.
     Returns the most recent snapshots first.
     Includes retry logic with exponential backoff for handling timeouts.
+
+    Returns:
+        tuple: (snapshots_list, status_string)
+            - snapshots_list: List of snapshots or empty list
+            - status_string: One of:
+                - "success": Archive reached and snapshots found
+                - "no_snapshots": Archive reached but no snapshots exist
+                - "access_failed": Archive could not be reached (timeout/error)
     """
     # Wayback Machine CDX API
     cdx_api = "http://web.archive.org/cdx/search/cdx"
@@ -49,8 +57,13 @@ def get_wayback_snapshots(url, from_year=2021, to_year=2023, max_retries=2):
             if response.status_code == 200:
                 data = response.json()
                 if len(data) > 1:  # First row is headers
-                    return data[1:]  # Return all snapshots except header
-            return []
+                    return data[1:], "success"  # Return snapshots with success status
+                else:
+                    # Archive was reached but no snapshots exist
+                    return [], "no_snapshots"
+            else:
+                # Non-200 status code
+                return [], "access_failed"
 
         except (Timeout, ConnectionError) as e:
             if attempt < max_retries - 1:
@@ -61,17 +74,17 @@ def get_wayback_snapshots(url, from_year=2021, to_year=2023, max_retries=2):
                 time.sleep(wait_time)
             else:
                 print(f"  ✗ Failed after {max_retries} attempts: {type(e).__name__}")
-                return []
+                return [], "access_failed"
 
         except RequestException as e:
             print(f"  ✗ Request error: {e}")
-            return []
+            return [], "access_failed"
 
         except Exception as e:
             print(f"  ✗ Unexpected error: {e}")
-            return []
+            return [], "access_failed"
 
-    return []
+    return [], "access_failed"
 
 
 def format_wayback_url(timestamp, original_url):
@@ -101,7 +114,9 @@ def process_single_url(idx, entry, print_lock):
     with print_lock:
         print("\nSearching Wayback Machine for 2021-2023 snapshots...")
 
-    snapshots = get_wayback_snapshots(cleaned_url, from_year=2021, to_year=2023)
+    snapshots, archive_status = get_wayback_snapshots(
+        cleaned_url, from_year=2021, to_year=2023
+    )
 
     # Determine which year was actually used from the snapshot timestamp
     year_used = None
@@ -149,10 +164,16 @@ def process_single_url(idx, entry, print_lock):
             "timestamp": selected_timestamp,
             "total_snapshots": len(snapshots),
             "year": year_used,
+            "archive_status": archive_status,
         }
     else:
-        with print_lock:
-            print("✗ No snapshots found from 2021-2023")
+        # Distinguish between no snapshots and access failure
+        if archive_status == "no_snapshots":
+            with print_lock:
+                print("✗ Archive reached but no snapshots found from 2021-2023")
+        else:  # access_failed
+            with print_lock:
+                print("✗ Failed to access web.archive.org (timeout/connection error)")
 
         return {
             "index": idx,
@@ -162,6 +183,7 @@ def process_single_url(idx, entry, print_lock):
             "timestamp": None,
             "total_snapshots": 0,
             "year": None,
+            "archive_status": archive_status,
         }
 
 
@@ -272,8 +294,14 @@ def main():
             print(
                 f"  (Found {result['total_snapshots']} snapshots from {result['year']})"
             )
+            print(f"  Status:   {result['archive_status']}")
         else:
             print("  Archive:  Not found")
+            print(f"  Status:   {result['archive_status']}")
+            if result["archive_status"] == "no_snapshots":
+                print("  Reason:   Archive reached but no snapshots exist")
+            elif result["archive_status"] == "access_failed":
+                print("  Reason:   Failed to access web.archive.org")
         print()
 
 
