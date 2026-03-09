@@ -14,13 +14,15 @@ Typical usage example:
     documents = data_loader.get_documents()
 """
 
+import json
 import logging
 import mimetypes
 import random
 from io import BytesIO
 from pathlib import Path
+from urllib.request import urlopen
 
-import pandas as pd
+from datasets import load_dataset  # type: ignore[import-not-found]
 
 from ragbench.api.dataset import DatasetSplit
 from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
@@ -95,44 +97,87 @@ class AITQaDataLoader(RagDataLoader):
             The documents directory location is determined by the shared configuration
             module (ait_qa_data.config), ensuring consistency with the dataset downloader.
         """
-        # Step 1: Load and parse benchmark entries from CSV
-        # The CSV contains question-answer pairs with references to ground truth documents
+        # Step 1: Load and parse benchmark entries from HuggingFace dataset
+        # Load the queries from the HuggingFace AITQARetrieval dataset
+        logger.info("Loading AIT QA queries from HuggingFace dataset...")
+        queries_dataset = load_dataset(
+            "ibm-research/AITQARetrieval", "queries", split="test_queries"
+        )
+
+        # Load the qrels (query-document relevance) from the default subset
+        logger.info(
+            "Loading AIT QA qrels (ground truth contexts) from HuggingFace dataset..."
+        )
+        qrels_dataset = load_dataset("ibm-research/AITQARetrieval", split="test")
+
+        # Build a mapping from question_id to list of document_ids (ground truth contexts)
+        # The qrels dataset has multiple rows per question, each with a relevant document
+        # Note: Document IDs need to be normalized from format "United-2018_27.md" to "United-2018.pdf"
+        qid_to_dids: dict[str, set[str]] = {}
+        for item in qrels_dataset:
+            qid = item["qid"]
+            did = item["did"]
+
+            # Normalize the document ID: remove everything after '_' and change extension to .pdf
+            # Example: "United-2018_27.md" -> "United-2018.pdf"
+            if "_" in did:
+                normalized_did = did.split("_")[0] + ".pdf"
+            else:
+                # If no underscore, just replace .md with .pdf
+                normalized_did = did.replace(".md", ".pdf")
+
+            if qid not in qid_to_dids:
+                qid_to_dids[qid] = set()
+            # Add to set (automatically handles duplicates after normalization)
+            qid_to_dids[qid].add(normalized_did)
+
+        logger.info(f"Loaded ground truth contexts for {len(qid_to_dids)} questions")
+
+        # Load ground truth answers from the AITQA GitHub repository
+        logger.info("Loading ground truth answers from AITQA GitHub repository...")
+        aitqa_jsonl_url = "https://raw.githubusercontent.com/IBM/AITQA/master/raw_data/aitqa_questions.jsonl"
+        qid_to_answers: dict[str, list[str]] = {}
+
+        with urlopen(aitqa_jsonl_url) as response:
+            for line in response:
+                line_str = line.decode("utf-8").strip()
+                if line_str:
+                    data = json.loads(line_str)
+                    qid = data["id"]
+                    qid_to_answers[qid] = data["answers"]
+
+        logger.info(f"Loaded ground truth answers for {len(qid_to_answers)} questions")
+
+        # Create RagBenchmarkEntry objects from the queries dataset
+        # The queries_dataset contains _id and text columns which map to question_id and question
         self.benchmark_entries: list[RagBenchmarkEntry] = []
-        benchmark_csv_file = Path(__file__).parent / "ait_qa_data" / "benchmark.csv"
-        benchmark_df = pd.read_csv(benchmark_csv_file)
 
-        # Iterate through each row and create RagBenchmarkEntry objects
-        for _, row in benchmark_df.iterrows():
-            # Extract question metadata and content
-            question_id = str(row["question_id"])  # Unique identifier for the question
-            question = str(row["question"])  # The actual question text
+        for item in queries_dataset:
+            question_id = item["_id"]
+            question = item["text"]
 
-            # Parse the correct_answer_document_ids which is stored as a string representation of a list
-            # Example: "['United-2017.pdf', 'United-2018.pdf']"
-            document_ids_str = str(row["correct_answer_document_ids"])
-            # Remove brackets and quotes, then split by comma
-            document_ids = [
-                doc_id.strip().strip("'\"")
-                for doc_id in document_ids_str.strip("[]").split(",")
-            ]
-
-            # Create ground truth context references linking to the source documents
+            # Get the ground truth context IDs for this question
+            document_ids = qid_to_dids.get(question_id, set())
             ground_truths_context_ids = [
                 GroundTruthContextId(document_id=doc_id) for doc_id in document_ids
             ]
 
-            # Extract the ground truth answer
-            answer = str(row["correct_answer"])
+            # Get the ground truth answers for this question
+            ground_truth_answers = qid_to_answers.get(question_id, None)
 
-            # Construct the complete benchmark entry
-            self.benchmark_entries.append(
-                RagBenchmarkEntry(
-                    question_id=question_id,
-                    question=question,
-                    ground_truths_context_ids=ground_truths_context_ids,
-                    ground_truth_answers=[answer],
-                )
+            # Create a RagBenchmarkEntry with the loaded data
+            entry = RagBenchmarkEntry(
+                question_id=question_id,
+                question=question,
+                ground_truth_answers=ground_truth_answers,
+                ground_truths_context_ids=ground_truths_context_ids,
+                is_answerable=True,  # Assume all queries are answerable
             )
+            self.benchmark_entries.append(entry)
+
+        logger.info(
+            f"Loaded {len(self.benchmark_entries)} benchmark entries from HuggingFace"
+        )
 
         # Step 2: Load document PDFs from the documents directory
         # Use shared configuration to get the documents directory location
