@@ -192,7 +192,8 @@ def save_progress(progress_file, processed_indices, results):
 
 
 def main():
-    progress_file = "sandbox/watsonx_urls_progress.json"
+
+    progress_file = "watsonx_urls_progress.json"
 
     print("Loading watsonxDocsQA dataset (streaming mode)...")
 
