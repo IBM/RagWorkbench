@@ -1,5 +1,5 @@
 """
-Script to explore watsonxDocsQA dataset URLs and find their 2023 archived versions.
+Script to explore watsonxDocsQA dataset URLs and find their archived versions from 2021-2023.
 Processes ALL URLs from the dataset with progress saving for resumability.
 """
 
@@ -21,9 +21,10 @@ def clean_url(url):
     return url
 
 
-def get_wayback_snapshots(url, year=2023, max_retries=2):
+def get_wayback_snapshots(url, from_year=2021, to_year=2023, max_retries=2):
     """
-    Get available snapshots from Wayback Machine for a given URL and year.
+    Get available snapshots from Wayback Machine for a given URL and date range.
+    Returns the most recent snapshots first.
     Includes retry logic with exponential backoff for handling timeouts.
     """
     # Wayback Machine CDX API
@@ -31,10 +32,11 @@ def get_wayback_snapshots(url, year=2023, max_retries=2):
 
     params = {
         "url": url,
-        "from": f"{year}0101",
-        "to": f"{year}1231",
+        "from": f"{from_year}0101",
+        "to": f"{to_year}1231",
         "output": "json",
-        "limit": 1,  # Get up to 1 snapshot from the year
+        "limit": 1,  # Get up to 1 snapshots from the date range
+        "sort": "reverse",  # Get most recent snapshots first
     }
 
     for attempt in range(max_retries):
@@ -52,7 +54,7 @@ def get_wayback_snapshots(url, year=2023, max_retries=2):
 
         except (Timeout, ConnectionError) as e:
             if attempt < max_retries - 1:
-                wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
+                wait_time = 2 ** (attempt + 1)  # Exponential backoff: 2s, 4s
                 print(
                     f"  Connection timeout/error. Waiting {wait_time}s before retry..."
                 )
@@ -95,24 +97,17 @@ def process_single_url(idx, entry, print_lock):
     with print_lock:
         print(f"Cleaned URL:  {cleaned_url}")
 
-    # Get Wayback Machine snapshots from 2023, fallback to 2022
+    # Get Wayback Machine snapshots from 2021-2023
     with print_lock:
-        print("\nSearching Wayback Machine for 2023 snapshots...")
+        print("\nSearching Wayback Machine for 2021-2023 snapshots...")
 
-    snapshots = get_wayback_snapshots(cleaned_url, year=2023)
-    year_used = 2023
+    snapshots = get_wayback_snapshots(cleaned_url, from_year=2021, to_year=2023)
 
-    if not snapshots:
-        with print_lock:
-            print("No 2023 snapshots found. Trying 2022...")
-        snapshots = get_wayback_snapshots(cleaned_url, year=2022)
-        year_used = 2022
-
-    if not snapshots:
-        with print_lock:
-            print("No 2022-2023 snapshots found. Trying 2021...")
-        snapshots = get_wayback_snapshots(cleaned_url, year=2021)
-        year_used = 2021
+    # Determine which year was actually used from the snapshot timestamp
+    year_used = None
+    if snapshots:
+        timestamp = snapshots[0][1]
+        year_used = int(timestamp[:4])
 
     if snapshots:
         with print_lock:
@@ -138,10 +133,8 @@ def process_single_url(idx, entry, print_lock):
                 print(f"  {i}. Date: {formatted_date} | Status: {status_code}")
                 print(f"     URL: {wayback_url}")
 
-        # Select the first snapshot (or middle one for variety)
-        selected_snapshot = (
-            snapshots[len(snapshots) // 2] if len(snapshots) > 1 else snapshots[0]
-        )
+        # Select the first snapshot (most recent due to reverse sort)
+        selected_snapshot = snapshots[0]
         selected_timestamp = selected_snapshot[1]
         selected_wayback_url = format_wayback_url(selected_timestamp, cleaned_url)
 
@@ -159,7 +152,7 @@ def process_single_url(idx, entry, print_lock):
         }
     else:
         with print_lock:
-            print("✗ No snapshots found from 2023 or 2022")
+            print("✗ No snapshots found from 2021-2023")
 
         return {
             "index": idx,
@@ -247,8 +240,8 @@ def main():
         results.append(result)
         processed_indices.add(idx)
 
-        # Save progress every 10 URLs
-        if len(processed_indices) % 10 == 0:
+        # Save progress every 5 URLs
+        if len(processed_indices) % 5 == 0:
             save_progress(progress_file, processed_indices, results)
             print(
                 f"\n  ✓ Progress saved ({len(processed_indices)}/{len(all_entries)} completed)"
