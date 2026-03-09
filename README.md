@@ -2,43 +2,27 @@
 
 A comprehensive benchmarking framework for Retrieval-Augmented Generation (RAG) systems.
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## Overview
 
-RAGBench is a powerful framework designed to evaluate and benchmark RAG systems across multiple datasets and metrics. It provides a unified interface for loading datasets, running experiments, and evaluating retrieval and generation performance.
+RAGBench is a powerful Python framework designed to evaluate and benchmark RAG systems across multiple datasets and metrics. It provides a unified interface for loading diverse RAG benchmarks, running inference pipelines, and computing comprehensive evaluation metrics.
 
-## Features
+### Key Features
 
-- 🎯 **Multiple Dataset Support**: Built-in support for 17+ RAG benchmark datasets
-- 📊 **Comprehensive Metrics**: Evaluate with various metrics including BERT Score, exact match, F1, and more
-- 🔄 **Flexible Pipeline**: Modular design with separate ingest, inference, and evaluation stages
-- 💾 **Smart Caching**: Built-in caching for data loading, generation, and evaluation results
-- 🎨 **Interactive Exploration**: Dataset exploration UI powered by NiceGUI
-- 📈 **Experiment Tracking**: Organize and track multiple experiments with ease
-
-## Supported Datasets
-
-RAGBench supports the following benchmark datasets:
-
-- **AIT QA** - AI and technology question answering
-- **BioASQ** - Biomedical question answering
-- **CLAP-NQ** - Natural questions with context
-- **DA-Code** - Code-related QA
-- **DABStep** - Step-by-step reasoning
-- **HotpotQA** - Multi-hop question answering
-- **KramaBench** - Knowledge-intensive QA
-- **Mini Wiki** - Wikipedia-based RAG
-- **MLDR** - Multilingual long document retrieval
-- **NarrativeQA** - Reading comprehension
-- **OfficeQA** - Enterprise documentation QA
-- **QASPER** - Question answering on scientific papers
-- **SecQue** - Security-related questions
-- **WatsonX DocsQA** - Enterprise documentation
-- **Real-MM** - Multimodal datasets (financial/technical reports and slides)
+- 🎯 **Multiple Benchmark Datasets**: Support for 18+ RAG benchmark datasets including AIT-QA, BioASQ, HotpotQA, NarrativeQA, QASPER, and more
+- 📊 **Comprehensive Metrics**: Built-in evaluation metrics for context correctness (Recall@K, MRR, MAP) and answer correctness (BERT Score, Sentence-BERT, LLM-as-a-Judge)
+- 🔄 **Flexible Pipeline**: Modular architecture supporting custom ingest and inference pipelines
+- 💾 **Smart Caching**: File-system based caching for data loading, generation, and evaluation results
+- 🌐 **Interactive Explorer**: Web-based dataset exploration tool with advanced filtering capabilities
+- 🧪 **Experiment Management**: End-to-end experiment orchestration from data loading to evaluation
 
 ## Installation
+
+### Requirements
+
+- Python 3.11 or higher
 
 ### Basic Installation
 
@@ -49,15 +33,9 @@ pip install ragbench
 ### Development Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/yourusername/ragbench.git
 cd ragbench
-
-# Install with development dependencies
 pip install -e ".[dev]"
-
-# Install pre-commit hooks
-pre-commit install
 ```
 
 ### Optional Dependencies
@@ -66,7 +44,7 @@ pre-commit install
 # For documentation
 pip install ragbench[docs]
 
-# For examples with Docling
+# For examples
 pip install ragbench[examples]
 
 # Install all optional dependencies
@@ -78,160 +56,175 @@ pip install ragbench[all]
 ### Basic Usage
 
 ```python
-from ragbench import Experiment, DataLoaderFactory, DatasetName
-from ragbench.api import IngestPipeline, InferencePipeline
+from ragbench import DataLoaderFactory, DatasetName, Experiment
+from ragbench.api.inference import InferencePipeline, InferenceParams
+from ragbench.api.ingest import IngestPipeline
 from ragbench.eval import MetricDefinition
 
 # Load a dataset
-data_loader = DataLoaderFactory.create_loader(
-    dataset_name=DatasetName.MINI_WIKI,
-    split="test"
-)
+data_loader = DataLoaderFactory.create_data_loader(DatasetName.HOTPOT_QA)
 
-# Define your pipelines
-ingest_pipeline = IngestPipeline(...)  # Your ingest implementation
-inference_pipeline = InferencePipeline(...)  # Your inference implementation
+# Define your custom pipelines
+class MyIngestPipeline(IngestPipeline):
+    def process(self, data_loader):
+        # Your ingestion logic
+        pass
+
+class MyInferencePipeline(InferencePipeline):
+    def __init__(self, params: InferenceParams, cache_dir=None):
+        super().__init__(params, cache_dir)
+
+    def set_ingest_artifacts(self, ingest_artifacts):
+        # Set up your retrieval system
+        pass
+
+    def process_no_cache(self, benchmark_entry):
+        # Your inference logic
+        pass
 
 # Define evaluation metrics
 metrics = [
-    MetricDefinition(metric_id="exact_match"),
-    MetricDefinition(metric_id="f1"),
+    MetricDefinition.from_yaml_key("unitxt.context_correctness.retrieval_at_k"),
+    MetricDefinition.from_yaml_key("unitxt.answer_correctness.bert_score_recall"),
 ]
 
 # Create and run experiment
 experiment = Experiment(
     name="my_rag_experiment",
     data_loader=data_loader,
-    ingest_pipeline=ingest_pipeline,
-    inference_pipeline=inference_pipeline,
+    ingest_pipeline=MyIngestPipeline(),
+    inference_pipeline=MyInferencePipeline(InferenceParams()),
     eval_metrics=metrics,
+    cache_dir="./cache"
 )
 
-# Run the complete pipeline
-inference_results, evaluation_results = experiment.run()
+results, evaluation = experiment.run()
 ```
 
-### Dataset Exploration
+## Supported Datasets
 
-```python
-from ragbench.dataset_exploration import DatasetExplorer
+RAGBench supports 18+ benchmark datasets across various domains:
 
-# Launch interactive dataset explorer
-explorer = DatasetExplorer()
-explorer.run()
-```
+| Dataset | Domain | Retrieval Hops | Modalities |
+|---------|--------|----------------|------------|
+| AIT-QA | Financial | Single | TEXT, TABLE |
+| BioASQ | Biomedical | Single | TEXT |
+| CLAP-NQ | Wikipedia | Single | TEXT |
+| DA-Code | Code | Single | TEXT |
+| DABStep | Code | Multi | TEXT |
+| HotpotQA | Wikipedia | Multi | TEXT |
+| KramaBench | Wikipedia | Single | TEXT |
+| Mini-Wiki | Wikipedia | Single | TEXT |
+| MLDR | Multilingual | Single | TEXT |
+| NarrativeQA | Literature | Single | TEXT |
+| OfficeQA | Technical Docs | Single | TEXT |
+| QASPER | Scientific Papers | Single | TEXT |
+| SecQue | Policies | Single | TEXT |
+| WatsonX DocsQA | Technical Docs | Single | TEXT |
+| RealMM (4 variants) | Financial/Technical | Single | TEXT, TABLE, IMAGE |
 
-## Dataset Setup
-
-### AIT QA Dataset
-
-The AIT QA (Airline Industry Table QA) dataset requires special setup as it uses local PDF files. Follow these steps to prepare the dataset:
-
-#### 1. Set Environment Variable
-
-The AIT QA dataset requires the `RAGBENCH_DATA_DIR` environment variable to be set. This specifies where the dataset files will be stored.
-
-**Option A: Using a .env file (Recommended)**
-
-Create a `.env` file in your project root directory:
-
-```bash
-# .env file
-RAGBENCH_DATA_DIR=/path/to/your/data/directory
-```
-
-The configuration will automatically load this file when needed.
-
-**Option B: System Environment Variable**
-
-```bash
-# Set the environment variable (Linux/macOS)
-export RAGBENCH_DATA_DIR=/path/to/your/data/directory
-
-# Set the environment variable (Windows)
-set RAGBENCH_DATA_DIR=C:\path\to\your\data\directory
-```
-
-To make this permanent, add it to your shell configuration file:
-
-```bash
-# For bash (~/.bashrc or ~/.bash_profile)
-echo 'export RAGBENCH_DATA_DIR=/path/to/your/data/directory' >> ~/.bashrc
-source ~/.bashrc
-
-# For zsh (~/.zshrc)
-echo 'export RAGBENCH_DATA_DIR=/path/to/your/data/directory' >> ~/.zshrc
-source ~/.zshrc
-```
-
-#### 2. Download Dataset Files
-
-Run the dataset creation script to download the required PDF files:
-
-```bash
-python -m ragbench.datasets_loader.ait_qa_data.create_ait_qa_dataset
-```
-
-This script will:
-- Create the directory structure: `$RAGBENCH_DATA_DIR/ait_qa_pdf/documents/`
-- Download 15 annual report PDFs from airlines (Alaska, American Airlines, Delta, Southwest, United) for fiscal years 2017-2019
-- Skip files that already exist (safe to re-run)
-
-The download may take several minutes depending on your internet connection.
-
-#### 3. Use the Dataset
-
-Once setup is complete, you can use the AIT QA dataset like any other dataset:
+### Loading Datasets
 
 ```python
 from ragbench import DataLoaderFactory, DatasetName
 
-# Load AIT QA dataset
-loader = DataLoaderFactory.create_loader(
-    dataset_name=DatasetName.AIT_QA,
-    split="test"
-)
+# Load a specific dataset
+loader = DataLoaderFactory.create_data_loader(DatasetName.BIOASQ)
 
-# Access the data
-corpus = loader.get_corpus()
+# Get the benchmark and corpus
 benchmark = loader.get_benchmark()
+corpus = loader.get_corpus()
+
+# Access benchmark entries
+for entry in benchmark.get_benchmark_entries():
+    print(f"Question: {entry.question}")
+    print(f"Ground truth answers: {entry.ground_truth_answers}")
 ```
 
-**Note:** If you try to use the AIT QA dataset without setting `RAGBENCH_DATA_DIR`, you will receive an `EnvironmentError` with instructions on how to set it.
+## Evaluation Metrics
 
-## Architecture
+RAGBench provides comprehensive evaluation metrics through integration with Unitxt:
 
-RAGBench follows a modular architecture with three main stages:
+### Context Correctness Metrics
 
-1. **Ingest Stage**: Process and index documents from the dataset
-2. **Inference Stage**: Retrieve relevant documents and generate answers
-3. **Evaluation Stage**: Compute metrics comparing generated answers to ground truth
+- **Retrieval@K**: Measures retrieval accuracy at different cutoffs (K=1, 3, 5, 10, 20, 40)
+- **MRR (Mean Reciprocal Rank)**: Evaluates the rank of the first relevant document
+- **MAP (Mean Average Precision)**: Measures precision across all relevant documents
 
+### Answer Correctness Metrics
+
+- **BERT Score Recall**: Semantic similarity using BERT embeddings
+- **Sentence-BERT**: Sentence-level semantic similarity
+- **LLM-as-a-Judge**: Uses LLMs (Llama, GPT-4) to evaluate answer quality
+
+### Using Metrics
+
+```python
+from ragbench.eval import MetricDefinition
+
+# Load metrics from YAML definitions
+metric = MetricDefinition.from_yaml_key("unitxt.context_correctness.retrieval_at_k")
+
+# Or create custom metrics
+custom_metric = MetricDefinition(
+    metric_id="custom.metric",
+    metric_params={"param": "value"},
+    metric_fields=["field1", "field2"],
+    vendor="unitxt"
+)
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│   Ingest    │────▶│  Inference   │────▶│ Evaluation  │
-│  Pipeline   │     │   Pipeline   │     │   Metrics   │
-└─────────────┘     └──────────────┘     └─────────────┘
-      │                    │                     │
-      ▼                    ▼                     ▼
-  Documents           Predictions            Scores
+
+## Caching System
+
+RAGBench includes a sophisticated caching system to speed up experiments:
+
+```python
+from pathlib import Path
+
+# Enable caching for all components
+cache_dir = Path("./cache")
+
+experiment = Experiment(
+    name="cached_experiment",
+    data_loader=data_loader,
+    ingest_pipeline=ingest_pipeline,
+    inference_pipeline=MyInferencePipeline(params, cache_dir=cache_dir),
+    eval_metrics=metrics,
+    cache_dir=cache_dir  # Enables evaluator caching
+)
 ```
 
-## Project Structure
+The caching system supports:
+- **Data Loader Cache**: Caches loaded datasets
+- **Generation Cache**: Caches inference results
+- **Evaluator Cache**: Caches evaluation results
 
+## Dataset Explorer
+
+RAGBench includes an interactive web-based dataset explorer:
+
+```bash
+python -m ragbench.dataset_exploration.dataset_explorer
 ```
-ragbench/
-├── src/ragbench/
-│   ├── api/              # Core API interfaces
-│   ├── caching/          # Caching implementations
-│   ├── datasets_loader/  # Dataset loaders
-│   ├── eval/             # Evaluation metrics
-│   ├── boards/           # Result visualization
-│   ├── dataset_exploration/  # Interactive dataset explorer
-│   └── experiment.py     # Main experiment orchestration
-├── tests/                # Test suite
-└── pyproject.toml        # Project configuration
-```
+
+Then open your browser to `http://localhost:8080`
+
+### Explorer Features
+
+- 📋 Browse all available datasets in a sortable table
+- 🔍 Search datasets by name or description
+- 🎨 Filter by domain, retrieval hops, modalities, and more
+- 📊 View detailed dataset statistics and metadata
+- 📋 Copy dataset names with one click
+
+
+### Core Components
+
+- **DataLoader**: Loads and manages benchmark datasets
+- **IngestPipeline**: Processes and indexes documents
+- **InferencePipeline**: Runs retrieval and generation
+- **Evaluator**: Computes evaluation metrics
+- **Experiment**: Orchestrates the complete workflow
 
 ## Development
 
@@ -244,8 +237,11 @@ pytest
 # Run with coverage
 pytest --cov=src --cov-report=html
 
-# Run only unit tests (skip integration tests)
-pytest -m "not integration"
+# Run only unit tests
+pytest tests/datasets_loader/unit
+
+# Run only integration tests
+pytest -m integration
 ```
 
 ### Code Quality
@@ -253,7 +249,6 @@ pytest -m "not integration"
 ```bash
 # Format code
 black src tests
-isort src tests
 
 # Lint code
 ruff check src tests
@@ -264,37 +259,24 @@ mypy src
 
 ### Pre-commit Hooks
 
-The project uses pre-commit hooks for code quality:
-
 ```bash
-# Install hooks
 pre-commit install
-
-# Run manually
 pre-commit run --all-files
 ```
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
+We welcome contributions! Please see our contributing guidelines for more details.
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests and linting
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## Authors
-
-- **Matan Orbach** - [matano@il.ibm.com](mailto:matano@il.ibm.com)
-- **Assaf Toledo** - [assaf.toledo@ibm.com](mailto:assaf.toledo@ibm.com)
-- **Benjamin Sznajder** - [benjams@il.ibm.com](mailto:benjams@il.ibm.com)
 
 ## Citation
 
@@ -303,20 +285,31 @@ If you use RAGBench in your research, please cite:
 ```bibtex
 @software{ragbench2024,
   title = {RAGBench: A Comprehensive Benchmarking Framework for RAG Systems},
-  author = {Orbach, Matan and Toledo, Assaf and Sznajder, Benjamin},
+  author = {Orbach, Matan and Toledo, Assaf, Boni, Odellia and Sznajder, Benjamin},
   year = {2024},
   url = {https://github.com/yourusername/ragbench}
 }
 ```
 
+## Authors
+
+- **Matan Orbach** - [matano@il.ibm.com](mailto:matano@il.ibm.com)
+- **Assaf Toledo** - [assaf.toledo@ibm.com](mailto:assaf.toledo@ibm.com)
+- **Benjamin Sznajder** - [benjams@il.ibm.com](mailto:benjams@il.ibm.com)
+- **Odellia Boni** - [odelliab@il.ibm.com](mailto:odelliab@il.ibm.com)
+
 ## Acknowledgments
 
-- Built with [Unitxt](https://github.com/IBM/unitxt) for metric evaluation
-- Uses [Docling](https://github.com/DS4SD/docling) for document processing
-- Powered by [HuggingFace Datasets](https://huggingface.co/docs/datasets/)
+- Built with [Unitxt](https://github.com/IBM/unitxt) for evaluation metrics
+- Uses [NiceGUI](https://nicegui.io/) for the dataset explorer
+- Integrates with [Hugging Face Datasets](https://huggingface.co/docs/datasets/)
 
 ## Support
 
 For questions, issues, or feature requests, please:
 - Open an issue on [GitHub Issues](https://github.com/yourusername/ragbench/issues)
 - Check the [documentation](https://github.com/yourusername/ragbench#readme)
+
+---
+
+**Note**: RAGBench is under active development. APIs may change between versions.
