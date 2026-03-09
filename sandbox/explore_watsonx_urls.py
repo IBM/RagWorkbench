@@ -21,7 +21,7 @@ def clean_url(url):
     return url
 
 
-def get_wayback_snapshots(url, year=2023, max_retries=3):
+def get_wayback_snapshots(url, year=2023, max_retries=2):
     """
     Get available snapshots from Wayback Machine for a given URL and year.
     Includes retry logic with exponential backoff for handling timeouts.
