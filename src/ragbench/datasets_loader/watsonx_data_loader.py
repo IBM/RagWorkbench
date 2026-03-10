@@ -164,11 +164,14 @@ class WatsonxDocsQADataLoader(RagDataLoader):
                     document_content = row["document_markdown"]
                     mime_type = "text/markdown"
                 case _:
-                    raise ValueError(f"Unsupported document format: {self.document_format}")
+                    raise ValueError(
+                        f"Unsupported document format: {self.document_format}"
+                    )
 
             # Ensure values are set
-            assert document_content is not None and mime_type is not None, \
-                f"Failed to load document content for format: {self.document_format}"
+            assert (
+                document_content is not None and mime_type is not None
+            ), f"Failed to load document content for format: {self.document_format}"
 
             # Create DocumentObject with metadata
             # Store title and url in metadata as specified
