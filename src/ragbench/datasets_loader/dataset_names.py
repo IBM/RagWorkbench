@@ -52,6 +52,8 @@ class DatasetName(str, Enum):
     QASPER = "qasper"
     SECQUE = "secque"
     WATSONX_DOCS_QA = "watsonx_docs_qa"
+    WATSONX_DOCS_QA_HTML = "watsonx_docs_qa_html"
+    WATSONX_DOCS_QA_MD = "watsonx_docs_qa_md"
     REAL_MM_FIN_SLIDES = "real_mm_fin_slides"
     REAL_MM_FIN_REPORT = "real_mm_fin_report"
     REAL_MM_TECH_REPORT = "real_mm_tech_report"

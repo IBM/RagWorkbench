@@ -12,6 +12,7 @@ References:
 import logging
 from io import BytesIO
 from pathlib import Path
+from typing import Literal
 
 from datasets import (  # type: ignore[import-not-found]
     concatenate_datasets,
@@ -46,10 +47,12 @@ class WatsonxDocsQADataLoader(RagDataLoader):
 
     Attributes:
         dataset_name: Set to DatasetName.WATSONX_DOCS_QA.
+        document_format: Format of documents ('text', 'markdown', or 'html').
         split: Dataset split ('train', 'test', or None for all).
 
     Example:
         >>> loader = WatsonxDocsQADataLoader(
+        ...     document_format="text",
         ...     split="train",
         ...     sampling_params=DataSamplingParams(question_limit=50)
         ... )
@@ -66,6 +69,7 @@ class WatsonxDocsQADataLoader(RagDataLoader):
 
     def __init__(
         self,
+        document_format: Literal["text", "markdown", "html"],
         split: DatasetSplit | None = None,
         sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
@@ -74,17 +78,20 @@ class WatsonxDocsQADataLoader(RagDataLoader):
         Initialize the WatsonX DocsQA data loader.
 
         Args:
+            document_format: Format of documents to load ('text', 'markdown', or 'html').
+                           Determines which document column to use from the corpus.
             split: Dataset split to load ('train', 'test', or None for all).
                    Note: The dataset may only have a 'train' split available.
             sampling_params: Parameters controlling question and document sampling.
                            Defaults to no sampling (all data included).
+            cache_dir: Optional cache directory for dataset storage.
 
         Note:
             Documents are loaded from the 'corpus' subset.
             Benchmark entries are loaded from the 'question_answers' subset.
         """
         logger.info(f"Initializing WatsonxDocsQADataLoader with split='{split}'")
-
+        self.document_format = document_format
         super().__init__(
             DatasetName.WATSONX_DOCS_QA, split, sampling_params, cache_dir=cache_dir
         )
@@ -112,7 +119,9 @@ class WatsonxDocsQADataLoader(RagDataLoader):
             - doc_id: Document identifier
             - title: Document title
             - url: Source URL
-            - document: Document content (text/markdown)
+            - document: Document content (text)
+            - document_markdown: Markdown formatted content
+            - document_html: HTML formatted content
         """
         hf_path = "ibm-research/watsonxDocsQA"
         subset = "corpus"
@@ -142,14 +151,31 @@ class WatsonxDocsQADataLoader(RagDataLoader):
             doc_id = str(row["doc_id"])
             title = row.get("title", "")
             url = row.get("url", "")
-            document_content = row["document"]
+            document_content = None
+            mime_type = None
+            match self.document_format:
+                case "text":
+                    document_content = row["document"]
+                    mime_type = "text/plain"
+                case "html":
+                    document_content = row["document_html"]
+                    mime_type = "text/html"
+                case "markdown":
+                    document_content = row["document_markdown"]
+                    mime_type = "text/markdown"
+                case _:
+                    raise ValueError(f"Unsupported document format: {self.document_format}")
+
+            # Ensure values are set
+            assert document_content is not None and mime_type is not None, \
+                f"Failed to load document content for format: {self.document_format}"
 
             # Create DocumentObject with metadata
             # Store title and url in metadata as specified
             doc = DocumentObject(
                 name=doc_id,
                 stream=BytesIO(document_content.encode("utf-8")),
-                mime_type="text/plain",
+                mime_type=mime_type,
                 metadata={"title": title, "url": url},
             )
             documents.append(doc)
