@@ -155,6 +155,8 @@ class DataLoaderFactory:
         DatasetName.REAL_MM_TECH_SLIDES: RealMMRagDataLoader,
         DatasetName.SECQUE: SecqueDataLoader,
         DatasetName.WATSONX_DOCS_QA: WatsonxDocsQADataLoader,
+        DatasetName.WATSONX_DOCS_QA_HTML: WatsonxDocsQADataLoader,
+        DatasetName.WATSONX_DOCS_QA_MD: WatsonxDocsQADataLoader,
     }
 
     # Custom registry for externally registered loaders (string-based keys)
@@ -384,7 +386,7 @@ class DataLoaderFactory:
         """
         # Determine which registry to use and get the loader class
         loader_class: type[RagDataLoader]
-        dataset_name_for_realmmrag: DatasetName | str = dataset_name
+        resolved_dataset_name: DatasetName | str = dataset_name
 
         if isinstance(dataset_name, DatasetName):
             # DatasetName enum - use built-in registry
@@ -404,7 +406,7 @@ class DataLoaderFactory:
                 # Try to convert to DatasetName enum (built-in dataset)
                 dataset_name_enum = DatasetName.from_string(dataset_name)
                 loader_class = cls._LOADER_REGISTRY[dataset_name_enum]
-                dataset_name_for_realmmrag = dataset_name_enum
+                resolved_dataset_name = dataset_name_enum
             except ValueError:
                 # Not a built-in dataset, check custom registry
                 if dataset_name in cls._CUSTOM_LOADER_REGISTRY:
@@ -435,7 +437,26 @@ class DataLoaderFactory:
 
         # RealMMRagDataLoader requires dataset_name as a constructor parameter
         if loader_class == RealMMRagDataLoader:
-            constructor_args["dataset_name"] = dataset_name_for_realmmrag
+            constructor_args["dataset_name"] = resolved_dataset_name
+
+        # WatsonxDocsQADataLoader requires document_format based on dataset_name
+        if loader_class == WatsonxDocsQADataLoader:
+            # Map dataset names to document formats
+            if isinstance(resolved_dataset_name, DatasetName):
+                if resolved_dataset_name == DatasetName.WATSONX_DOCS_QA_HTML:
+                    constructor_args["document_format"] = "html"
+                elif resolved_dataset_name == DatasetName.WATSONX_DOCS_QA_MD:
+                    constructor_args["document_format"] = "markdown"
+                else:  # DatasetName.WATSONX_DOCS_QA (default to text)
+                    constructor_args["document_format"] = "text"
+            else:
+                # String-based dataset name
+                if dataset_name == "watsonx_docs_qa_html":
+                    constructor_args["document_format"] = "html"
+                elif dataset_name == "watsonx_docs_qa_md":
+                    constructor_args["document_format"] = "markdown"
+                else:  # "watsonx_docs_qa" (default to text)
+                    constructor_args["document_format"] = "text"
 
         constructor_args["sampling_params"] = sampling_params
 
