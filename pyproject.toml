@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ragbench"
+name = "RagWorkbench"
 version = "0.1.0"
 description = "A comprehensive benchmarking framework for Retrieval-Augmented Generation (RAG) systems"
 readme = "README.md"
