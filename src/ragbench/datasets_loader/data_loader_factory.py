@@ -343,6 +343,8 @@ class DataLoaderFactory:
                   Default is None.
             sampling_params: Parameters controlling question and document sampling.
                            If None, defaults to DataSamplingParams() (no sampling).
+            cache_dir: Directory path for caching downloaded datasets. If None,
+                      uses the default cache location. Default is None.
             **kwargs: Additional loader-specific parameters. Examples:
                      - level: For HotpotQA ("easy", "medium", or "hard")
                      - verbose: For Kramabench (bool)
