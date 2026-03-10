@@ -165,10 +165,10 @@ class WatsonxDocsQADataLoader(RagDataLoader):
                     document_content = row["document"]
                     mime_type = "text/plain"
                 case "html":
-                    document_content = row["document_html"]
+                    document_content = row["html_document"]
                     mime_type = "text/html"
                 case "markdown":
-                    document_content = row["document_markdown"]
+                    document_content = row["md_document"]
                     mime_type = "text/markdown"
                 case _:
                     raise ValueError(
