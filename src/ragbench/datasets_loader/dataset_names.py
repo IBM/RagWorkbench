@@ -24,7 +24,7 @@ class DatasetName(str, Enum):
         OFFICEQA: OfficeQA dataset identifier.
         QASPER: QASPER (Question Answering on Scientific Papers) dataset identifier.
         SECQUE: SecQue dataset identifier.
-        WATSONX_DOCS_QA: WatsonX DocsQA enterprise documentation dataset identifier.
+        WATSONX_DOCS_QA_TXT: WatsonX DocsQA enterprise documentation dataset identifier.
 
     Example:
         >>> dataset = DatasetName.AI_ARXIV
@@ -51,7 +51,7 @@ class DatasetName(str, Enum):
     OFFICEQA = "officeqa"
     QASPER = "qasper"
     SECQUE = "secque"
-    WATSONX_DOCS_QA = "watsonx_docs_qa"
+    WATSONX_DOCS_QA_TXT = "watsonx_docs_qa_txt"
     WATSONX_DOCS_QA_HTML = "watsonx_docs_qa_html"
     WATSONX_DOCS_QA_MD = "watsonx_docs_qa_md"
     REAL_MM_FIN_SLIDES = "real_mm_fin_slides"

@@ -92,9 +92,16 @@ class WatsonxDocsQADataLoader(RagDataLoader):
         """
         logger.info(f"Initializing WatsonxDocsQADataLoader with split='{split}'")
         self.document_format = document_format
-        super().__init__(
-            DatasetName.WATSONX_DOCS_QA, split, sampling_params, cache_dir=cache_dir
-        )
+
+        # Select dataset name based on document format
+        dataset_name_map = {
+            "text": DatasetName.WATSONX_DOCS_QA_TXT,
+            "html": DatasetName.WATSONX_DOCS_QA_HTML,
+            "markdown": DatasetName.WATSONX_DOCS_QA_MD,
+        }
+        dataset_name = dataset_name_map[document_format]
+
+        super().__init__(dataset_name, split, sampling_params, cache_dir=cache_dir)
 
     def _get_documents(self) -> list[DocumentObject]:
         """

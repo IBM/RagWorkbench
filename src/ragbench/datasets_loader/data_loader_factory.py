@@ -154,7 +154,7 @@ class DataLoaderFactory:
         DatasetName.REAL_MM_TECH_REPORT: RealMMRagDataLoader,
         DatasetName.REAL_MM_TECH_SLIDES: RealMMRagDataLoader,
         DatasetName.SECQUE: SecqueDataLoader,
-        DatasetName.WATSONX_DOCS_QA: WatsonxDocsQADataLoader,
+        DatasetName.WATSONX_DOCS_QA_TXT: WatsonxDocsQADataLoader,
         DatasetName.WATSONX_DOCS_QA_HTML: WatsonxDocsQADataLoader,
         DatasetName.WATSONX_DOCS_QA_MD: WatsonxDocsQADataLoader,
     }
