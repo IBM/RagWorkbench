@@ -12,7 +12,7 @@ This module comprehensively tests the GroundTruthContextId class, focusing on:
 import pytest
 from pydantic import ValidationError
 
-from ragbench.datasets_loader.data_models.rag_benchmark import GroundTruthContextId
+from ragworkbench.datasets_loader.data_models.rag_benchmark import GroundTruthContextId
 
 
 class TestGroundTruthContextId:

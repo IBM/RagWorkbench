@@ -13,7 +13,7 @@ This module comprehensively tests the RagBenchmarkEntry class, focusing on:
 import pytest
 from pydantic import ValidationError
 
-from ragbench.datasets_loader.data_models.rag_benchmark import (
+from ragworkbench.datasets_loader.data_models.rag_benchmark import (
     GroundTruthContextId,
     RagBenchmarkEntry,
 )

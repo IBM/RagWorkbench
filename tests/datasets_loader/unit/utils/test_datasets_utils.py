@@ -7,11 +7,11 @@ including train/test splitting with reproducible randomization.
 
 import pytest
 
-from ragbench.datasets_loader.data_models.rag_benchmark import (
+from ragworkbench.datasets_loader.data_models.rag_benchmark import (
     GroundTruthContextId,
     RagBenchmarkEntry,
 )
-from ragbench.datasets_loader.datasets_utils import (
+from ragworkbench.datasets_loader.datasets_utils import (
     DEFAULT_SPLIT_SEED,
     DEFAULT_TRAIN_RATIO,
     get_benchmark_split,

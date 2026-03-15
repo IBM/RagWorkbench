@@ -1,11 +1,11 @@
-from ragbench.api.inference import InferencePipeline, InferenceRuntimeParams
-from ragbench.api.ingest import IngestPipeline, IngestRuntimeParams
-from ragbench.api.ingest_artifact import IngestArtifact
-from ragbench.datasets_loader import DataLoaderFactory
-from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
-from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
-from ragbench.datasets_loader.dataset_names import DatasetName
-from ragbench.experiment import Experiment
+from ragworkbench.api.inference import InferencePipeline, InferenceRuntimeParams
+from ragworkbench.api.ingest import IngestPipeline, IngestRuntimeParams
+from ragworkbench.api.ingest_artifact import IngestArtifact
+from ragworkbench.datasets_loader import DataLoaderFactory
+from ragworkbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
+from ragworkbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from ragworkbench.datasets_loader.dataset_names import DatasetName
+from ragworkbench.experiment import Experiment
 
 
 class EmptyIngestPipeline(IngestPipeline):

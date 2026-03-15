@@ -12,19 +12,19 @@ from io import BytesIO
 
 import pytest
 
-from ragbench.api.dataset import DatasetSplit
-from ragbench.api.inference import InferenceParams, InferencePipeline
-from ragbench.api.inference_result import InferenceResult
-from ragbench.api.ingest import IngestParams, IngestPipeline
-from ragbench.api.ingest_artifact import IngestArtifact
-from ragbench.datasets_loader import RagDataLoader
-from ragbench.datasets_loader.data_models.document_object import DocumentObject
-from ragbench.datasets_loader.data_models.rag_benchmark import (
+from ragworkbench.api.dataset import DatasetSplit
+from ragworkbench.api.inference import InferenceParams, InferencePipeline
+from ragworkbench.api.inference_result import InferenceResult
+from ragworkbench.api.ingest import IngestParams, IngestPipeline
+from ragworkbench.api.ingest_artifact import IngestArtifact
+from ragworkbench.datasets_loader import RagDataLoader
+from ragworkbench.datasets_loader.data_models.document_object import DocumentObject
+from ragworkbench.datasets_loader.data_models.rag_benchmark import (
     GroundTruthContextId,
     RagBenchmarkEntry,
 )
-from ragbench.eval.metric_models import load_metric_definitions
-from ragbench.experiment import Experiment
+from ragworkbench.eval.metric_models import load_metric_definitions
+from ragworkbench.experiment import Experiment
 
 
 class MockIngestPipeline(IngestPipeline):
