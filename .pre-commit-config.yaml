@@ -17,6 +17,23 @@ repos:
       - id: debug-statements
       - id: mixed-line-ending
 
+  # DCO (Developer Certificate of Origin) check
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: []
+
+  # Check for DCO sign-off in commit messages
+  - repo: local
+    hooks:
+      - id: check-dco-signoff
+        name: Check DCO Sign-off
+        entry: bash -c 'if ! git log -1 --pretty=%B | grep -q "^Signed-off-by"; then echo "Error - Commit must include DCO sign-off. Use git commit -s"; exit 1; fi'
+        language: system
+        stages: [commit-msg]
+        always_run: true
 
   # Black first
   - repo: https://github.com/psf/black

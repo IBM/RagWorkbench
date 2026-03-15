@@ -79,11 +79,11 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/ragbench"
-Documentation = "https://github.com/yourusername/ragbench#readme"
-Repository = "https://github.com/yourusername/ragbench"
-Issues = "https://github.com/yourusername/ragbench/issues"
-Changelog = "https://github.com/yourusername/ragbench/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/IBM/RagWorkbench"
+Documentation = "https://github.com/IBM/RagWorkbench#readme"
+Repository = "https://github.com/IBM/RagWorkbench"
+Issues = "https://github.com/IBM/RagWorkbench/issues"
+Changelog = "https://github.com/IBM/RagWorkbench/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ragworkbench"]
