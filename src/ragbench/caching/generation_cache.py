@@ -13,11 +13,27 @@ class GenerationCache(AbstractFileSystemCache):
         self,
         cache_dir: Path | str,
         inference_params: InferenceParams,
+        additional_cache_params: dict[str, Any] | None = None,
     ):
+        """
+        Initialize generation cache.
+        
+        Args:
+            cache_dir: Base directory for the cache
+            inference_params: Inference parameters to include in cache key
+            additional_cache_params: Optional additional parameters (e.g., index_name)
+                                    to include in the cache directory hash
+        """
+        config_dict = inference_params.model_dump()
+        
+        # Merge additional parameters into config_dict if provided
+        if additional_cache_params:
+            config_dict.update(additional_cache_params)
+        
         super().__init__(
             cache_dir,
             "generation",
-            config_dict=inference_params.model_dump(),
+            config_dict=config_dict,
         )
 
     def _read_content(self, file: Path) -> InferenceResult:

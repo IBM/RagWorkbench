@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
@@ -39,28 +39,48 @@ class InferencePipeline(ABC):
         """
         self._params = _params
         self.generation_cache: GenerationCache | None = None
-
-        if cache_dir is not None:
-            # Import here to avoid circular import
-            from ragbench.caching.generation_cache import GenerationCache
-
-            self.generation_cache = GenerationCache(
-                cache_dir=cache_dir,
-                inference_params=_params,
-            )
+        self._cache_dir = cache_dir
 
     @abstractmethod
     def set_ingest_artifacts(self, ingest_artifacts: list[IngestArtifact]) -> None:
         pass
+
+    def _get_additional_cache_params(self) -> dict[str, Any] | None:
+        """
+        Get additional parameters to include in the cache key.
+        
+        Subclasses can override this method to add extra parameters
+        (like index_name) to the cache directory hash.
+        
+        Returns:
+            Dictionary of additional parameters or None
+        """
+        return None
+
+    def _lazy_cache_initialization(self) -> None:
+        """
+        Lazily initialize the generation cache.
+        """
+        if self._cache_dir is not None and self.generation_cache is None:
+            # Import here to avoid circular import
+            from ragbench.caching.generation_cache import GenerationCache
+
+            additional_params = self._get_additional_cache_params()
+            self.generation_cache = GenerationCache(
+                cache_dir=self._cache_dir,
+                inference_params=self._params,
+                additional_cache_params=additional_params,
+            )
 
     def process(self, benchmark_entry: RagBenchmarkEntry) -> InferenceResult:
         """
         Process a benchmark entry and return the inference result.
 
         If a cache is configured, this method will:
-        1. Check if the result exists in cache and return it if found
-        2. Otherwise, call process_no_cache to generate the result
-        3. Save the result to cache before returning
+        1. Initialize cache with additional parameters if needed
+        2. Check if the result exists in cache and return it if found
+        3. Otherwise, call process_no_cache to generate the result
+        4. Save the result to cache before returning
 
         If no cache is configured, it directly calls process_no_cache.
 
@@ -70,6 +90,9 @@ class InferencePipeline(ABC):
         Returns:
             The inference result.
         """
+        # Lazily initialize cache with all parameters
+        self._lazy_cache_initialization()
+        
         # If cache exists, try to get cached result
         if self.generation_cache is not None:
             cached_result = self.generation_cache.get(benchmark_entry)
