@@ -1,13 +1,17 @@
+import logging
 from pathlib import Path
 from typing import Any
 
 from ragbench.api.inference import InferencePipeline
 from ragbench.api.inference_result import InferenceResult
 from ragbench.api.ingest import IngestPipeline
+from ragbench.caching.generation_cache import GenerationCache
 from ragbench.datasets_loader import RagDataLoader
 from ragbench.datasets_loader.data_models import RagBenchmark
 from ragbench.eval import MetricDefinition
 from ragbench.eval.evaluator import Evaluator
+
+logger = logging.getLogger(__name__)
 
 
 class Experiment:
@@ -56,6 +60,9 @@ class Experiment:
             # collect the result
             results.append(result)
 
+        # Log cache statistics before evaluation
+        self._log_cache_statistics(self.inference_pipeline.generation_cache)
+
         # Now run the evaluation via the evaluator code!
         # Run evaluation for each metric
         evaluation_results: dict[str, dict[str, Any]] = {}
@@ -85,3 +92,27 @@ class Experiment:
             }
 
         return results, evaluation_results
+
+    @staticmethod
+    def _log_cache_statistics(generation_cache: GenerationCache | None) -> None:
+        """
+        Log cache hit statistics from the generation cache.
+        
+        Args:
+            generation_cache: The GenerationCache instance to get statistics from, or None if caching is disabled.
+        """
+        if generation_cache is not None:
+            cache_stats = generation_cache.get_cache_stats()
+            cache_hits = cache_stats["cache_hit"]
+            cache_misses = cache_stats["cache_miss"]
+            total_queries = cache_hits + cache_misses
+            if total_queries > 0:
+                hit_rate = (cache_hits / total_queries) * 100
+                logger.info(
+                    f"Inference complete: {cache_hits}/{total_queries} queries served from cache "
+                    f"({hit_rate:.1f}% cache hit rate)"
+                )
+            else:
+                logger.info("Inference complete: No cache queries recorded")
+        else:
+            logger.info("Inference complete: Caching disabled")
