@@ -11,7 +11,6 @@ from typing import Any
 
 from ragworkbench.api.dataset import DatasetSplit
 from ragworkbench.datasets_loader.abstract_data_loader import RagDataLoader
-from ragworkbench.datasets_loader.ait_qa_data_loader import AITQaDataLoader
 from ragworkbench.datasets_loader.bioasq_data_loader import BioasqDataLoader
 from ragworkbench.datasets_loader.clap_nq_data_loader import ClapNqDataLoader
 from ragworkbench.datasets_loader.da_code_data_loader import DaCodeDataLoader
@@ -32,23 +31,6 @@ from ragworkbench.datasets_loader.secque_data_loader import SecqueDataLoader
 from ragworkbench.datasets_loader.watsonx_data_loader import WatsonxDocsQADataLoader
 
 logger = logging.getLogger(__name__)
-
-
-def data_loader(name: str):
-    """
-    Decorator to register a data loader with the DataLoaderFactory.
-
-    Usage:
-        @data_loader(name="my_dataset")
-        class MyDataLoader(RagDataLoader):
-            ...
-    """
-
-    def decorator(cls: type[RagDataLoader]) -> type[RagDataLoader]:
-        DataLoaderFactory.register_loader(name, cls)
-        return cls
-
-    return decorator
 
 
 class DataLoaderFactory:
@@ -139,7 +121,6 @@ class DataLoaderFactory:
 
     # Registry mapping DatasetName to loader classes
     _LOADER_REGISTRY: dict[DatasetName, type[RagDataLoader]] = {
-        DatasetName.AIT_QA: AITQaDataLoader,
         DatasetName.BIOASQ: BioasqDataLoader,
         DatasetName.CLAP_NQ: ClapNqDataLoader,
         DatasetName.DA_CODE: DaCodeDataLoader,

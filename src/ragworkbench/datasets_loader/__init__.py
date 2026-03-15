@@ -21,7 +21,10 @@ Example:
     >>> loader = DataLoaderFactory.create_loader("my_dataset", split="train")
 """
 
-from ragworkbench.datasets_loader.abstract_data_loader import RagDataLoader
+from ragworkbench.datasets_loader.abstract_data_loader import (
+    RagDataLoader,
+    data_loader,
+)
 from ragworkbench.datasets_loader.bioasq_data_loader import BioasqDataLoader
 from ragworkbench.datasets_loader.data_loader_factory import DataLoaderFactory
 from ragworkbench.datasets_loader.dataset_names import DatasetName
@@ -33,4 +36,5 @@ __all__ = [
     "DataLoaderFactory",
     "RagDataLoader",
     "DatasetName",
+    "data_loader",
 ]
