@@ -16,12 +16,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from ragbench.api.inference import InferenceParams, InferencePipeline
-from ragbench.api.inference_result import InferenceResult
-from ragbench.api.ingest_artifact import IngestArtifact
-from ragbench.caching.abstract_file_system_cache import AbstractFileSystemCache
-from ragbench.caching.generation_cache import GenerationCache
-from ragbench.datasets_loader.data_models import (
+from ragworkbench.api.inference import InferenceParams, InferencePipeline
+from ragworkbench.api.inference_result import InferenceResult
+from ragworkbench.api.ingest_artifact import IngestArtifact
+from ragworkbench.caching.abstract_file_system_cache import AbstractFileSystemCache
+from ragworkbench.caching.generation_cache import GenerationCache
+from ragworkbench.datasets_loader.data_models import (
     GroundTruthContextId,
     RagBenchmarkEntry,
 )

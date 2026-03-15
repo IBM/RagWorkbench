@@ -7,7 +7,9 @@ with various configurations for testing sampling behavior.
 
 import pytest
 
-from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
+from ragworkbench.datasets_loader.data_models.data_sampling_params import (
+    DataSamplingParams,
+)
 
 
 @pytest.fixture

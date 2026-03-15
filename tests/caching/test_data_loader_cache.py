@@ -18,14 +18,14 @@ from pathlib import Path
 
 import pytest
 
-from ragbench.caching.data_loader_cache import (
+from ragworkbench.caching.data_loader_cache import (
     DataLoaderCache,
     DataLoaderCacheError,
     InvalidCacheFileError,
     StreamSerializationError,
     _CacheKeys,
 )
-from ragbench.datasets_loader.data_models import (
+from ragworkbench.datasets_loader.data_models import (
     DocumentObject,
     GroundTruthContextId,
     RagBenchmark,

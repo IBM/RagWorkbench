@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from ragbench.caching.abstract_file_system_cache import AbstractFileSystemCache
+from ragworkbench.caching.abstract_file_system_cache import AbstractFileSystemCache
 
 
 class ConcreteFileSystemCache(AbstractFileSystemCache):

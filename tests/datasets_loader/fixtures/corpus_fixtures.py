@@ -10,8 +10,8 @@ from pathlib import Path
 
 import pytest
 
-from ragbench.datasets_loader.data_models.document_object import DocumentObject
-from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from ragworkbench.datasets_loader.data_models.document_object import DocumentObject
+from ragworkbench.datasets_loader.data_models.rag_corpus import RagCorpus
 
 
 @pytest.fixture

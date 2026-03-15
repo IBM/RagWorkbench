@@ -2,9 +2,9 @@
 
 import pytest
 
-from ragbench import DatasetName
-from ragbench.api.dataset import Dataset, DatasetSplit
-from ragbench.datasets_loader.data_models import DataSamplingParams
+from ragworkbench import DatasetName
+from ragworkbench.api.dataset import Dataset, DatasetSplit
+from ragworkbench.datasets_loader.data_models import DataSamplingParams
 
 
 class TestDatasetSplitConversion:

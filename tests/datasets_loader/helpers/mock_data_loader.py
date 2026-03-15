@@ -8,16 +8,18 @@ that can be used in tests without requiring actual dataset files.
 from io import BytesIO
 from pathlib import Path
 
-from ragbench.api.dataset import DatasetSplit
-from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
-from ragbench.datasets_loader.data_models.data_sampling_params import DataSamplingParams
-from ragbench.datasets_loader.data_models.document_object import DocumentObject
-from ragbench.datasets_loader.data_models.rag_benchmark import (
+from ragworkbench.api.dataset import DatasetSplit
+from ragworkbench.datasets_loader.abstract_data_loader import RagDataLoader
+from ragworkbench.datasets_loader.data_models.data_sampling_params import (
+    DataSamplingParams,
+)
+from ragworkbench.datasets_loader.data_models.document_object import DocumentObject
+from ragworkbench.datasets_loader.data_models.rag_benchmark import (
     GroundTruthContextId,
     RagBenchmarkEntry,
 )
-from ragbench.datasets_loader.dataset_names import DatasetName
-from ragbench.datasets_loader.datasets_utils import get_benchmark_split
+from ragworkbench.datasets_loader.dataset_names import DatasetName
+from ragworkbench.datasets_loader.datasets_utils import get_benchmark_split
 
 
 class MockRagDataLoader(RagDataLoader):

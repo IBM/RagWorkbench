@@ -14,12 +14,12 @@ from typing import Any
 
 import pytest
 
-from ragbench.api.dataset import DatasetSplit
-from ragbench.datasets_loader.abstract_data_loader import RagDataLoader
-from ragbench.datasets_loader.data_loader_factory import DataLoaderFactory
-from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
-from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
-from ragbench.datasets_loader.dataset_names import DatasetName
+from ragworkbench.api.dataset import DatasetSplit
+from ragworkbench.datasets_loader.abstract_data_loader import RagDataLoader
+from ragworkbench.datasets_loader.data_loader_factory import DataLoaderFactory
+from ragworkbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
+from ragworkbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from ragworkbench.datasets_loader.dataset_names import DatasetName
 from tests.datasets_loader.helpers.integration_test_helpers import (
     IntegrationTestHelpers as helpers,
 )
