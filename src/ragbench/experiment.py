@@ -47,7 +47,6 @@ class Experiment:
         # set the ingest artifacts for the inference pipeline
         self.inference_pipeline.set_ingest_artifacts(ingest_artifacts=ingest_artifacts)
 
-        # ml-flow wrapper for the inference part
         results: list[InferenceResult] = []
         for benchmark_entry in rag_benchmark.get_benchmark_entries():
             # run the inference
