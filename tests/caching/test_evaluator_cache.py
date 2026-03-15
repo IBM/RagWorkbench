@@ -18,10 +18,10 @@ from pathlib import Path
 
 import pytest
 
-from ragbench.api.inference_result import InferenceResult
-from ragbench.caching.abstract_file_system_cache import AbstractFileSystemCache
-from ragbench.caching.evaluator_cache import EvaluatorCache
-from ragbench.datasets_loader.data_models import (
+from ragworkbench.api.inference_result import InferenceResult
+from ragworkbench.caching.abstract_file_system_cache import AbstractFileSystemCache
+from ragworkbench.caching.evaluator_cache import EvaluatorCache
+from ragworkbench.datasets_loader.data_models import (
     GroundTruthContextId,
 )
 

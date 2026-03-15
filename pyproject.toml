@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "RagWorkbench"
+name = "ragworkbench"
 version = "0.1.0"
 description = "A comprehensive benchmarking framework for Retrieval-Augmented Generation (RAG) systems"
 readme = "README.md"
@@ -19,7 +19,7 @@ maintainers = [
     {name = "Assaf Toledo", email = "assaf.toledo@ibm.com"},
     {name = "Benjamin Sznajder", email = "benjams@il.ibm.com"},
 ]
-keywords = ["rag", "retrieval", "generatiohn", "benchmark", "nlp", "ai", "llm"]
+keywords = ["rag", "retrieval", "generation", "benchmark", "nlp", "ai", "llm"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -46,7 +46,6 @@ dependencies = [
     "gdown",
     "datasets",
     "pandas-stubs",
-    "pandas",
     "types-PyYAML",
     "unitxt",
     "scipy",
@@ -76,7 +75,7 @@ examples = [
     "docling"
 ]
 all = [
-    "ragbench[dev,docs,examples]",
+    "ragworkbench[dev,docs,examples]",
 ]
 
 [project.urls]
@@ -87,7 +86,7 @@ Issues = "https://github.com/yourusername/ragbench/issues"
 Changelog = "https://github.com/yourusername/ragbench/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ragbench"]
+packages = ["src/ragworkbench"]
 
 [tool.ruff]
 line-length = 88
@@ -125,7 +124,7 @@ markers = [
 ]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.11"
 mypy_path = "src"
 warn_return_any = true
 warn_unused_configs = true
@@ -145,5 +144,5 @@ ignore_missing_imports = true
 
 [tool.black]
 line-length = 88
-target-version = ["py313"]
+target-version = ["py311"]
 include = '\.pyi?$'

@@ -10,7 +10,7 @@ This module comprehensively tests the DataSamplingParams class, focusing on:
 
 import pytest
 
-from ragbench.datasets_loader.data_models.data_sampling_params import (
+from ragworkbench.datasets_loader.data_models.data_sampling_params import (
     DataSamplingParams,
 )
 

@@ -5,8 +5,8 @@ This module provides common validation functions to reduce code duplication
 across integration tests for different data loaders.
 """
 
-from ragbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
-from ragbench.datasets_loader.data_models.rag_corpus import RagCorpus
+from ragworkbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
+from ragworkbench.datasets_loader.data_models.rag_corpus import RagCorpus
 
 
 class IntegrationTestHelpers:

@@ -13,7 +13,7 @@ from io import BytesIO
 
 import pytest
 
-from ragbench.datasets_loader.data_models.document_object import DocumentObject
+from ragworkbench.datasets_loader.data_models.document_object import DocumentObject
 
 
 class TestDocumentObject:

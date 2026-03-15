@@ -10,7 +10,7 @@ from tempfile import NamedTemporaryFile
 
 import yaml
 
-from ragbench.eval import (
+from ragworkbench.eval import (
     MetricDefinition,
     MetricDefinitionsConfig,
     load_metric_definitions,
