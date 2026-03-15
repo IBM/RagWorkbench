@@ -52,13 +52,22 @@ class Experiment:
         self.inference_pipeline.set_ingest_artifacts(ingest_artifacts=ingest_artifacts)
 
         results: list[InferenceResult] = []
-        for benchmark_entry in rag_benchmark.get_benchmark_entries():
+        benchmark_entries = rag_benchmark.get_benchmark_entries()
+        total_entries = len(benchmark_entries)
+        
+        logger.info(f"Starting inference on {total_entries} benchmark entries")
+        
+        for idx, benchmark_entry in enumerate(benchmark_entries, start=1):
             # run the inference
             result: InferenceResult = self.inference_pipeline.process(
                 benchmark_entry=benchmark_entry,
             )
             # collect the result
             results.append(result)
+            
+            # Log progress every 10 entries or at the end
+            if idx % 10 == 0 or idx == total_entries:
+                logger.info(f"Inference progress: {idx}/{total_entries} entries processed ({idx/total_entries*100:.1f}%)")
 
         # Log cache statistics before evaluation
         self._log_cache_statistics(self.inference_pipeline.generation_cache)
