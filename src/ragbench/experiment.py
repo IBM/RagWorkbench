@@ -106,13 +106,14 @@ class Experiment:
             cache_hits = cache_stats["cache_hit"]
             cache_misses = cache_stats["cache_miss"]
             total_queries = cache_hits + cache_misses
+            cache_path = generation_cache.cache_path
             if total_queries > 0:
                 hit_rate = (cache_hits / total_queries) * 100
                 logger.info(
                     f"Inference complete: {cache_hits}/{total_queries} queries served from cache "
-                    f"({hit_rate:.1f}% cache hit rate)"
+                    f"({hit_rate:.1f}% cache hit rate) - Cache path: {cache_path}"
                 )
             else:
-                logger.info("Inference complete: No cache queries recorded")
+                logger.info(f"Inference complete: No cache queries recorded - Cache path: {cache_path}")
         else:
             logger.info("Inference complete: Caching disabled")
