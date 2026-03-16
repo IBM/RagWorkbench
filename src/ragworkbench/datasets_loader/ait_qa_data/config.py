@@ -4,8 +4,9 @@ This module provides centralized path configuration for the AIT QA dataset,
 ensuring both the dataset downloader and data loader use the same location.
 This is especially important when ragbench is used as a library dependency.
 
-The module requires:
-    - RAGBENCH_DATA_DIR environment variable to be set (can be defined in .env file)
+The module uses:
+    - RAGBENCH_DATA_DIR environment variable (optional, can be defined in .env file)
+    - If not set, defaults to 'ragworkbench_data' in the current working directory
 
 Example:
     >>> import os
@@ -20,6 +21,13 @@ Example:
     >>> # RAGBENCH_DATA_DIR=/path/to/data
     >>> from ragworkbench.datasets_loader.ait_qa_data.config import get_ait_qa_documents_dir
     >>> docs_dir = get_ait_qa_documents_dir()
+    
+    Or use the default location (current working directory):
+    >>> # Without setting RAGBENCH_DATA_DIR
+    >>> from ragworkbench.datasets_loader.ait_qa_data.config import get_ait_qa_documents_dir
+    >>> docs_dir = get_ait_qa_documents_dir()
+    >>> print(docs_dir)
+    /current/working/directory/ragworkbench_data/ait_qa_pdf/documents
 """
 
 import os
@@ -42,16 +50,16 @@ def get_ait_qa_data_dir() -> Path:
     The environment variable can be set either:
     1. As a system environment variable
     2. In a .env file in the project root or current directory
+    
+    If RAGBENCH_DATA_DIR is not set, defaults to 'ragworkbench_data' in the current
+    working directory. This works both when developing ragworkbench and when
+    using it as an installed dependency.
 
     The function does NOT create the directory - that's the responsibility
     of the caller (either the downloader or data loader).
 
     Returns:
         Path object pointing to the ait_qa_pdf directory.
-
-    Raises:
-        EnvironmentError: If RAGBENCH_DATA_DIR environment variable is not set
-                         (neither in environment nor in .env file).
 
     Example:
         >>> import os
@@ -64,16 +72,16 @@ def get_ait_qa_data_dir() -> Path:
         >>> # RAGBENCH_DATA_DIR=/custom/data/path
         >>> get_ait_qa_data_dir()
         PosixPath('/custom/data/path/ait_qa_pdf')
+        
+        Or use default (current working directory):
+        >>> # Without setting RAGBENCH_DATA_DIR
+        >>> get_ait_qa_data_dir()
+        PosixPath('/current/working/dir/ragworkbench_data/ait_qa_pdf')
     """
     data_dir = os.getenv("RAGBENCH_DATA_DIR")
     if not data_dir:
-        raise OSError(
-            "RAGBENCH_DATA_DIR environment variable is not set. "
-            "Please set it to specify where the AIT QA dataset should be stored.\n"
-            "You can either:\n"
-            "1. Set it as an environment variable: export RAGBENCH_DATA_DIR=/path/to/data\n"
-            "2. Create a .env file in your project root with: RAGBENCH_DATA_DIR=/path/to/data"
-        )
+        # Default to 'data_dir' in the current working directory
+        data_dir = str(Path.cwd() / "ragworkbench_data")
     return Path(data_dir) / "ait_qa_pdf"
 
 

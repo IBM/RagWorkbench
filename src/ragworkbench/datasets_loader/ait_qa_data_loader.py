@@ -186,10 +186,11 @@ class AITQaDataLoader(RagDataLoader):
 
         # Check if the directory exists
         if not ait_qa_pdf_document_folder.exists():
-            raise FileNotFoundError(
-                f"Documents directory not found: {ait_qa_pdf_document_folder}. "
-                f"Please run create_ait_qa_dataset.py first to download the PDFs."
+            from ragworkbench.datasets_loader.ait_qa_data.create_ait_qa_dataset import (
+                create_ait_qa_dataset,
             )
+            
+            create_ait_qa_dataset()
 
         self.documents: list[DocumentObject] = []
 
