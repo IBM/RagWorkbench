@@ -6,7 +6,7 @@ This is especially important when ragbench is used as a library dependency.
 
 The module uses:
     - RAGBENCH_DATA_DIR environment variable (optional, can be defined in .env file)
-    - If not set, defaults to 'data_dir' in the current working directory
+    - If not set, defaults to 'ragworkbench_data' in the current working directory
 
 Example:
     >>> import os
@@ -27,7 +27,7 @@ Example:
     >>> from ragworkbench.datasets_loader.ait_qa_data.config import get_ait_qa_documents_dir
     >>> docs_dir = get_ait_qa_documents_dir()
     >>> print(docs_dir)
-    /current/working/directory/data_dir/ait_qa_pdf/documents
+    /current/working/directory/ragworkbench_data/ait_qa_pdf/documents
 """
 
 import os
@@ -51,7 +51,7 @@ def get_ait_qa_data_dir() -> Path:
     1. As a system environment variable
     2. In a .env file in the project root or current directory
     
-    If RAGBENCH_DATA_DIR is not set, defaults to 'data_dir' in the current
+    If RAGBENCH_DATA_DIR is not set, defaults to 'ragworkbench_data' in the current
     working directory. This works both when developing ragworkbench and when
     using it as an installed dependency.
 
@@ -76,7 +76,7 @@ def get_ait_qa_data_dir() -> Path:
         Or use default (current working directory):
         >>> # Without setting RAGBENCH_DATA_DIR
         >>> get_ait_qa_data_dir()
-        PosixPath('/current/working/dir/data_dir/ait_qa_pdf')
+        PosixPath('/current/working/dir/ragworkbench_data/ait_qa_pdf')
     """
     data_dir = os.getenv("RAGBENCH_DATA_DIR")
     if not data_dir:
