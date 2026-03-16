@@ -34,6 +34,23 @@ from ragworkbench.datasets_loader.watsonx_data_loader import WatsonxDocsQADataLo
 logger = logging.getLogger(__name__)
 
 
+def data_loader(name: str):
+    """
+    Decorator to register a data loader with the DataLoaderFactory.
+
+    Usage:
+        @data_loader(name="my_dataset")
+        class MyDataLoader(RagDataLoader):
+            ...
+    """
+
+    def decorator(cls: type[RagDataLoader]) -> type[RagDataLoader]:
+        DataLoaderFactory.register_loader(name, cls)
+        return cls
+
+    return decorator
+
+
 class DataLoaderFactory:
     """
     Factory class for creating DataLoader instances based on dataset name.

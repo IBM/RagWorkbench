@@ -19,42 +19,6 @@ from ragworkbench.datasets_loader.dataset_names import DatasetName
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-def data_loader(name: str):
-    """
-    Decorator to register a data loader with the DataLoaderFactory.
-
-    This decorator should be applied to RagDataLoader subclasses to automatically
-    register them with the DataLoaderFactory under a specific name.
-
-    Args:
-        name: The unique identifier for the data loader (e.g., "ait_qa_pdf").
-
-    Returns:
-        A decorator function that registers the class and returns it unchanged.
-
-    Example:
-        >>> @data_loader(name="my_dataset")
-        >>> class MyDataLoader(RagDataLoader):
-        ...     def _get_documents(self):
-        ...         return [...]
-        ...     def _get_benchmark_entries(self, split):
-        ...         return [...]
-
-    Note:
-        The actual registration is performed by DataLoaderFactory.register_loader(),
-        which is imported lazily to avoid circular dependencies.
-    """
-
-    def decorator(cls: type["RagDataLoader"]) -> type["RagDataLoader"]:
-        # Import here to avoid circular dependency
-        from ragworkbench.datasets_loader.data_loader_factory import DataLoaderFactory
-
-        DataLoaderFactory.register_loader(name, cls)
-        return cls
-
-    return decorator
-
-
 class RagDataLoader(ABC):
     """
     Abstract base class for loading RAG benchmark datasets.
