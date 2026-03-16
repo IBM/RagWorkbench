@@ -11,6 +11,7 @@ from typing import Any
 
 from ragworkbench.api.dataset import DatasetSplit
 from ragworkbench.datasets_loader.abstract_data_loader import RagDataLoader
+from ragworkbench.datasets_loader.ait_qa_data_loader import AITQaDataLoader
 from ragworkbench.datasets_loader.bioasq_data_loader import BioasqDataLoader
 from ragworkbench.datasets_loader.clap_nq_data_loader import ClapNqDataLoader
 from ragworkbench.datasets_loader.da_code_data_loader import DaCodeDataLoader
@@ -121,6 +122,7 @@ class DataLoaderFactory:
 
     # Registry mapping DatasetName to loader classes
     _LOADER_REGISTRY: dict[DatasetName, type[RagDataLoader]] = {
+        DatasetName.AIT_QA: AITQaDataLoader,
         DatasetName.BIOASQ: BioasqDataLoader,
         DatasetName.CLAP_NQ: ClapNqDataLoader,
         DatasetName.DA_CODE: DaCodeDataLoader,

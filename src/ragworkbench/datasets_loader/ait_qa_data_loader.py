@@ -25,7 +25,7 @@ from urllib.request import urlopen
 from datasets import load_dataset  # type: ignore[import-not-found]
 
 from ragworkbench.api.dataset import DatasetSplit
-from ragworkbench.datasets_loader.abstract_data_loader import RagDataLoader, data_loader
+from ragworkbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragworkbench.datasets_loader.ait_qa_data.config import get_ait_qa_documents_dir
 from ragworkbench.datasets_loader.data_models import (
     DataSamplingParams,
@@ -39,7 +39,6 @@ logger = logging.getLogger(__name__)
 SEED = 43
 
 
-@data_loader(name="ait_qa_pdf")
 class AITQaDataLoader(RagDataLoader):
     """Loads AIT QA benchmark data from local CSV and PDF files.
 
