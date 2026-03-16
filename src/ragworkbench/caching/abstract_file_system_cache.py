@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import time
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from pathlib import Path
@@ -61,13 +62,14 @@ class AbstractFileSystemCache(ABC):
         if cached_dict is None:
             # The cache_dict maps from the file stem (a hash of the parameter without *json suffix) to the cache object
             cache_files = list(self.cache_path.glob("*.json"))
-            logger.info(
-                f"Loading {len(cache_files)} cache files from '{self.cache_path}'.."
-            )
+            start_time = time.time()
             self.cache_dict: dict[str, Any] = {
                 f.stem: self._read_content(f) for f in cache_files
             }
-            logger.info(f"Loading of {len(cache_files)} cache files is done.")
+            elapsed_time = time.time() - start_time
+            logger.info(
+                f"Loaded in {elapsed_time:.2f}s: {len(cache_files)} cache files from '{self.cache_path}'"
+            )
             self.cache_path_to_contents[self.cache_path] = self.cache_dict
             self.read_files = len(self.cache_dict)
         else:

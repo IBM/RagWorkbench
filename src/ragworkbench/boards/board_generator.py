@@ -107,6 +107,7 @@ class BoardGenerator:
                     dataset_seq,
                     config.name,
                     dataset.id(),
+                    evaluation_results,
                 )
 
                 # Export combined results to JSON for this experiment
@@ -155,8 +156,20 @@ class BoardGenerator:
         dataset_seq: int,
         config_name: str,
         dataset_id: str,
+        evaluation_results: dict,
     ) -> None:
-        """Export inference results to a CSV file for a single experiment."""
+        """Export inference results to a CSV file for a single experiment.
+        
+        Args:
+            inference_results: List of inference results
+            experiment_id: Experiment identifier
+            config_seq: Configuration sequence number
+            dataset_seq: Dataset sequence number
+            config_name: Configuration name
+            dataset_id: Dataset identifier
+            evaluation_results: Dictionary mapping metric IDs to their evaluation results,
+                              where each result contains 'per_question' scores
+        """
         os.makedirs(self.output_path, exist_ok=True)
 
         inference_data = []
@@ -181,6 +194,17 @@ class BoardGenerator:
                 ),
                 "num_contexts": len(inf_result.contexts) if inf_result.contexts else 0,
             }
+            
+            # Add metric scores per question
+            for metric_id, metric_result in evaluation_results.items():
+                per_question_scores = metric_result.get("per_question", {})
+                question_scores = per_question_scores.get(inf_result.question_id, {})
+                
+                # Add each metric score as a separate column
+                for score_name, score_value in question_scores.items():
+                    column_name = f"{metric_id}_{score_name}"
+                    inference_dict[column_name] = score_value
+            
             inference_data.append(inference_dict)
 
         inference_df = pd.DataFrame(inference_data)
