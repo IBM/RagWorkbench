@@ -1,12 +1,15 @@
 """AIT QA data loader implementation for RAG (Retrieval-Augmented Generation) benchmarking.
 
 This module provides a concrete implementation of the RagDataLoader abstract class
-for loading the AIT QA benchmark dataset from local files. It reads question-answer
-pairs from a CSV file and loads corresponding PDF documents from a local directory.
+for loading the AIT QA benchmark dataset from HuggingFace and GitHub sources. It loads
+queries and ground truth contexts from the HuggingFace AITQARetrieval dataset, ground
+truth answers from the AITQA GitHub repository, and PDF documents from a local directory.
 
 The data loader is designed to work with the AIT QA dataset, which contains:
-    - benchmark.csv: Contains questions, answers, and references to ground truth documents
-    - documents/: Directory containing PDF files referenced in the benchmark
+    - Queries: Loaded from HuggingFace dataset 'ibm-research/AITQARetrieval'
+    - Ground truth contexts (qrels): Loaded from the same HuggingFace dataset
+    - Ground truth answers: Loaded from AITQA GitHub repository JSONL file
+    - PDF documents: Loaded from local directory (auto-downloaded if missing)
 
 Typical usage example:
     data_loader = AITQaDataLoader(split=DatasetSplit.TEST)
@@ -40,16 +43,18 @@ SEED = 43
 
 
 class AITQaDataLoader(RagDataLoader):
-    """Loads AIT QA benchmark data from local CSV and PDF files.
+    """Loads AIT QA benchmark data from HuggingFace, GitHub, and local PDF files.
 
     This class implements the RagDataLoader abstract class to provide a data loader
-    for the AIT QA benchmark dataset. It loads question-answer pairs from a CSV file
-    and their corresponding PDF documents from a local directory.
+    for the AIT QA benchmark dataset. It loads queries and ground truth contexts from
+    the HuggingFace AITQARetrieval dataset, ground truth answers from the AITQA GitHub
+    repository, and PDF documents from a local directory.
 
-    The loader expects the following structure:
-        - A CSV file (benchmark.csv) with columns: question_id, question,
-          correct_answer, correct_answer_document_ids, is_answerable, golden_contexts
-        - A documents directory containing PDF files referenced in the CSV
+    The loader retrieves data from the following sources:
+        - Queries: HuggingFace dataset 'ibm-research/AITQARetrieval' (queries subset)
+        - Ground truth contexts (qrels): HuggingFace dataset 'ibm-research/AITQARetrieval' (test split)
+        - Ground truth answers: AITQA GitHub repository JSONL file
+        - PDF documents: Local directory (auto-downloaded if missing)
 
     Attributes:
         benchmark_entries: List of RagBenchmarkEntry objects containing questions,
@@ -69,13 +74,10 @@ class AITQaDataLoader(RagDataLoader):
         sampling_params: DataSamplingParams = DataSamplingParams(),
         cache_dir: Path | None = None,
     ):
-        """Initialize the AITQaDataLoader with benchmark data and documents.
+        """Initialize the AITQaDataLoader with lazy loading configuration.
 
-        This method performs the following initialization steps:
-        1. Locates the ait_qa_pdf directory using shared configuration
-        2. Loads benchmark.csv and parses it into RagBenchmarkEntry objects
-        3. Loads all PDF files from the documents directory into DocumentObject instances
-        4. Calls the parent RagDataLoader constructor with the dataset configuration
+        This method uses lazy initialization - data is only loaded when first accessed
+        through the _get_documents() or _get_benchmark_entries() methods.
 
         Args:
             split: Optional dataset split to use (DatasetSplit.TRAIN or DatasetSplit.TEST).
@@ -85,19 +87,29 @@ class AITQaDataLoader(RagDataLoader):
             cache_dir: Optional directory path for caching processed data. If None,
                 no caching is performed.
 
-        Raises:
-            FileNotFoundError: If benchmark.csv or the documents directory cannot be found.
-            pd.errors.EmptyDataError: If benchmark.csv is empty.
-            KeyError: If required columns are missing from benchmark.csv.
-
         Note:
-            All PDF files in the documents directory are loaded into memory as BytesIO
-            streams. For large datasets, consider the memory implications.
-
-            The documents directory location is determined by the shared configuration
-            module (ait_qa_data.config), ensuring consistency with the dataset downloader.
+            Data loading is deferred until _get_documents() or _get_benchmark_entries()
+            is called by the parent class. This improves initialization performance and
+            allows for better error handling during data loading.
         """
-        # Step 1: Load and parse benchmark entries from HuggingFace dataset
+        # Initialize lazy loading flags
+        self._benchmark_entries: list[RagBenchmarkEntry] | None = None
+        self._documents: list[DocumentObject] | None = None
+
+        # Call parent constructor which will trigger lazy loading via abstract methods
+        super().__init__(
+            split=split,
+            dataset_name="AIT_QA_Dataset",
+            sampling_params=sampling_params,
+            cache_dir=cache_dir,
+        )
+
+    def _load_benchmark_entries(self) -> None:
+        """Load and parse benchmark entries from HuggingFace dataset (lazy initialization).
+
+        This method is called once when benchmark entries are first accessed.
+        It loads queries and ground truth data from HuggingFace and GitHub.
+        """
         # Load the queries from the HuggingFace AITQARetrieval dataset
         logger.info("Loading AIT QA queries from HuggingFace dataset...")
         queries_dataset = load_dataset(
@@ -150,7 +162,7 @@ class AITQaDataLoader(RagDataLoader):
 
         # Create RagBenchmarkEntry objects from the queries dataset
         # The queries_dataset contains _id and text columns which map to question_id and question
-        self.benchmark_entries: list[RagBenchmarkEntry] = []
+        self._benchmark_entries = []
 
         for item in queries_dataset:
             question_id = item["_id"]
@@ -173,13 +185,18 @@ class AITQaDataLoader(RagDataLoader):
                 ground_truths_context_ids=ground_truths_context_ids,
                 is_answerable=True,  # Assume all queries are answerable
             )
-            self.benchmark_entries.append(entry)
+            self._benchmark_entries.append(entry)
 
         logger.info(
-            f"Loaded {len(self.benchmark_entries)} benchmark entries from HuggingFace"
+            f"Loaded {len(self._benchmark_entries)} benchmark entries from HuggingFace"
         )
 
-        # Step 2: Load document PDFs from the documents directory
+    def _load_documents(self) -> None:
+        """Load document PDFs from the documents directory (lazy initialization).
+
+        This method is called once when documents are first accessed.
+        It loads all PDF files from the configured documents directory.
+        """
         # Use shared configuration to get the documents directory location
         # This ensures consistency with where create_ait_qa_dataset.py downloads files
         ait_qa_pdf_document_folder = get_ait_qa_documents_dir()
@@ -192,7 +209,7 @@ class AITQaDataLoader(RagDataLoader):
             
             create_ait_qa_dataset()
 
-        self.documents: list[DocumentObject] = []
+        self._documents = []
 
         # Process all PDF files in the documents directory
         for file in ait_qa_pdf_document_folder.glob("*.pdf"):
@@ -217,15 +234,7 @@ class AITQaDataLoader(RagDataLoader):
                 stream=buffer,
                 mime_type=mime_type,
             )
-            self.documents.append(doc)
-
-        # Step 3: Initialize the parent RagDataLoader with configuration
-        super().__init__(
-            split=split,
-            dataset_name="AIT_QA_Dataset",
-            sampling_params=sampling_params,
-            cache_dir=cache_dir,
-        )
+            self._documents.append(doc)
 
     def _get_benchmark_entries(
         self, split: DatasetSplit | None
@@ -233,8 +242,8 @@ class AITQaDataLoader(RagDataLoader):
         """Retrieve the benchmark entries for the specified split.
 
         This method implements the abstract _get_benchmark_entries method from
-        RagDataLoader. It returns the pre-loaded benchmark entries that were
-        parsed from the CSV file during initialization.
+        RagDataLoader. It returns the benchmark entries that were loaded from
+        HuggingFace and GitHub sources.
 
         Args:
             split: The dataset split to retrieve (DatasetSplit.TRAIN or DatasetSplit.TEST).
@@ -244,12 +253,16 @@ class AITQaDataLoader(RagDataLoader):
             A list of RagBenchmarkEntry objects containing questions, ground truth
             answers, and references to the source documents.
         """
+        # Lazy load benchmark entries if not already loaded
+        if self._benchmark_entries is None:
+            self._load_benchmark_entries()
+
         if split is None:
             # Return all the entries
-            return self.benchmark_entries
+            return self._benchmark_entries  # type: ignore[return-value]
         else:
             # Split the data into train/test sets
-            items = self.benchmark_entries[:]
+            items = self._benchmark_entries[:]  # type: ignore[index]
             random.seed(SEED)
             random.shuffle(items)
 
@@ -271,8 +284,8 @@ class AITQaDataLoader(RagDataLoader):
         """Retrieve all loaded document objects.
 
         This method implements the abstract _get_documents method from RagDataLoader.
-        It returns the pre-loaded PDF documents that were read from the documents
-        directory during initialization.
+        It returns the PDF documents that were loaded from the local documents directory.
+        If the directory doesn't exist, it will be automatically created and populated.
 
         Returns:
             A list of DocumentObject instances, each containing:
@@ -281,10 +294,14 @@ class AITQaDataLoader(RagDataLoader):
                 - mime_type: The MIME type of the document (e.g., 'application/pdf')
 
         Note:
-            The documents are loaded into memory during initialization. Each document's
+            The documents are loaded lazily on first access. Each document's
             content is stored as a BytesIO stream for efficient access.
         """
-        return self.documents
+        # Lazy load documents if not already loaded
+        if self._documents is None:
+            self._load_documents()
+
+        return self._documents  # type: ignore[return-value]
 
 
 # Made with Bob

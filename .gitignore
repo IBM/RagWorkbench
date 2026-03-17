@@ -178,3 +178,7 @@ cython_debug/
 
 # VS
 .vscode/
+
+
+# RagWorkbench data directory
+ragworkbench_data/
