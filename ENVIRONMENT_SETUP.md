@@ -55,9 +55,9 @@ Common regions:
 - `unitxt.answer_correctness.llmaaj_llama` - Uses Llama 3.3 70B on watsonx
 - `unitxt.answer_correctness.llmaaj_llama4` - Uses Llama 4 Maverick on watsonx
 
-### Azure OpenAI (for GPT metrics)
+### Azure OpenAI Setup (Optional)
 
-If using `unitxt.answer_correctness.llmaaj_gpt`:
+Required only if using `unitxt.answer_correctness.llmaaj_gpt` metric:
 ```
 AZURE_API_KEY=your_azure_key
 AZURE_API_BASE=https://your-resource.openai.azure.com
