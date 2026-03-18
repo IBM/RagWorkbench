@@ -182,3 +182,6 @@ cython_debug/
 
 # RagWorkbench data directory
 ragworkbench_data/
+
+# Inference engine cache
+inference_engine_cache/
