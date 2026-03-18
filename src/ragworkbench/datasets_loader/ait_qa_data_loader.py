@@ -201,12 +201,43 @@ class AITQaDataLoader(RagDataLoader):
         # This ensures consistency with where create_ait_qa_dataset.py downloads files
         ait_qa_pdf_document_folder = get_ait_qa_documents_dir()
 
-        # Check if the directory exists
+        # Import the URL_TO_OUTPUT_FILE dictionary to get the list of expected files
+        from ragworkbench.datasets_loader.ait_qa_data.create_ait_qa_dataset import (
+            URL_TO_OUTPUT_FILE,
+        )
+
+        # Extract the expected filenames from the URL_TO_OUTPUT_FILE dictionary
+        expected_files = list(URL_TO_OUTPUT_FILE.values())
+
+        # Check if the directory exists and contains all required files
+        needs_download = False
         if not ait_qa_pdf_document_folder.exists():
+            logger.info(
+                f"Documents directory does not exist: {ait_qa_pdf_document_folder}"
+            )
+            needs_download = True
+        else:
+            # Check if all expected files are present
+            missing_files = []
+            for filename in expected_files:
+                file_path = ait_qa_pdf_document_folder / filename
+                if not file_path.exists():
+                    missing_files.append(filename)
+
+            if missing_files:
+                logger.warning(
+                    f"Documents directory exists but is missing {len(missing_files)} file(s): "
+                    f"{', '.join(missing_files)}"
+                )
+                needs_download = True
+
+        # Download the dataset if directory doesn't exist or files are missing
+        if needs_download:
             from ragworkbench.datasets_loader.ait_qa_data.create_ait_qa_dataset import (
                 create_ait_qa_dataset,
             )
-            
+
+            logger.info("Downloading AIT QA dataset...")
             create_ait_qa_dataset()
 
         self._documents = []
