@@ -34,6 +34,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Define URL to output filename mapping for all AIT QA dataset PDFs
+# This dictionary is used both for downloading and for validation
+URL_TO_OUTPUT_FILE: dict[str, str] = {
+    "https://web.archive.org/web/20220629112311/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NYSE_ALK_2017.pdf": "Alaska-2017.pdf",
+    "https://web.archive.org/web/20220629112336/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NYSE_ALK_2018.pdf": "Alaska-2018.pdf",
+    "https://web.archive.org/web/20240626083628/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2017.pdf": "AmericanAirlines-2017.pdf",
+    # "https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2017.pdf": "AmericanAirlines-2017.pdf.bck",
+    "https://web.archive.org/web/20240802123343/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2018.pdf": "AmericanAirlines-2018.pdf",
+    "https://web.archive.org/web/20240626051553/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2019.pdf": "AmericanAirlines-2019.pdf",
+    "https://web.archive.org/web/20250726023255/https://www.annualreports.com/HostedData/AnnualReportArchive/d/NYSE_DAL_2017.pdf": "Delta-2017.pdf",
+    "https://web.archive.org/web/20250913060612/https://www.annualreports.com/HostedData/AnnualReportArchive/d/NYSE_DAL_2018.pdf": "Delta-2018.pdf",
+    "https://web.archive.org/web/20250913060615/https://www.annualreports.com/HostedData/AnnualReportArchive/d/NYSE_DAL_2019.pdf": "Delta-2019.pdf",
+    "https://web.archive.org/web/20211204111318/https://www.annualreports.com/HostedData/AnnualReportArchive/s/NYSE_LUV_2017.pdf": "Southwest-2017.pdf",
+    "https://web.archive.org/web/20260303211647/https://www.annualreports.com/HostedData/AnnualReportArchive/s/NYSE_LUV_2018.pdf": "Southwest-2018.pdf",
+    "https://web.archive.org/web/20211204101822/https://www.annualreports.com/HostedData/AnnualReportArchive/s/NYSE_LUV_2019.pdf": "Southwest-2019.pdf",
+    "https://web.archive.org/web/20250716011902/https://www.annualreports.com/HostedData/AnnualReportArchive/u/NYSE_UAL_2017.pdf": "United-2017.pdf",
+    "https://web.archive.org/web/20250716020222/https://www.annualreports.com/HostedData/AnnualReportArchive/u/NYSE_UAL_2018.pdf": "United-2018.pdf",
+    "https://web.archive.org/web/20250717033806/https://www.annualreports.com/HostedData/AnnualReportArchive/u/NYSE_UAL_2019.pdf": "United-2019.pdf",
+}
+
 
 def create_session_with_retries() -> requests.Session:
     """Create a requests session with retry logic and SSL handling.
@@ -80,25 +100,6 @@ def create_ait_qa_dataset() -> None:
     Raises:
         Exception: If any download fails, logs the error and continues with remaining files.
     """
-    # Define URL to output filename mapping
-    url_to_output_file: dict[str, str] = {
-        "https://web.archive.org/web/20220629112311/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NYSE_ALK_2017.pdf": "Alaska-2017.pdf",
-        "https://web.archive.org/web/20220629112336/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NYSE_ALK_2018.pdf": "Alaska-2018.pdf",
-        "https://web.archive.org/web/20240626083628/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2017.pdf": "AmericanAirlines-2017.pdf",
-        # "https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2017.pdf": "AmericanAirlines-2017.pdf.bck",
-        "https://web.archive.org/web/20240802123343/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2018.pdf": "AmericanAirlines-2018.pdf",
-        "https://web.archive.org/web/20240626051553/https://www.annualreports.com/HostedData/AnnualReportArchive/a/NASDAQ_AAL_2019.pdf": "AmericanAirlines-2019.pdf",
-        "https://web.archive.org/web/20250726023255/https://www.annualreports.com/HostedData/AnnualReportArchive/d/NYSE_DAL_2017.pdf": "Delta-2017.pdf",
-        "https://web.archive.org/web/20250913060612/https://www.annualreports.com/HostedData/AnnualReportArchive/d/NYSE_DAL_2018.pdf": "Delta-2018.pdf",
-        "https://web.archive.org/web/20250913060615/https://www.annualreports.com/HostedData/AnnualReportArchive/d/NYSE_DAL_2019.pdf": "Delta-2019.pdf",
-        "https://web.archive.org/web/20211204111318/https://www.annualreports.com/HostedData/AnnualReportArchive/s/NYSE_LUV_2017.pdf": "Southwest-2017.pdf",
-        "https://web.archive.org/web/20260303211647/https://www.annualreports.com/HostedData/AnnualReportArchive/s/NYSE_LUV_2018.pdf": "Southwest-2018.pdf",
-        "https://web.archive.org/web/20211204101822/https://www.annualreports.com/HostedData/AnnualReportArchive/s/NYSE_LUV_2019.pdf": "Southwest-2019.pdf",
-        "https://web.archive.org/web/20250716011902/https://www.annualreports.com/HostedData/AnnualReportArchive/u/NYSE_UAL_2017.pdf": "United-2017.pdf",
-        "https://web.archive.org/web/20250716020222/https://www.annualreports.com/HostedData/AnnualReportArchive/u/NYSE_UAL_2018.pdf": "United-2018.pdf",
-        "https://web.archive.org/web/20250717033806/https://www.annualreports.com/HostedData/AnnualReportArchive/u/NYSE_UAL_2019.pdf": "United-2019.pdf",
-    }
-
     # Step 1: Create folder structure using shared configuration
     # This ensures both the downloader and data loader use the same location
     ait_qa_pdf_folder = get_ait_qa_data_dir()
@@ -111,7 +112,7 @@ def create_ait_qa_dataset() -> None:
     logger.info(f"Created/verified folder: {documents_folder}")
 
     # Step 2: Download PDFs
-    total_files = len(url_to_output_file)
+    total_files = len(URL_TO_OUTPUT_FILE)
     successful_downloads = 0
     failed_downloads = 0
 
@@ -120,7 +121,7 @@ def create_ait_qa_dataset() -> None:
     # Create session with retry logic
     session = create_session_with_retries()
 
-    for idx, (url, filename) in enumerate(url_to_output_file.items(), 1):
+    for idx, (url, filename) in enumerate(URL_TO_OUTPUT_FILE.items(), 1):
         output_path = documents_folder / filename
 
         # Skip if file already exists
