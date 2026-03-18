@@ -3,7 +3,10 @@ import logging
 import os
 import shutil
 from collections.abc import Sequence
+from copy import deepcopy
+from itertools import product
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import yaml
@@ -37,6 +40,9 @@ class BoardGenerator:
         with yaml_file.open("r") as f:
             data = yaml.full_load(f)
 
+        # Expand configurations with list parameters into multiple configurations
+        data["configurations"] = self._expand_configurations(data["configurations"])
+
         self.board = Board(**data)
         self.pipelines = []
         for config in self.board.configurations:
@@ -63,6 +69,156 @@ class BoardGenerator:
             ]
 
         self.results: DataFrame = pd.DataFrame()
+
+    @staticmethod
+    def _find_list_params(
+        params: dict[str, Any], prefix: str = ""
+    ) -> list[tuple[str, list]]:
+        """Recursively find all parameters that have list values.
+
+        Args:
+            params: Dictionary of parameters to search
+            prefix: Current path prefix for nested keys
+
+        Returns:
+            List of tuples (param_path, list_values) where param_path uses dot notation
+        """
+        list_params = []
+        for key, value in params.items():
+            current_path = f"{prefix}.{key}" if prefix else key
+            if isinstance(value, list):
+                list_params.append((current_path, value))
+            elif isinstance(value, dict):
+                list_params.extend(
+                    BoardGenerator._find_list_params(value, current_path)
+                )
+        return list_params
+
+    @staticmethod
+    def _set_nested_value(params: dict[str, Any], path: str, value: Any) -> None:
+        """Set a value in a nested dictionary using dot notation path.
+
+        Args:
+            params: Dictionary to modify
+            path: Dot-separated path (e.g., "embedding_model.model_id")
+            value: Value to set
+        """
+        keys = path.split(".")
+        current = params
+        for key in keys[:-1]:
+            if key not in current:
+                current[key] = {}
+            current = current[key]
+        current[keys[-1]] = value
+
+    @staticmethod
+    def _expand_configurations(
+        configurations: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        """Expand configurations that contain list parameters into multiple configurations.
+
+        When a parameter value is a list, this creates multiple configurations with all
+        combinations of the list values (Cartesian product).
+
+        Args:
+            configurations: List of configuration dictionaries from YAML
+
+        Returns:
+            Expanded list of configurations with all parameter combinations
+
+        Example:
+            Input configuration with:
+                embedding_model.model_id: [model-1, model-2]
+                chunking.chunk_size: [512, 256]
+
+            Will generate 4 configurations (2 × 2):
+                1. model-1, chunk_size=512
+                2. model-1, chunk_size=256
+                3. model-2, chunk_size=512
+                4. model-2, chunk_size=256
+        """
+        expanded_configs = []
+
+        for config in configurations:
+            # Find all parameters with list values in both ingest and inference
+            ingest_list_params = BoardGenerator._find_list_params(
+                config.get("ingest", {}).get("params", {})
+            )
+            inference_list_params = BoardGenerator._find_list_params(
+                config.get("inference", {}).get("params", {})
+            )
+
+            # Combine all list parameters
+            all_list_params = ingest_list_params + inference_list_params
+
+            if not all_list_params:
+                # No list parameters, keep configuration as-is
+                expanded_configs.append(config)
+                continue
+
+            # Generate all combinations of list parameter values
+            param_paths = [path for path, _ in all_list_params]
+            param_values = [values for _, values in all_list_params]
+            combinations = list(product(*param_values))
+
+            logger.info(
+                f"Expanding configuration '{config['name']}' with {len(combinations)} "
+                f"parameter combinations"
+            )
+
+            # Create a new configuration for each combination
+            for combo_idx, combo_values in enumerate(combinations):
+                # Deep copy the original configuration
+                new_config = deepcopy(config)
+
+                # Build a suffix for the configuration name based on parameter values
+                param_suffix_parts = []
+                for param_path, param_value in zip(
+                    param_paths, combo_values, strict=True
+                ):
+                    # Extract the last part of the path for the suffix
+                    param_name = param_path.split(".")[-1]
+                    param_suffix_parts.append(f"{param_name}={param_value}")
+
+                # Update configuration name with parameter values
+                original_name = config["name"]
+                new_config["name"] = f"{original_name}__{combo_idx + 1}"
+
+                # Update description to include parameter values
+                param_description = ", ".join(param_suffix_parts)
+                original_description = config.get("description", "")
+                new_config["description"] = (
+                    f"{original_description} [{param_description}]"
+                    if original_description
+                    else f"[{param_description}]"
+                )
+
+                # Set each parameter value in the new configuration
+                for param_path, param_value in zip(
+                    param_paths, combo_values, strict=True
+                ):
+                    # Determine if this is an ingest or inference parameter
+                    if param_path in [p for p, _ in ingest_list_params]:
+                        BoardGenerator._set_nested_value(
+                            new_config["ingest"]["params"], param_path, param_value
+                        )
+                    else:
+                        BoardGenerator._set_nested_value(
+                            new_config["inference"]["params"], param_path, param_value
+                        )
+
+                expanded_configs.append(new_config)
+                logger.debug(
+                    f"Created configuration '{new_config['name']}' with parameters: "
+                    f"{param_description}"
+                )
+
+        logger.info(
+            f"Configuration expansion complete: {len(configurations)} original → "
+            f"{len(expanded_configs)} expanded"
+        )
+
+        return expanded_configs
 
     def process(self) -> None:
         # iterate over configurations and then over datasets
@@ -159,7 +315,7 @@ class BoardGenerator:
         evaluation_results: dict,
     ) -> None:
         """Export inference results to a CSV file for a single experiment.
-        
+
         Args:
             inference_results: List of inference results
             experiment_id: Experiment identifier
@@ -194,17 +350,17 @@ class BoardGenerator:
                 ),
                 "num_contexts": len(inf_result.contexts) if inf_result.contexts else 0,
             }
-            
+
             # Add metric scores per question
             for metric_id, metric_result in evaluation_results.items():
                 per_question_scores = metric_result.get("per_question", {})
                 question_scores = per_question_scores.get(inf_result.question_id, {})
-                
+
                 # Add each metric score as a separate column
                 for score_name, score_value in question_scores.items():
                     column_name = f"{metric_id}_{score_name}"
                     inference_dict[column_name] = score_value
-            
+
             inference_data.append(inference_dict)
 
         inference_df = pd.DataFrame(inference_data)
