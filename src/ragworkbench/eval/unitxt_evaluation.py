@@ -19,9 +19,10 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
         name: str,
         metric_params: dict[str, Any],
         evaluation_level: EvaluationLevel = EvaluationLevel.DOC_ID,
+        metric_id: str | None = None,
         **kwargs,
     ):
-        super().__init__(name, metric_params, evaluation_level)
+        super().__init__(name, metric_params, evaluation_level, metric_id=metric_id)
         self.sub_scores = (
             metric_params["sub_scores"] if "sub_scores" in metric_params.keys() else []
         )
@@ -35,9 +36,9 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
     def compute(
         self, inference_result_list: list[InferenceResult]
     ) -> dict[str, dict[str, float]]:
-        metric_id = self.get_name()
-        # load the metric and prepare the dataset
-        metrics_operator = SequentialOperator(steps=[metric_id])
+        # Use metric_id for Unitxt (the actual metric identifier)
+        # but use name (metric_name) for score naming
+        metrics_operator = SequentialOperator(steps=[self.metric_id])
         dataset = [
             {
                 "q_id": r.question_id,

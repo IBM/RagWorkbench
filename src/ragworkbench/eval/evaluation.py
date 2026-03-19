@@ -25,9 +25,11 @@ class BaseEvaluationMetric(ABC):
         name: str,
         metric_params: dict[str, Any],
         evaluation_level: EvaluationLevel = EvaluationLevel.DOC_ID,
+        metric_id: str | None = None,
         **kwargs,
     ):
         self.name = name
+        self.metric_id = metric_id if metric_id else name
         self.metric_params = metric_params
         self.evaluation_level = evaluation_level
 
@@ -68,7 +70,7 @@ class BaseEvaluationMetric(ABC):
         return (
             self.name
             if score_name == self.name
-            else self.name[: self.name.rindex(".")] + "." + score_name
+            else self.name + "." + score_name
         )
 
     @staticmethod
