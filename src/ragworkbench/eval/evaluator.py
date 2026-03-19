@@ -45,12 +45,8 @@ class Evaluator:
 
         fields = metric_definition.metric_fields
 
-        # Store both score names (for per-question) and full score names (for statistics)
+        # Store score names (for per-question)
         self._score_names: list[str] = self.metric.get_score_names()
-        self._full_score_names: list[str] = [
-            self.metric.full_score_name(metric_score)
-            for metric_score in self._score_names
-        ]
 
         self.evaluation_cache = None
         if cache_dir:
@@ -143,7 +139,11 @@ class Evaluator:
     ) -> dict[str, dict[str, float]]:
         # compute the mean, ci_low, ci_high and coverage
         eval_stats = {}
-        for full_metric_score in self._full_score_names:
+        full_score_names = [
+            self.metric.full_score_name(metric_score)
+            for metric_score in self._score_names
+        ]
+        for full_metric_score in full_score_names:
             eval_stats[full_metric_score] = BaseEvaluationMetric.compute_stats(
                 metric_to_scores[full_metric_score]
             )
