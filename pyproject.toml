@@ -52,7 +52,9 @@ dependencies = [
     "nicegui",
     "python-dotenv",
     # Needed by some metrics
-    "bert_score"
+    "bert_score",
+    "litellm",
+    "tenacity",
 ]
 
 [project.optional-dependencies]
@@ -114,10 +116,12 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = [
-    "--verbose",
+    "-q",
+    "--tb=short",
     "--cov=src",
     "--cov-report=term-missing",
     "--cov-report=html",
+    "-s",
 ]
 markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",

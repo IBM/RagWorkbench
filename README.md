@@ -38,6 +38,12 @@ cd RagWorkbench
 pip install -e ".[dev]"
 ```
 
+### Environment Configuration
+
+Some evaluation metrics require environment variables to be configured. See [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) for detailed instructions on setting up credentials for:
+- watsonx.ai LLM-as-a-Judge metrics
+- Azure OpenAI metrics
+
 ### Optional Dependencies
 
 ```bash

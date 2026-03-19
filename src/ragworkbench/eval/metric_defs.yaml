@@ -48,7 +48,7 @@ unitxt.answer_correctness.sentence_bert_mini_lm:
   vendor: "unitxt"
 
 unitxt.answer_correctness.llmaaj_llama:
-  metric_id: "metrics.rag.external_rag.answer_correctness.llama_3_3_70b_instruct_watsonx_judge"
+  metric_id: "metrics.rag.external_rag.answer_correctness.llama_3_3_70b_instruct_watsonx_judge[inference_model=engines.classification.llama_3_3_70b_instruct_watsonx[provider_specific_args={watsonx={max_requests_per_second=2}}]]"
   metric_params: {}
   metric_fields:
       - "answer"
