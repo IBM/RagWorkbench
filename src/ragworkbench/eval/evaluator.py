@@ -101,7 +101,7 @@ class Evaluator:
         ]
 
         if len(not_in_cache_dataset) == 0:
-            logger.info(f"Metric {self.metric} is skipped (loaded entirely from cache)")
+            logger.info(f"Metric {self.metric.name} is skipped (loaded entirely from cache)")
         else:
             metric_instance_scores = self.metric.compute(not_in_cache_dataset)
 
