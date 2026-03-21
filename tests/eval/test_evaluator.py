@@ -20,37 +20,58 @@ from ragworkbench.eval.evaluator import Evaluator
 from ragworkbench.eval.metric_models import load_metric_definitions
 
 
+def create_inference_result(index: int, question: str, answer: str) -> InferenceResult:
+    """
+    Generate an inference result from an index, question, and answer.
+    
+    Args:
+        index: The index/ID for the question
+        question: The question text
+        answer: The answer text
+        
+    Returns:
+        InferenceResult with the provided data
+    """
+    return InferenceResult(
+        question_id=f"q{index}",
+        question=question,
+        ground_truth_answers=[answer],
+        ground_truths_context_ids=[GroundTruthContextId(document_id=f"doc{index}")],
+        is_answerable=True,
+        answer=answer,
+        context_ids=[f"doc{index}"],
+    )
+
+
 @pytest.fixture
 def sample_inference_results():
     """Provide sample inference results for testing."""
+    questions_and_answers = [
+        ("Who is the president of the United States?", "Joe Biden"),
+        ("What is the capital of France?", "Paris"),
+        ("What is the largest planet in our solar system?", "Jupiter"),
+        ("What is the speed of light?", "299,792,458 meters per second"),
+        ("Who wrote Romeo and Juliet?", "William Shakespeare"),
+        ("What is the chemical symbol for gold?", "Au"),
+        ("What year did World War II end?", "1945"),
+        ("What is the tallest mountain in the world?", "Mount Everest"),
+        ("Who painted the Mona Lisa?", "Leonardo da Vinci"),
+        ("What is the smallest prime number?", "2"),
+        ("What is the capital of Japan?", "Tokyo"),
+        ("Who invented the telephone?", "Alexander Graham Bell"),
+        ("What is the largest ocean on Earth?", "Pacific Ocean"),
+        ("What is the boiling point of water in Celsius?", "100 degrees"),
+        ("Who was the first person to walk on the moon?", "Neil Armstrong"),
+        ("What is the currency of the United Kingdom?", "Pound Sterling"),
+        ("What is the square root of 144?", "12"),
+        ("Who wrote '1984'?", "George Orwell"),
+        ("What is the longest river in the world?", "Nile River"),
+        ("What is the atomic number of carbon?", "6"),
+    ]
+    
     return [
-        InferenceResult(
-            question_id="q1",
-            question="Who is the president of the United States?",
-            ground_truth_answers=["Joe Biden"],
-            ground_truths_context_ids=[GroundTruthContextId(document_id="doc1")],
-            is_answerable=True,
-            answer="Joe Biden",
-            context_ids=["doc1"],
-        ),
-        InferenceResult(
-            question_id="q2",
-            question="What is the capital of France?",
-            ground_truth_answers=["Paris"],
-            ground_truths_context_ids=[GroundTruthContextId(document_id="doc2")],
-            is_answerable=True,
-            answer="Paris",
-            context_ids=["doc2"],
-        ),
-        InferenceResult(
-            question_id="q3",
-            question="What is the largest planet in our solar system?",
-            ground_truth_answers=["Jupiter"],
-            ground_truths_context_ids=[GroundTruthContextId(document_id="doc3")],
-            is_answerable=True,
-            answer="Saturn",
-            context_ids=["doc3"],
-        ),
+        create_inference_result(i + 1, question, answer)
+        for i, (question, answer) in enumerate(questions_and_answers)
     ]
 
 
@@ -90,10 +111,9 @@ def test_evaluator_runs_single_metric(sample_inference_results):
             print(f"  {score_name}: {score_value}")
     
     # Verify we got results for all questions
-    assert len(per_question_scores) == 3
-    assert "q1" in per_question_scores
-    assert "q2" in per_question_scores
-    assert "q3" in per_question_scores
+    assert len(per_question_scores) == 20
+    for i in range(1, 21):
+        assert f"q{i}" in per_question_scores
     
     # Verify each question has scores
     for question_id, scores in per_question_scores.items():
