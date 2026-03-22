@@ -108,6 +108,13 @@ else
 
     echo -e "${GREEN}✓ CHANGELOG.md updated${NC}"
     echo -e "${YELLOW}Please edit CHANGELOG.md to add release notes for version ${NEW_VERSION}${NC}"
+
+    # Auto-fix any formatting issues introduced by sed
+    if command -v uv &> /dev/null; then
+        echo -e "${YELLOW}Auto-fixing CHANGELOG.md formatting...${NC}"
+        uv run pre-commit run --files CHANGELOG.md || true
+        echo -e "${GREEN}✓ CHANGELOG.md formatting fixed${NC}"
+    fi
 fi
 
 # Run tests
@@ -126,14 +133,14 @@ fi
 # Run pre-commit checks
 echo ""
 echo -e "${YELLOW}Running pre-commit checks...${NC}"
-if command -v pre-commit &> /dev/null; then
-    pre-commit run --all-files || {
+if command -v uv &> /dev/null; then
+    uv run pre-commit run --all-files || {
         echo -e "${RED}Pre-commit checks failed! Please fix before continuing.${NC}"
         exit 1
     }
     echo -e "${GREEN}✓ Pre-commit checks passed${NC}"
 else
-    echo -e "${YELLOW}Warning: pre-commit not found, skipping checks${NC}"
+    echo -e "${YELLOW}Warning: uv not found, skipping pre-commit checks${NC}"
 fi
 
 # Show git diff
