@@ -108,6 +108,13 @@ else
 
     echo -e "${GREEN}✓ CHANGELOG.md updated${NC}"
     echo -e "${YELLOW}Please edit CHANGELOG.md to add release notes for version ${NEW_VERSION}${NC}"
+
+    # Auto-fix any formatting issues introduced by sed
+    if command -v uv &> /dev/null; then
+        echo -e "${YELLOW}Auto-fixing CHANGELOG.md formatting...${NC}"
+        uv run pre-commit run --files CHANGELOG.md || true
+        echo -e "${GREEN}✓ CHANGELOG.md formatting fixed${NC}"
+    fi
 fi
 
 # Run tests
