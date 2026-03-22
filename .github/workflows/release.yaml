@@ -133,7 +133,6 @@ jobs:
         with:
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true
-          # Add TESTPYPI_API_TOKEN to repository secrets if not using trusted publishing
-          # password: ${{ secrets.TESTPYPI_API_TOKEN }}
+          password: ${{ secrets.TESTPYPI_API_TOKEN }}
 
 # Made with Bob
