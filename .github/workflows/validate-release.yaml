@@ -1,0 +1,93 @@
+name: Validate Release Files
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/release.yaml'
+      - '.github/workflows/version-check.yaml'
+      - 'scripts/prepare_release.sh'
+      - 'CHANGELOG.md'
+      - 'RELEASE.md'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Release Configuration
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate YAML syntax
+        run: |
+          # Install yamllint
+          pip install yamllint
+          
+          # Validate workflow files
+          yamllint .github/workflows/release.yaml
+          yamllint .github/workflows/version-check.yaml
+          
+          echo "✓ YAML files are valid"
+
+      - name: Check shell script syntax
+        run: |
+          # Check bash script syntax
+          bash -n scripts/prepare_release.sh
+          echo "✓ Shell script syntax is valid"
+
+      - name: Verify required files exist
+        run: |
+          files=(
+            ".github/workflows/release.yaml"
+            ".github/workflows/version-check.yaml"
+            "scripts/prepare_release.sh"
+            "CHANGELOG.md"
+            "RELEASE.md"
+            ".github/PULL_REQUEST_TEMPLATE.md"
+            ".github/ISSUE_TEMPLATE/release.md"
+          )
+          
+          for file in "${files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "✗ Missing required file: $file"
+              exit 1
+            fi
+            echo "✓ Found: $file"
+          done
+
+      - name: Check CHANGELOG format
+        run: |
+          # Check if CHANGELOG follows Keep a Changelog format
+          if ! grep -q "## \[Unreleased\]" CHANGELOG.md; then
+            echo "✗ CHANGELOG.md missing [Unreleased] section"
+            exit 1
+          fi
+          
+          if ! grep -q "The format is based on" CHANGELOG.md; then
+            echo "✗ CHANGELOG.md missing format reference"
+            exit 1
+          fi
+          
+          echo "✓ CHANGELOG.md format is valid"
+
+      - name: Verify script is executable
+        run: |
+          if [ ! -x scripts/prepare_release.sh ]; then
+            echo "✗ scripts/prepare_release.sh is not executable"
+            exit 1
+          fi
+          echo "✓ prepare_release.sh is executable"
+
+      - name: Check for version placeholders
+        run: |
+          # Check if any files still have placeholder versions
+          if grep -r "yourusername" .github/ pyproject.toml README.md 2>/dev/null; then
+            echo "✗ Found placeholder 'yourusername' in files"
+            exit 1
+          fi
+          echo "✓ No version placeholders found"
+
+# Made with Bob

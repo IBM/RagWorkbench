@@ -1,0 +1,101 @@
+name: Version Check
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'pyproject.toml'
+      - 'CHANGELOG.md'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-version:
+    name: Check Version Update
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get base branch version
+        id: base-version
+        run: |
+          git fetch origin main
+          BASE_VERSION=$(git show origin/main:pyproject.toml | grep -m 1 'version = ' | cut -d'"' -f2)
+          echo "version=$BASE_VERSION" >> $GITHUB_OUTPUT
+          echo "Base version: $BASE_VERSION"
+
+      - name: Get PR branch version
+        id: pr-version
+        run: |
+          PR_VERSION=$(grep -m 1 'version = ' pyproject.toml | cut -d'"' -f2)
+          echo "version=$PR_VERSION" >> $GITHUB_OUTPUT
+          echo "PR version: $PR_VERSION"
+
+      - name: Check if version changed
+        id: version-changed
+        run: |
+          if [ "${{ steps.base-version.outputs.version }}" != "${{ steps.pr-version.outputs.version }}" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "✅ Version changed from ${{ steps.base-version.outputs.version }} to ${{ steps.pr-version.outputs.version }}"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "⚠️ Version not changed (still ${{ steps.base-version.outputs.version }})"
+          fi
+
+      - name: Check CHANGELOG updated
+        id: changelog-check
+        if: steps.version-changed.outputs.changed == 'true'
+        run: |
+          if git diff origin/main...HEAD -- CHANGELOG.md | grep -q "^+.*\[${{ steps.pr-version.outputs.version }}\]"; then
+            echo "updated=true" >> $GITHUB_OUTPUT
+            echo "✅ CHANGELOG.md updated for version ${{ steps.pr-version.outputs.version }}"
+          else
+            echo "updated=false" >> $GITHUB_OUTPUT
+            echo "⚠️ CHANGELOG.md not updated for version ${{ steps.pr-version.outputs.version }}"
+          fi
+
+      - name: Comment on PR
+        if: steps.version-changed.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const versionChanged = '${{ steps.version-changed.outputs.changed }}' === 'true';
+            const changelogUpdated = '${{ steps.changelog-check.outputs.updated }}' === 'true';
+            const baseVersion = '${{ steps.base-version.outputs.version }}';
+            const prVersion = '${{ steps.pr-version.outputs.version }}';
+            
+            let message = '## 📦 Version Update Detected\n\n';
+            message += `Version changed from \`${baseVersion}\` to \`${prVersion}\`\n\n`;
+            
+            if (changelogUpdated) {
+              message += '✅ CHANGELOG.md has been updated\n\n';
+              message += '### Next Steps\n';
+              message += '1. Merge this PR to main\n';
+              message += `2. Create and push a tag: \`git tag -a v${prVersion} -m "Release version ${prVersion}"\`\n`;
+              message += `3. Push the tag: \`git push origin v${prVersion}\`\n`;
+              message += '4. The release workflow will automatically publish to PyPI and create a GitHub release\n';
+            } else {
+              message += '⚠️ **CHANGELOG.md needs to be updated**\n\n';
+              message += `Please add release notes for version \`${prVersion}\` to CHANGELOG.md\n`;
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
+      - name: Fail if CHANGELOG not updated
+        if: steps.version-changed.outputs.changed == 'true' && steps.changelog-check.outputs.updated == 'false'
+        run: |
+          echo "::error::CHANGELOG.md must be updated when version changes"
+          exit 1
+
+# Made with Bob
