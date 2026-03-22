@@ -15,7 +15,7 @@ jobs:
   check-version:
     name: Check Version Update
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -69,10 +69,10 @@ jobs:
             const changelogUpdated = '${{ steps.changelog-check.outputs.updated }}' === 'true';
             const baseVersion = '${{ steps.base-version.outputs.version }}';
             const prVersion = '${{ steps.pr-version.outputs.version }}';
-            
+
             let message = '## 📦 Version Update Detected\n\n';
             message += `Version changed from \`${baseVersion}\` to \`${prVersion}\`\n\n`;
-            
+
             if (changelogUpdated) {
               message += '✅ CHANGELOG.md has been updated\n\n';
               message += '### Next Steps\n';
@@ -84,7 +84,7 @@ jobs:
               message += '⚠️ **CHANGELOG.md needs to be updated**\n\n';
               message += `Please add release notes for version \`${prVersion}\` to CHANGELOG.md\n`;
             }
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,

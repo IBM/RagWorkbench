@@ -16,7 +16,7 @@ jobs:
   validate:
     name: Validate Release Configuration
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,11 +25,11 @@ jobs:
         run: |
           # Install yamllint
           pip install yamllint
-          
+
           # Validate workflow files
           yamllint .github/workflows/release.yaml
           yamllint .github/workflows/version-check.yaml
-          
+
           echo "✓ YAML files are valid"
 
       - name: Check shell script syntax
@@ -49,7 +49,7 @@ jobs:
             ".github/PULL_REQUEST_TEMPLATE.md"
             ".github/ISSUE_TEMPLATE/release.md"
           )
-          
+
           for file in "${files[@]}"; do
             if [ ! -f "$file" ]; then
               echo "✗ Missing required file: $file"
@@ -65,12 +65,12 @@ jobs:
             echo "✗ CHANGELOG.md missing [Unreleased] section"
             exit 1
           fi
-          
+
           if ! grep -q "The format is based on" CHANGELOG.md; then
             echo "✗ CHANGELOG.md missing format reference"
             exit 1
           fi
-          
+
           echo "✓ CHANGELOG.md format is valid"
 
       - name: Verify script is executable

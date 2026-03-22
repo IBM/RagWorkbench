@@ -23,12 +23,12 @@ from ragworkbench.eval.metric_models import load_metric_definitions
 def create_inference_result(index: int, question: str, answer: str) -> InferenceResult:
     """
     Generate an inference result from an index, question, and answer.
-    
+
     Args:
         index: The index/ID for the question
         question: The question text
         answer: The answer text
-        
+
     Returns:
         InferenceResult with the provided data
     """
@@ -68,7 +68,7 @@ def sample_inference_results():
         ("What is the longest river in the world?", "Nile River"),
         ("What is the atomic number of carbon?", "6"),
     ]
-    
+
     return [
         create_inference_result(i + 1, question, answer)
         for i, (question, answer) in enumerate(questions_and_answers)
@@ -83,14 +83,14 @@ def test_evaluator_runs_single_metric(sample_inference_results):
     if cache_path.exists():
         shutil.rmtree(cache_path)
         print(f"\nDeleted inference_engine_cache at: {cache_path.absolute()}")
-    
+
     # Load metric definitions
     config = load_metric_definitions()
-    
+
     # Get a single metric definition (LLM as a Judge - llmaaj_llama)
     metric_name = "unitxt.answer_correctness.llmaaj_llama"
     metric_def = config.get_metric_definition(metric_name)
-    
+
     # Create Evaluator instance
     evaluator = Evaluator(
         metric_definition=metric_def,
@@ -98,55 +98,56 @@ def test_evaluator_runs_single_metric(sample_inference_results):
         rag_corpus=None,
         cache_dir=None,
     )
-    
+
     # Run metrics on the inference results
     per_question_scores = evaluator.run_metrics(sample_inference_results)
-    
+
     # Print per-question scores
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("PER-QUESTION METRIC SCORES:")
-    print("="*80)
+    print("=" * 80)
     for question_id, scores in per_question_scores.items():
         print(f"\n{question_id}:")
         for score_name, score_value in scores.items():
             print(f"  {score_name}: {score_value}")
-    
+
     # Verify we got results for all questions
     assert len(per_question_scores) == 20
     for i in range(1, 21):
         assert f"q{i}" in per_question_scores
-    
+
     # Verify each question has scores
-    for question_id, scores in per_question_scores.items():
+    for _question_id, scores in per_question_scores.items():
         assert isinstance(scores, dict)
         assert len(scores) > 0
         # Verify all scores are floats
         for score_name, score_value in scores.items():
             assert isinstance(score_name, str)
             assert isinstance(score_value, (int, float))
-    
+
     # Compute statistics from per-question results
     stats = evaluator.compute_stats_from_per_question_results(per_question_scores)
-    
+
     # Print statistics
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("METRIC STATISTICS:")
-    print("="*80)
+    print("=" * 80)
     for metric_name, metric_stats in stats.items():
         print(f"\n{metric_name}:")
         for stat_name, stat_value in metric_stats.items():
             print(f"  {stat_name}: {stat_value}")
-    print("="*80 + "\n")
-    
+    print("=" * 80 + "\n")
+
     # Verify statistics structure
     assert isinstance(stats, dict)
     assert len(stats) > 0
-    
+
     # Each metric should have statistics
-    for metric_name, metric_stats in stats.items():
+    for _metric_name, metric_stats in stats.items():
         assert isinstance(metric_stats, dict)
         # Statistics should include mean, std, etc.
         assert "mean" in metric_stats
         assert isinstance(metric_stats["mean"], (int, float))
+
 
 # Made with Bob

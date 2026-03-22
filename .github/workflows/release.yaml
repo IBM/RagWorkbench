@@ -13,7 +13,7 @@ jobs:
   build:
     name: Build distribution
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
     environment:
       name: pypi
       url: https://pypi.org/p/ragworkbench
-    
+
     steps:
       - name: Download all the dists
         uses: actions/download-artifact@v4
@@ -66,7 +66,7 @@ jobs:
     name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -85,12 +85,12 @@ jobs:
           # Extract version from tag
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          
+
           # Extract release notes from CHANGELOG.md if it exists
           if [ -f CHANGELOG.md ]; then
             # Extract the section for this version
             sed -n "/## \[${VERSION}\]/,/## \[/p" CHANGELOG.md | sed '$d' > release_notes.md
-            
+
             # If no specific version section found, use a default message
             if [ ! -s release_notes.md ]; then
               echo "Release version ${VERSION}" > release_notes.md
