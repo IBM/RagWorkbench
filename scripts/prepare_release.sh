@@ -126,14 +126,14 @@ fi
 # Run pre-commit checks
 echo ""
 echo -e "${YELLOW}Running pre-commit checks...${NC}"
-if command -v pre-commit &> /dev/null; then
-    pre-commit run --all-files || {
+if command -v uv &> /dev/null; then
+    uv run pre-commit run --all-files || {
         echo -e "${RED}Pre-commit checks failed! Please fix before continuing.${NC}"
         exit 1
     }
     echo -e "${GREEN}✓ Pre-commit checks passed${NC}"
 else
-    echo -e "${YELLOW}Warning: pre-commit not found, skipping checks${NC}"
+    echo -e "${YELLOW}Warning: uv not found, skipping pre-commit checks${NC}"
 fi
 
 # Show git diff
