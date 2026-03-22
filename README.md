@@ -280,6 +280,48 @@ We welcome contributions! Please see our contributing guidelines for more detail
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+## Releases
+
+RAGWorkbench follows [Semantic Versioning](https://semver.org/) and uses automated releases via GitHub Actions.
+
+### Installation
+
+Install the latest stable release from PyPI:
+
+```bash
+pip install ragworkbench
+```
+
+Install a specific version:
+
+```bash
+pip install ragworkbench==0.1.0
+```
+
+### Release Process
+
+For maintainers preparing a new release:
+
+1. **Prepare the release**:
+   ```bash
+   ./scripts/prepare_release.sh 0.2.0
+   ```
+
+2. **Create and push the tag**:
+   ```bash
+   git tag -a v0.2.0 -m "Release version 0.2.0"
+   git push origin v0.2.0
+   ```
+
+3. **Monitor the automated workflow** at [GitHub Actions](https://github.com/IBM/RagWorkbench/actions)
+
+The release workflow will automatically:
+- Build the package
+- Publish to PyPI
+- Create a GitHub release with release notes
+
+For detailed release instructions, see [RELEASE.md](RELEASE.md).
+
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
