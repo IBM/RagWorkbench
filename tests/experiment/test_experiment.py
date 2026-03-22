@@ -7,6 +7,8 @@ from ragworkbench.datasets_loader.data_models.rag_corpus import RagCorpus
 from ragworkbench.datasets_loader.dataset_names import DatasetName
 from ragworkbench.experiment import Experiment
 
+import pytest
+
 
 class EmptyIngestPipeline(IngestPipeline):
     def process(
