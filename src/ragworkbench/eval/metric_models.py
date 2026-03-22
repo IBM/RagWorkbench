@@ -15,6 +15,9 @@ class MetricDefinition(BaseModel):
     and the vendor framework to use.
 
     Attributes:
+        metric_name: The name/key of the metric from metric_defs.yaml (e.g.,
+                     "unitxt.answer_correctness.llmaaj_llama"). This is used
+                     for referencing the metric in configurations and reports.
         metric_id: Unique identifier for the metric in the vendor's evaluation framework.
                    This is the actual metric name used by the framework (e.g.,
                    "metrics.rag.context_correctness.retrieval_at_k").
@@ -29,6 +32,7 @@ class MetricDefinition(BaseModel):
 
     Example:
         >>> metric = MetricDefinition(
+        ...     metric_name="unitxt.context_correctness.retrieval_at_k",
         ...     metric_id="metrics.rag.context_correctness.retrieval_at_k",
         ...     metric_params={"sub_scores": ["match_at_1", "match_at_3"]},
         ...     metric_fields=["context_ids", "ground_truths_context_ids"],
@@ -36,6 +40,10 @@ class MetricDefinition(BaseModel):
         ... )
     """
 
+    metric_name: str = Field(
+        min_length=1,
+        description="The name/key of the metric from metric_defs.yaml for referencing in configs.",
+    )
     metric_id: str = Field(
         min_length=1,
         description="Unique identifier for the metric in the vendor's evaluation framework.",
@@ -260,8 +268,10 @@ def load_metric_definitions(
         )
 
     # Convert the raw dictionary to MetricDefinition objects
+    # Add the metric_name field to each definition
     definitions = {
-        name: MetricDefinition(**definition) for name, definition in data.items()
+        name: MetricDefinition(metric_name=name, **definition)
+        for name, definition in data.items()
     }
 
     # Create and return the MetricDefinitionsConfig instance

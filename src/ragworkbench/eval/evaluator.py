@@ -36,18 +36,17 @@ class Evaluator:
         self.metric: BaseEvaluationMetric = self.evaluation_metric_factory[
             metric_definition.vendor
         ](
-            name=metric_definition.metric_id,
+            name=metric_definition.metric_name,
             metric_params=metric_definition.metric_params,
             rag_benchmark=rag_benchmark,
             rag_corpus=rag_corpus,
+            metric_id=metric_definition.metric_id,
         )
 
         fields = metric_definition.metric_fields
 
-        self.full_score_names: list[str] = [
-            self.metric.full_score_name(metric_score)
-            for metric_score in self.metric.get_score_names()
-        ]
+        # Store score names (for per-question)
+        self._score_names: list[str] = self.metric.get_score_names()
 
         self.evaluation_cache = None
         if cache_dir:
@@ -87,29 +86,30 @@ class Evaluator:
                     # We check that we have all the score_names
                     if not (
                         score_name in scores_dict
-                        for score_name in self.full_score_names
+                        for score_name in self._score_names
                     ):
                         logger.error(
-                            "We do not have all the full_scores_names in the cache : {scores_dict.keys()} vs. {self.full_score_names}]"
+                            f"We do not have all the score_names in the cache : {scores_dict.keys()} vs. {self._score_names}]"
                         )
                     else:
                         not_in_cache_qids.remove(q_id)
-                        for full_score_name, score in scores_dict.items():
-                            question_id_to_metric_scores[q_id][full_score_name] = score
+                        for score_name, score in scores_dict.items():
+                            question_id_to_metric_scores[q_id][score_name] = score
 
         not_in_cache_dataset: list[InferenceResult] = [
             d for d in list_of_inference_results if d.question_id in not_in_cache_qids
         ]
 
         if len(not_in_cache_dataset) == 0:
-            logger.info(f"Metric {self.metric} is skipped (loaded entirely from cache)")
-        else:
+            logger.info(f"Metric '{self.metric.name}' is skipped (loaded entirely from cache)")
+        else:   
+            logger.info(f"Evaluating {len(not_in_cache_dataset)} items with metric '{self.metric.name}' (metric ID: {self.metric.metric_id})..")
             metric_instance_scores = self.metric.compute(not_in_cache_dataset)
 
             for score_name, scores in metric_instance_scores.items():
-                full_score_name = self.metric.full_score_name(score_name)
+                # Use just the score_name for per-question scores (not full_score_name)
                 for q_id, score in scores.items():
-                    question_id_to_metric_scores[q_id][full_score_name] = score
+                    question_id_to_metric_scores[q_id][score_name] = score
 
             if self.evaluation_cache:
                 for q_id in not_in_cache_qids:
@@ -124,10 +124,13 @@ class Evaluator:
         self, question_id_to_metric_scores: dict[str, dict[str, float]]
     ) -> dict[str, dict[str, float]]:
         metric_to_scores = defaultdict(list)
-        for full_metric_score in self.full_score_names:
+        # Iterate over short score names and create full names dynamically
+        for score_name in self._score_names:
+            full_metric_score = self.metric.full_score_name(score_name)
             for evaluation_result in question_id_to_metric_scores.values():
+                # Access using short score_name
                 metric_to_scores[full_metric_score].append(
-                    evaluation_result[full_metric_score]
+                    evaluation_result[score_name]
                 )
         metric_stats = self._compute_stats(metric_to_scores)
         return metric_stats
@@ -137,7 +140,11 @@ class Evaluator:
     ) -> dict[str, dict[str, float]]:
         # compute the mean, ci_low, ci_high and coverage
         eval_stats = {}
-        for full_metric_score in self.full_score_names:
+        full_score_names = [
+            self.metric.full_score_name(metric_score)
+            for metric_score in self._score_names
+        ]
+        for full_metric_score in full_score_names:
             eval_stats[full_metric_score] = BaseEvaluationMetric.compute_stats(
                 metric_to_scores[full_metric_score]
             )

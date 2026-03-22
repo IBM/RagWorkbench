@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -39,7 +41,7 @@ class Experiment:
         Returns:
             A tuple containing:
             - List of inference results
-            - Dictionary mapping metric IDs to their evaluation results, where each
+            - Dictionary mapping metric names to their evaluation results, where each
               evaluation result contains 'per_question' scores and aggregate 'statistics'
         """
         # prepare the data
@@ -73,34 +75,74 @@ class Experiment:
         self._log_cache_statistics(self.inference_pipeline.generation_cache)
 
         # Now run the evaluation via the evaluator code!
-        # Run evaluation for each metric
-        evaluation_results: dict[str, dict[str, Any]] = {}
-        for metric_def in self.metric_definitions:
-            # Create evaluator for this metric
-            evaluator = Evaluator(
-                metric_definition=metric_def,
+        # Run evaluation in a separate thread to avoid event loop conflicts
+        # Unitxt's inference engine uses asyncio internally with run_until_complete,
+        # which cannot be nested. Running in a thread allows it to create its own event loop.
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                self._run_evaluation,
+                results=results,
                 rag_benchmark=rag_benchmark,
-                rag_corpus=self.data_loader.get_corpus(),
-                cache_dir=self.cache_dir,
             )
-
-            # Run metrics and get per-question scores
-            question_scores: dict[str, dict[str, float]] = evaluator.run_metrics(
-                results
-            )
-
-            # Compute aggregate statistics
-            metric_stats = evaluator.compute_stats_from_per_question_results(
-                question_scores
-            )
-
-            # Store results
-            evaluation_results[metric_def.metric_id] = {
-                "per_question": question_scores,
-                "statistics": metric_stats,
-            }
+            evaluation_results = future.result()
 
         return results, evaluation_results
+
+    def _run_evaluation(
+        self,
+        results: list[InferenceResult],
+        rag_benchmark: RagBenchmark,
+    ) -> dict[str, dict[str, Any]]:
+        """
+        Run evaluation for all metrics.
+        
+        This method is executed in a separate thread to allow unitxt's inference engine
+        to create and manage its own event loop without conflicts. We create a new event
+        loop for this thread since threads don't have event loops by default.
+
+        Args:
+            results: List of inference results to evaluate
+            rag_benchmark: The RAG benchmark containing ground truth data
+
+        Returns:
+            Dictionary mapping metric names to their evaluation results, where each
+            evaluation result contains 'per_question' scores and aggregate 'statistics'
+        """
+        # Create a new event loop for this thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            evaluation_results: dict[str, dict[str, Any]] = {}
+            for metric_def in self.metric_definitions:
+                # Create evaluator for this metric
+                evaluator = Evaluator(
+                    metric_definition=metric_def,
+                    rag_benchmark=rag_benchmark,
+                    rag_corpus=self.data_loader.get_corpus(),
+                    cache_dir=self.cache_dir,
+                )
+
+                # Run metrics and get per-question scores
+                question_scores: dict[str, dict[str, float]] = evaluator.run_metrics(
+                    results
+                )
+
+                # Compute aggregate statistics
+                metric_stats = evaluator.compute_stats_from_per_question_results(
+                    question_scores
+                )
+
+                # Store results using metric_name as key
+                evaluation_results[metric_def.metric_name] = {
+                    "per_question": question_scores,
+                    "statistics": metric_stats,
+                }
+
+            return evaluation_results
+        finally:
+            # Clean up the event loop
+            loop.close()
 
     @staticmethod
     def _log_cache_statistics(generation_cache: GenerationCache | None) -> None:

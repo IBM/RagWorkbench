@@ -323,7 +323,7 @@ class BoardGenerator:
             dataset_seq: Dataset sequence number
             config_name: Configuration name
             dataset_id: Dataset identifier
-            evaluation_results: Dictionary mapping metric IDs to their evaluation results,
+            evaluation_results: Dictionary mapping metric names to their evaluation results,
                               where each result contains 'per_question' scores
         """
         os.makedirs(self.output_path, exist_ok=True)
@@ -352,13 +352,18 @@ class BoardGenerator:
             }
 
             # Add metric scores per question
-            for metric_id, metric_result in evaluation_results.items():
+            for metric_name, metric_result in evaluation_results.items():
                 per_question_scores = metric_result.get("per_question", {})
                 question_scores = per_question_scores.get(inf_result.question_id, {})
 
                 # Add each metric score as a separate column
                 for score_name, score_value in question_scores.items():
-                    column_name = f"{metric_id}_{score_name}"
+                    # Avoid duplication: if score_name equals metric_name, use it as-is
+                    # Otherwise, concatenate metric_name with score_name
+                    if score_name == metric_name:
+                        column_name = metric_name
+                    else:
+                        column_name = f"{metric_name}.{score_name}"
                     inference_dict[column_name] = score_value
 
             inference_data.append(inference_dict)
@@ -531,7 +536,15 @@ class BoardGenerator:
                             (self.results["board_configuration_seq"] == config_seq)
                             & (self.results["board_dataset_seq"] == dataset_seq)
                         ]
-                        md += f"\t<td>{df.iloc[0][score]:.2f}</td>\n"
+                        row = df.iloc[0]
+                        try:
+                            md += f"\t<td>{row[score]:.2f}</td>\n"
+                        except KeyError as e:
+                            available_keys = list(row.index)
+                            raise KeyError(
+                                f"Score key '{score}' not found in DataFrame row. "
+                                f"Available keys: {available_keys}"
+                            ) from e
                 md += "</tr>\n"
             md += "</table>\n\n"
         return md
