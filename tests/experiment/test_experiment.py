@@ -1,3 +1,5 @@
+import pytest
+
 from ragworkbench.api.inference import InferencePipeline, InferenceRuntimeParams
 from ragworkbench.api.ingest import IngestPipeline, IngestRuntimeParams
 from ragworkbench.api.ingest_artifact import IngestArtifact
@@ -6,8 +8,6 @@ from ragworkbench.datasets_loader.data_models.rag_benchmark import RagBenchmark
 from ragworkbench.datasets_loader.data_models.rag_corpus import RagCorpus
 from ragworkbench.datasets_loader.dataset_names import DatasetName
 from ragworkbench.experiment import Experiment
-
-import pytest
 
 
 class EmptyIngestPipeline(IngestPipeline):

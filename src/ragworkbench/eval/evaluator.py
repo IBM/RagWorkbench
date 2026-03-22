@@ -85,8 +85,7 @@ class Evaluator:
                 if scores_dict is not None:
                     # We check that we have all the score_names
                     if not (
-                        score_name in scores_dict
-                        for score_name in self._score_names
+                        score_name in scores_dict for score_name in self._score_names
                     ):
                         logger.error(
                             f"We do not have all the score_names in the cache : {scores_dict.keys()} vs. {self._score_names}]"
@@ -101,9 +100,13 @@ class Evaluator:
         ]
 
         if len(not_in_cache_dataset) == 0:
-            logger.info(f"Metric '{self.metric.name}' is skipped (loaded entirely from cache)")
-        else:   
-            logger.info(f"Evaluating {len(not_in_cache_dataset)} items with metric '{self.metric.name}' (metric ID: {self.metric.metric_id})..")
+            logger.info(
+                f"Metric '{self.metric.name}' is skipped (loaded entirely from cache)"
+            )
+        else:
+            logger.info(
+                f"Evaluating {len(not_in_cache_dataset)} items with metric '{self.metric.name}' (metric ID: {self.metric.metric_id}).."
+            )
             metric_instance_scores = self.metric.compute(not_in_cache_dataset)
 
             for score_name, scores in metric_instance_scores.items():

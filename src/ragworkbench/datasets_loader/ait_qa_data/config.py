@@ -21,7 +21,7 @@ Example:
     >>> # RAGBENCH_DATA_DIR=/path/to/data
     >>> from ragworkbench.datasets_loader.ait_qa_data.config import get_ait_qa_documents_dir
     >>> docs_dir = get_ait_qa_documents_dir()
-    
+
     Or use the default location (current working directory):
     >>> # Without setting RAGBENCH_DATA_DIR
     >>> from ragworkbench.datasets_loader.ait_qa_data.config import get_ait_qa_documents_dir
@@ -50,7 +50,7 @@ def get_ait_qa_data_dir() -> Path:
     The environment variable can be set either:
     1. As a system environment variable
     2. In a .env file in the project root or current directory
-    
+
     If RAGBENCH_DATA_DIR is not set, defaults to 'ragworkbench_data' in the current
     working directory. This works both when developing ragworkbench and when
     using it as an installed dependency.
@@ -72,7 +72,7 @@ def get_ait_qa_data_dir() -> Path:
         >>> # RAGBENCH_DATA_DIR=/custom/data/path
         >>> get_ait_qa_data_dir()
         PosixPath('/custom/data/path/ait_qa_pdf')
-        
+
         Or use default (current working directory):
         >>> # Without setting RAGBENCH_DATA_DIR
         >>> get_ait_qa_data_dir()

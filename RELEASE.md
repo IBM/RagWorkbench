@@ -68,13 +68,13 @@ For TestPyPI (pre-releases):
 2. **Update CHANGELOG.md**:
    ```markdown
    ## [0.2.0] - 2024-XX-XX
-   
+
    ### Added
    - New feature description
-   
+
    ### Changed
    - Changed feature description
-   
+
    ### Fixed
    - Bug fix description
    ```
@@ -156,7 +156,7 @@ For urgent bug fixes:
 4. **Update CHANGELOG.md**:
    ```markdown
    ## [0.1.1] - 2024-XX-XX
-   
+
    ### Fixed
    - Critical bug description
    ```

@@ -48,10 +48,10 @@ class InferencePipeline(ABC):
     def _get_additional_cache_params(self) -> dict[str, Any] | None:
         """
         Get additional parameters to include in the cache key.
-        
+
         Subclasses can override this method to add extra parameters
         (like index_name) to the cache directory hash.
-        
+
         Returns:
             Dictionary of additional parameters or None
         """
@@ -92,7 +92,7 @@ class InferencePipeline(ABC):
         """
         # Lazily initialize cache with all parameters
         self._lazy_cache_initialization()
-        
+
         # If cache exists, try to get cached result
         if self.generation_cache is not None:
             cached_result = self.generation_cache.get(benchmark_entry)

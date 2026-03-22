@@ -81,10 +81,10 @@ if grep -q "\[${NEW_VERSION}\]" CHANGELOG.md; then
 else
     # Get current date
     RELEASE_DATE=$(date +%Y-%m-%d)
-    
+
     # Create temporary file with new version section
     echo -e "${YELLOW}Adding version ${NEW_VERSION} to CHANGELOG.md...${NC}"
-    
+
     # Insert new version section after [Unreleased]
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
@@ -105,7 +105,7 @@ else
         # Linux
         sed -i "/## \[Unreleased\]/a\\\\n## [${NEW_VERSION}] - ${RELEASE_DATE}\\n\\n### Added\\n- \\n\\n### Changed\\n- \\n\\n### Fixed\\n- \\n" CHANGELOG.md
     fi
-    
+
     echo -e "${GREEN}✓ CHANGELOG.md updated${NC}"
     echo -e "${YELLOW}Please edit CHANGELOG.md to add release notes for version ${NEW_VERSION}${NC}"
 fi
@@ -149,7 +149,7 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     git add pyproject.toml CHANGELOG.md
     git commit -m "Prepare release v${NEW_VERSION}"
     echo -e "${GREEN}✓ Changes committed${NC}"
-    
+
     # Ask to push
     echo ""
     read -p "Push to origin? (y/N) " -n 1 -r

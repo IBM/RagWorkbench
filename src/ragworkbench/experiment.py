@@ -56,9 +56,9 @@ class Experiment:
         results: list[InferenceResult] = []
         benchmark_entries = rag_benchmark.get_benchmark_entries()
         total_entries = len(benchmark_entries)
-        
+
         logger.info(f"Starting inference on {total_entries} benchmark entries")
-        
+
         for idx, benchmark_entry in enumerate(benchmark_entries, start=1):
             # run the inference
             result: InferenceResult = self.inference_pipeline.process(
@@ -66,10 +66,12 @@ class Experiment:
             )
             # collect the result
             results.append(result)
-            
+
             # Log progress every 10 entries or at the end
             if idx % 10 == 0 or idx == total_entries:
-                logger.info(f"Inference progress: {idx}/{total_entries} entries processed ({idx/total_entries*100:.1f}%)")
+                logger.info(
+                    f"Inference progress: {idx}/{total_entries} entries processed ({idx/total_entries*100:.1f}%)"
+                )
 
         # Log cache statistics before evaluation
         self._log_cache_statistics(self.inference_pipeline.generation_cache)
@@ -95,7 +97,7 @@ class Experiment:
     ) -> dict[str, dict[str, Any]]:
         """
         Run evaluation for all metrics.
-        
+
         This method is executed in a separate thread to allow unitxt's inference engine
         to create and manage its own event loop without conflicts. We create a new event
         loop for this thread since threads don't have event loops by default.
@@ -111,7 +113,7 @@ class Experiment:
         # Create a new event loop for this thread
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
+
         try:
             evaluation_results: dict[str, dict[str, Any]] = {}
             for metric_def in self.metric_definitions:
@@ -141,14 +143,44 @@ class Experiment:
 
             return evaluation_results
         finally:
-            # Clean up the event loop
-            loop.close()
+            # Clean up pending tasks before closing the event loop
+            # This prevents "Task was destroyed but it is pending" warnings from litellm
+            try:
+                pending = asyncio.all_tasks(loop)
+                if pending:
+                    logger.info(
+                        f"Cleaning up {len(pending)} pending async tasks before closing event loop"
+                    )
+                    # Cancel all pending tasks
+                    for task in pending:
+                        task.cancel()
+                    # Wait for all tasks to complete cancellation with a timeout
+                    try:
+                        logger.info(f"Waiting for {len(pending)} pending tasks..")
+                        loop.run_until_complete(
+                            asyncio.wait_for(
+                                asyncio.gather(*pending, return_exceptions=True),
+                                timeout=5.0,
+                            )
+                        )
+                        logger.info("Successfully cleaned up all pending tasks")
+                    except TimeoutError:
+                        logger.warning(
+                            f"Timeout while waiting for {len(pending)} tasks to cancel - forcing cleanup"
+                        )
+            except Exception as e:
+                # Log any errors during cleanup but don't fail the evaluation
+                logger.warning(
+                    f"Error during event loop cleanup: {type(e).__name__}: {e}"
+                )
+            finally:
+                loop.close()
 
     @staticmethod
     def _log_cache_statistics(generation_cache: GenerationCache | None) -> None:
         """
         Log cache hit statistics from the generation cache.
-        
+
         Args:
             generation_cache: The GenerationCache instance to get statistics from, or None if caching is disabled.
         """
@@ -165,6 +197,8 @@ class Experiment:
                     f"({hit_rate:.1f}% cache hit rate) - Cache path: {cache_path}"
                 )
             else:
-                logger.info(f"Inference complete: No cache queries recorded - Cache path: {cache_path}")
+                logger.info(
+                    f"Inference complete: No cache queries recorded - Cache path: {cache_path}"
+                )
         else:
             logger.info("Inference complete: Caching disabled")

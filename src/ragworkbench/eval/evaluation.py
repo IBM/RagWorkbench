@@ -67,11 +67,7 @@ class BaseEvaluationMetric(ABC):
         pass
 
     def full_score_name(self, score_name):
-        return (
-            self.name
-            if score_name == self.name
-            else self.name + "." + score_name
-        )
+        return self.name if score_name == self.name else self.name + "." + score_name
 
     @staticmethod
     def compute_stats(scores: list[float]) -> dict[str, float]:

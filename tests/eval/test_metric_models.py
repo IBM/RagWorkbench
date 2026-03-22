@@ -6,10 +6,9 @@ and retrieving metric names.
 """
 
 from pathlib import Path
-
-import pytest
 from tempfile import NamedTemporaryFile
 
+import pytest
 import yaml
 
 from ragworkbench.eval import (

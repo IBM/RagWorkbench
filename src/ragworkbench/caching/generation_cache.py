@@ -17,7 +17,7 @@ class GenerationCache(AbstractFileSystemCache):
     ):
         """
         Initialize generation cache.
-        
+
         Args:
             cache_dir: Base directory for the cache
             inference_params: Inference parameters to include in cache key
@@ -25,11 +25,11 @@ class GenerationCache(AbstractFileSystemCache):
                                     to include in the cache directory hash
         """
         config_dict = inference_params.model_dump()
-        
+
         # Merge additional parameters into config_dict if provided
         if additional_cache_params:
             config_dict.update(additional_cache_params)
-        
+
         super().__init__(
             cache_dir,
             "generation",
