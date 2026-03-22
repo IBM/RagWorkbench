@@ -2,12 +2,12 @@
 Unit tests for metric_models module.
 
 Tests the functionality of loading metric definitions from YAML files
-
-import pytest
 and retrieving metric names.
 """
 
 from pathlib import Path
+
+import pytest
 from tempfile import NamedTemporaryFile
 
 import yaml

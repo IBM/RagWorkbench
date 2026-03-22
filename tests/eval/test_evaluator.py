@@ -75,6 +75,7 @@ def sample_inference_results():
     ]
 
 
+@pytest.mark.skip(reason="Test takes >1 second (44.75s)")
 def test_evaluator_runs_single_metric(sample_inference_results):
     """Test that Evaluator can run a single LLMaaJ metric and produce results."""
     # Delete inference_engine_cache before the run

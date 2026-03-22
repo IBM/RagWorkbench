@@ -8,6 +8,8 @@ proper error messages for invalid inputs.
 
 from pathlib import Path
 
+import pytest
+
 from ragworkbench.datasets_loader.abstract_data_loader import RagDataLoader
 from ragworkbench.datasets_loader.bioasq_data_loader import BioasqDataLoader
 from ragworkbench.datasets_loader.data_loader_factory import DataLoaderFactory
