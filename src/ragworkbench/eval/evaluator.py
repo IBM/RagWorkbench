@@ -54,7 +54,8 @@ class Evaluator:
             self.evaluation_cache = EvaluatorCache(
                 cache_dir=cache_dir,
                 config_params={
-                    "name": metric_definition.metric_id,
+                    "name": metric_definition.metric_name,
+                    "metric_id": metric_definition.metric_id,
                     "metric_params": metric_definition.metric_params,
                 },
                 cache_key_fields=set(fields),
