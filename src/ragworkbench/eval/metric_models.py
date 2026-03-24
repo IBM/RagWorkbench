@@ -202,10 +202,10 @@ class MetricDefinitionsConfig(BaseModel):
             unitxt
         """
         if metric_name not in self.definitions:
-            available_metrics = ", ".join(self.get_metric_names())
+            available_metrics = "\n".join(self.get_metric_names())
             raise KeyError(
                 f"Metric '{metric_name}' not found. "
-                f"Available metrics: {available_metrics}"
+                f"Available metrics:\n{available_metrics}"
             )
         return self.definitions[metric_name]
 
