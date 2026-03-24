@@ -8,7 +8,6 @@ and retrieving metric names.
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-import pytest
 import yaml
 
 from ragworkbench.eval import (
@@ -21,15 +20,16 @@ from ragworkbench.eval import (
 class TestMetricDefinition:
     """Test cases for MetricDefinition model."""
 
-    @pytest.mark.skip(reason="Test disabled - needs fixing")
     def test_valid_metric_definition(self):
         """Test creating a valid MetricDefinition."""
         metric = MetricDefinition(
+            metric_name="unitxt.context_correctness.retrieval_at_k",
             metric_id="metrics.rag.context_correctness.retrieval_at_k",
             metric_params={"sub_scores": ["match_at_1", "match_at_3"]},
             metric_fields=["context_ids", "ground_truths_context_ids"],
             vendor="unitxt",
         )
+        assert metric.metric_name == "unitxt.context_correctness.retrieval_at_k"
         assert metric.metric_id == "metrics.rag.context_correctness.retrieval_at_k"
         assert metric.metric_params == {"sub_scores": ["match_at_1", "match_at_3"]}
         assert metric.metric_fields == ["context_ids", "ground_truths_context_ids"]
@@ -39,17 +39,18 @@ class TestMetricDefinition:
 class TestMetricDefinitionsConfig:
     """Test cases for MetricDefinitionsConfig model."""
 
-    @pytest.mark.skip(reason="Test disabled - needs fixing")
     def test_valid_config(self):
         """Test creating a valid MetricDefinitionsConfig."""
         definitions = {
             "unitxt.context_correctness.retrieval_at_k": MetricDefinition(
+                metric_name="unitxt.context_correctness.retrieval_at_k",
                 metric_id="metrics.rag.context_correctness.retrieval_at_k",
                 metric_params={"sub_scores": ["match_at_1"]},
                 metric_fields=["context_ids", "ground_truths_context_ids"],
                 vendor="unitxt",
             ),
             "unitxt.context_correctness.map": MetricDefinition(
+                metric_name="unitxt.context_correctness.map",
                 metric_id="metrics.rag.context_correctness.map",
                 metric_params={},
                 metric_fields=["context_ids", "ground_truths_context_ids"],
@@ -61,23 +62,25 @@ class TestMetricDefinitionsConfig:
         assert "unitxt.context_correctness.retrieval_at_k" in config.definitions
         assert "unitxt.context_correctness.map" in config.definitions
 
-    @pytest.mark.skip(reason="Test disabled - needs fixing")
     def test_get_metric_names(self):
         """Test get_metric_names method returns all metric names."""
         definitions = {
             "unitxt.context_correctness.retrieval_at_k": MetricDefinition(
+                metric_name="unitxt.context_correctness.retrieval_at_k",
                 metric_id="metrics.rag.context_correctness.retrieval_at_k",
                 metric_params={},
                 metric_fields=["context_ids", "ground_truths_context_ids"],
                 vendor="unitxt",
             ),
             "unitxt.context_correctness.map": MetricDefinition(
+                metric_name="unitxt.context_correctness.map",
                 metric_id="metrics.rag.context_correctness.map",
                 metric_params={},
                 metric_fields=["context_ids", "ground_truths_context_ids"],
                 vendor="unitxt",
             ),
             "unitxt.answer_correctness": MetricDefinition(
+                metric_name="unitxt.answer_correctness",
                 metric_id="metrics.rag.answer_correctness",
                 metric_params={},
                 metric_fields=["ground_truths", "answer"],
@@ -93,23 +96,25 @@ class TestMetricDefinitionsConfig:
         assert "unitxt.context_correctness.map" in metric_names
         assert "unitxt.answer_correctness" in metric_names
 
-    @pytest.mark.skip(reason="Test disabled - needs fixing")
     def test_get_metric_names_order(self):
         """Test that get_metric_names returns names in consistent order."""
         definitions = {
             "metric_c": MetricDefinition(
+                metric_name="metric_c",
                 metric_id="metrics.c",
                 metric_params={},
                 metric_fields=["field1"],
                 vendor="unitxt",
             ),
             "metric_a": MetricDefinition(
+                metric_name="metric_a",
                 metric_id="metrics.a",
                 metric_params={},
                 metric_fields=["field1"],
                 vendor="unitxt",
             ),
             "metric_b": MetricDefinition(
+                metric_name="metric_b",
                 metric_id="metrics.b",
                 metric_params={},
                 metric_fields=["field1"],
@@ -122,17 +127,18 @@ class TestMetricDefinitionsConfig:
         # Should contain all keys
         assert set(metric_names) == {"metric_a", "metric_b", "metric_c"}
 
-    @pytest.mark.skip(reason="Test disabled - needs fixing")
     def test_get_metric_definition(self):
         """Test get_metric_definition method returns correct metric."""
         definitions = {
             "unitxt.context_correctness.retrieval_at_k": MetricDefinition(
+                metric_name="unitxt.context_correctness.retrieval_at_k",
                 metric_id="metrics.rag.context_correctness.retrieval_at_k",
                 metric_params={"sub_scores": ["match_at_1"]},
                 metric_fields=["context_ids", "ground_truths_context_ids"],
                 vendor="unitxt",
             ),
             "unitxt.context_correctness.map": MetricDefinition(
+                metric_name="unitxt.context_correctness.map",
                 metric_id="metrics.rag.context_correctness.map",
                 metric_params={},
                 metric_fields=["context_ids", "ground_truths_context_ids"],
@@ -147,11 +153,11 @@ class TestMetricDefinitionsConfig:
         assert metric_def.vendor == "unitxt"
         assert metric_def.metric_fields == ["context_ids", "ground_truths_context_ids"]
 
-    @pytest.mark.skip(reason="Test disabled - needs fixing")
     def test_get_metric_definition_via_direct_access(self):
         """Test that direct dictionary access still works."""
         definitions = {
             "unitxt.context_correctness.map": MetricDefinition(
+                metric_name="unitxt.context_correctness.map",
                 metric_id="metrics.rag.context_correctness.map",
                 metric_params={},
                 metric_fields=["context_ids", "ground_truths_context_ids"],
