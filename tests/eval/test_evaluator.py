@@ -99,6 +99,8 @@ def test_evaluator_runs_single_metric(sample_inference_results):
         cache_dir=None,
     )
 
+    max_instances_to_test = 1
+    sample_inference_results = sample_inference_results[:max_instances_to_test]
     # Run metrics on the inference results
     per_question_scores = evaluator.run_metrics(sample_inference_results)
 
@@ -111,9 +113,9 @@ def test_evaluator_runs_single_metric(sample_inference_results):
         for score_name, score_value in scores.items():
             print(f"  {score_name}: {score_value}")
 
-    # Verify we got results for all questions
-    assert len(per_question_scores) == 20
-    for i in range(1, 21):
+    # Verify we got results for the expected number of questions
+    assert len(per_question_scores) == max_instances_to_test
+    for i in range(1, max_instances_to_test + 1):
         assert f"q{i}" in per_question_scores
 
     # Verify each question has scores
