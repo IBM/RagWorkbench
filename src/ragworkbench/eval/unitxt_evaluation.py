@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Any
 
 from unitxt.operator import (  # type: ignore[import-not-found]
     MultiStream,
@@ -8,30 +7,12 @@ from unitxt.operator import (  # type: ignore[import-not-found]
 
 from ragworkbench.api.inference_result import InferenceResult
 from ragworkbench.eval.evaluation import BaseEvaluationMetric
-from ragworkbench.eval.evaluation_level import EvaluationLevel
 
 
 class UnitxtEvaluationMetric(BaseEvaluationMetric):
-    """"""
-
-    def __init__(
-        self,
-        name: str,
-        metric_params: dict[str, Any],
-        evaluation_level: EvaluationLevel = EvaluationLevel.DOC_ID,
-        metric_id: str | None = None,
-        **kwargs,
-    ):
-        super().__init__(name, metric_params, evaluation_level, metric_id=metric_id)
-        self.sub_scores = (
-            metric_params["sub_scores"] if "sub_scores" in metric_params.keys() else []
-        )
-
-    def get_name(self) -> str:
-        return self.name
-
-    def get_score_names(self) -> list[str]:
-        return [self.name] if len(self.sub_scores) == 0 else self.sub_scores
+    """
+    Evaluation metric implementation using IBM's Unitxt framework.
+    """
 
     def compute(
         self, inference_result_list: list[InferenceResult]
@@ -71,6 +52,3 @@ class UnitxtEvaluationMetric(BaseEvaluationMetric):
                     name = self.name if score_name == "score" else score_name
                     metric_scores[name][q_id] = score_value
         return metric_scores
-
-    def cleanup(self) -> None:
-        pass

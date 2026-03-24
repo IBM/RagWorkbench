@@ -32,6 +32,9 @@ class BaseEvaluationMetric(ABC):
         self.metric_id = metric_id if metric_id else name
         self.metric_params = metric_params
         self.evaluation_level = evaluation_level
+        self.sub_scores = (
+            metric_params["sub_scores"] if "sub_scores" in metric_params.keys() else []
+        )
 
     @abstractmethod
     def compute(
@@ -51,7 +54,6 @@ class BaseEvaluationMetric(ABC):
             Evaluation result data
         """
 
-    @abstractmethod
     def get_name(self) -> str:
         """
         Returns the metric full name
@@ -61,10 +63,21 @@ class BaseEvaluationMetric(ABC):
         str
             the full name of the metric
         """
+        return self.name
 
-    @abstractmethod
     def get_score_names(self) -> list[str]:
-        pass
+        """
+        Returns the list of score names for this metric.
+
+        If sub_scores are defined in metric_params, returns those.
+        Otherwise, returns a list containing just the metric name.
+
+        Returns
+        -------
+        list[str]
+            List of score names
+        """
+        return [self.name] if len(self.sub_scores) == 0 else self.sub_scores
 
     def full_score_name(self, score_name):
         return self.name if score_name == self.name else self.name + "." + score_name
@@ -86,7 +99,3 @@ class BaseEvaluationMetric(ABC):
             "ci_high": float(ci[1]),
             "coverage": coverage,
         }
-
-    @abstractmethod
-    def cleanup(self) -> None:
-        pass

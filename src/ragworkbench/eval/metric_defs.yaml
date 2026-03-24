@@ -78,3 +78,10 @@ unitxt.answer_correctness.llmaaj_gpt:
       - "answer"
       - "ground_truth_answers"
   vendor: "unitxt"
+
+workbench.tool_use_count:
+  metric_id: "workbench.tool_use_count"
+  metric_params: {}
+  metric_fields:
+    - "trajectory"
+  vendor: "workbench"

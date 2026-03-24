@@ -69,6 +69,7 @@ class MetricDefinition(BaseModel):
 
         Currently supported vendors:
         - unitxt: IBM's Unitxt evaluation framework
+        - workbench: RagWorkbench's built-in metrics
 
         Args:
             v: The vendor string to validate.
@@ -79,7 +80,7 @@ class MetricDefinition(BaseModel):
         Raises:
             ValueError: If the vendor is not in the list of known vendors.
         """
-        known_vendors = {"unitxt"}  # Extensible for future vendors like "ragas"
+        known_vendors = {"unitxt", "workbench"}  # Extensible for future vendors
         if v not in known_vendors:
             raise ValueError(f"Unknown vendor: '{v}'. Known vendors: {known_vendors}")
         return v
