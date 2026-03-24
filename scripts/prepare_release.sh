@@ -15,7 +15,17 @@ NC='\033[0m' # No Color
 if [ -z "$1" ]; then
     echo -e "${RED}Error: Version number required${NC}"
     echo "Usage: $0 <version>"
-    echo "Example: $0 0.2.0"
+    echo ""
+    echo "Version format examples:"
+    echo "  Stable releases:    0.2.0, 1.0.0, 2.1.3"
+    echo "  Beta releases:      0.1.0-beta.1, 1.0.0-beta.2"
+    echo "  Alpha releases:     0.1.0-alpha.1, 1.0.0-alpha.3"
+    echo "  Release candidates: 1.0.0-rc.1, 2.0.0-rc.2"
+    echo ""
+    echo "Examples:"
+    echo "  $0 0.2.0"
+    echo "  $0 1.0.0-beta.1"
+    echo "  $0 2.0.0-rc.1"
     exit 1
 fi
 
