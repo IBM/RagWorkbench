@@ -59,7 +59,7 @@ jobs:
         with:
           # Using trusted publishing (no token needed if configured in PyPI)
           # If not using trusted publishing, add PYPI_API_TOKEN to repository secrets
-          # password: ${{ secrets.PYPI_API_TOKEN }}
+          password: ${{ secrets.PYPI_API_TOKEN }}
           skip-existing: true
 
   github-release:
