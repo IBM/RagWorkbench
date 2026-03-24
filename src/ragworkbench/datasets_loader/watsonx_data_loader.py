@@ -102,7 +102,15 @@ class WatsonxDocsQADataLoader(RagDataLoader):
             "markdown": DatasetName.WATSONX_DOCS_QA_MD,
         }
         dataset_name = dataset_name_map[document_format]
-
+        match self.document_format:
+            case "text":
+                self.suffix = ".txt"
+            case "html":
+                self.suffix = ".html"
+            case "markdown":
+                self.suffix = ".md"
+            case _:
+                raise ValueError(f"Unsupported document format: {self.document_format}")
         super().__init__(dataset_name, split, sampling_params, cache_dir=cache_dir)
 
     def _get_documents(self) -> list[DocumentObject]:
@@ -185,7 +193,7 @@ class WatsonxDocsQADataLoader(RagDataLoader):
             # Create DocumentObject with metadata
             # Store title and url in metadata as specified
             doc = DocumentObject(
-                name=doc_id,
+                name=doc_id + self.suffix,
                 stream=BytesIO(document_content.encode("utf-8")),
                 mime_type=mime_type,
                 metadata={"title": title, "url": url},
@@ -260,7 +268,9 @@ class WatsonxDocsQADataLoader(RagDataLoader):
             question = row["question"]
             correct_answer = row["correct_answer"]
             # correct_answer_document_ids contains a single document ID
-            correct_answer_doc_id = str(row["correct_answer_document_ids"])
+            correct_answer_doc_id = (
+                str(row["correct_answer_document_ids"]) + self.suffix
+            )
 
             # Create ground truth context ID from the single document ID
             ground_truth_context_ids = [
