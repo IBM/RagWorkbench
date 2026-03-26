@@ -13,6 +13,7 @@ from ragworkbench.eval import MetricDefinition
 from ragworkbench.eval.evaluation import BaseEvaluationMetric
 from ragworkbench.eval.evaluation_level import EvaluationLevel
 from ragworkbench.eval.unitxt_evaluation import UnitxtEvaluationMetric
+from ragworkbench.eval.workbench_evaluation import WorkbenchEvaluationMetric
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +22,8 @@ class Evaluator:
 
     evaluation_metric_factory = {
         "unitxt": UnitxtEvaluationMetric,
+        "workbench": WorkbenchEvaluationMetric,
         # "ragas": RagasEvaluationMetric,
-        # "workbench": RagWorkbenchEvaluationMetric,
     }
 
     def __init__(
@@ -53,7 +54,8 @@ class Evaluator:
             self.evaluation_cache = EvaluatorCache(
                 cache_dir=cache_dir,
                 config_params={
-                    "name": metric_definition.metric_id,
+                    "name": metric_definition.metric_name,
+                    "metric_id": metric_definition.metric_id,
                     "metric_params": metric_definition.metric_params,
                 },
                 cache_key_fields=set(fields),
