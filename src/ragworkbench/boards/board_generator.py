@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import shutil
@@ -13,7 +12,6 @@ import yaml
 from pandas import DataFrame
 
 from ragworkbench import DataLoaderFactory, Experiment
-from ragworkbench.api.inference_result import InferenceResult
 from ragworkbench.boards.board_model import Board
 from ragworkbench.boards.board_registry import BoardRegistry
 from ragworkbench.eval import (
@@ -241,8 +239,9 @@ class BoardGenerator:
                     cache_dir=self.cache_dir,
                 )
 
+                experiment_id = f"experiment_{config_seq}_{dataset_seq}"
                 experiment = Experiment(
-                    name=f"experiment_{config_seq}_{dataset_seq}",
+                    experiment_id=experiment_id,
                     data_loader=data_loader,
                     ingest_pipeline=ingest_pipeline,
                     inference_pipeline=inference_pipeline,
@@ -251,37 +250,21 @@ class BoardGenerator:
                     cache_dir=self.cache_dir,
                 )
 
-                # Run experiment and capture inference, evaluation, and cost results
-                inference_results: list[InferenceResult]
-                evaluation_results: dict
-                cost_data: dict
-                inference_results, evaluation_results, cost_data = experiment.run()
+                # Run experiment and get ExperimentResult object
+                experiment_result = experiment.run()
 
                 # Log cost data if tracking is enabled
-                if self.board.experiment.usage_tracking and cost_data:
+                if self.board.experiment.usage_tracking and experiment_result.cost_data:
                     logger.info(
-                        f"Experiment {experiment.name} cost: "
-                        f"${cost_data.get('total_cost', 0):.4f}, "
-                        f"{cost_data.get('total_tokens', 0)} tokens"
+                        f"Experiment {experiment_id} cost: "
+                        f"${experiment_result.cost_data.get('total_cost', 0):.4f}, "
+                        f"{experiment_result.cost_data.get('total_tokens', 0)} tokens"
                     )
 
-                # Export inference results to CSV for this experiment
-                experiment_id = f"exp_{config_seq}_{dataset_seq}"
-                self._export_inference_results_csv(
-                    inference_results,
-                    experiment_id,
-                    config_seq,
-                    dataset_seq,
-                    config.name,
-                    dataset.id(),
-                    evaluation_results,
-                )
+                # Export results using ExperimentResult methods
 
-                # Export combined results to JSON for this experiment
-                self._export_combined_results_json(
-                    inference_results,
-                    evaluation_results,
-                    experiment_id,
+                experiment_result.export_all(
+                    self.output_path,
                     config_seq,
                     dataset_seq,
                     config.name,
@@ -295,14 +278,14 @@ class BoardGenerator:
                             "board_dataset_seq": dataset_seq,
                             "board_configuration_name": config.name,
                             "board_dataset_id": dataset.id(),
-                            "board_experiment_id": f"exp_{config_seq}_{dataset_seq}",
+                            "board_experiment_id": experiment_id,
                         }
                     ]
                 )
-                for metric_name in evaluation_results.keys():
-                    metric_stats: dict[str, dict] = evaluation_results[metric_name][
-                        "statistics"
-                    ]
+                for metric_name in experiment_result.evaluation_results.keys():
+                    metric_stats: dict[str, dict] = (
+                        experiment_result.evaluation_results[metric_name]["statistics"]
+                    )
                     for sub_metric_name in metric_stats.keys():
                         for k, v in metric_stats[sub_metric_name].items():
                             config_dataset_df[f"{sub_metric_name}_{k}"] = v
@@ -314,115 +297,6 @@ class BoardGenerator:
         # Export results and markdown at the end of processing
         self.export_results()
         self.export_md()
-
-    def _export_inference_results_csv(
-        self,
-        inference_results: list[InferenceResult],
-        experiment_id: str,
-        config_seq: int,
-        dataset_seq: int,
-        config_name: str,
-        dataset_id: str,
-        evaluation_results: dict,
-    ) -> None:
-        """Export inference results to a CSV file for a single experiment.
-
-        Args:
-            inference_results: List of inference results
-            experiment_id: Experiment identifier
-            config_seq: Configuration sequence number
-            dataset_seq: Dataset sequence number
-            config_name: Configuration name
-            dataset_id: Dataset identifier
-            evaluation_results: Dictionary mapping metric names to their evaluation results,
-                              where each result contains 'per_question' scores
-        """
-        os.makedirs(self.output_path, exist_ok=True)
-
-        inference_data = []
-        for inf_result in inference_results:
-            inference_dict = {
-                "board_configuration_seq": config_seq,
-                "board_dataset_seq": dataset_seq,
-                "board_configuration_name": config_name,
-                "board_dataset_id": dataset_id,
-                "board_experiment_id": experiment_id,
-                "question_id": inf_result.question_id,
-                "question": inf_result.question,
-                "answer": inf_result.answer,
-                "ground_truth_answers": (
-                    str(inf_result.ground_truth_answers)
-                    if inf_result.ground_truth_answers
-                    else None
-                ),
-                "is_answerable": inf_result.is_answerable,
-                "context_ids": (
-                    str(inf_result.context_ids) if inf_result.context_ids else None
-                ),
-                "num_contexts": len(inf_result.contexts) if inf_result.contexts else 0,
-            }
-
-            # Add metric scores per question
-            for metric_name, metric_result in evaluation_results.items():
-                per_question_scores = metric_result.get("per_question", {})
-                question_scores = per_question_scores.get(inf_result.question_id, {})
-
-                # Add each metric score as a separate column
-                for score_name, score_value in question_scores.items():
-                    # Avoid duplication: if score_name equals metric_name, use it as-is
-                    # Otherwise, concatenate metric_name with score_name
-                    if score_name == metric_name:
-                        column_name = metric_name
-                    else:
-                        column_name = f"{metric_name}.{score_name}"
-                    inference_dict[column_name] = score_value
-
-            inference_data.append(inference_dict)
-
-        inference_df = pd.DataFrame(inference_data)
-        csv_filename = f"inference_results_{experiment_id}.csv"
-        inference_df.to_csv(self.output_path / csv_filename, index=False)
-        logger.info(f"Exported inference results to {self.output_path / csv_filename}")
-
-    def _export_combined_results_json(
-        self,
-        inference_results: list[InferenceResult],
-        evaluation_results: dict,
-        experiment_id: str,
-        config_seq: int,
-        dataset_seq: int,
-        config_name: str,
-        dataset_id: str,
-    ) -> None:
-        """Export combined inference and evaluation results to a JSON file for a single experiment."""
-        os.makedirs(self.output_path, exist_ok=True)
-
-        combined_data = {
-            "board_configuration_seq": config_seq,
-            "board_dataset_seq": dataset_seq,
-            "board_configuration_name": config_name,
-            "board_dataset_id": dataset_id,
-            "board_experiment_id": experiment_id,
-            "inference_results": [
-                {
-                    "question_id": inf_result.question_id,
-                    "question": inf_result.question,
-                    "answer": inf_result.answer,
-                    "ground_truth_answers": inf_result.ground_truth_answers,
-                    "is_answerable": inf_result.is_answerable,
-                    "context_ids": inf_result.context_ids,
-                    "contexts": inf_result.contexts,
-                    "trajectory": inf_result.trajectory,
-                }
-                for inf_result in inference_results
-            ],
-            "evaluation_results": evaluation_results,
-        }
-
-        json_filename = f"combined_results_{experiment_id}.json"
-        with open(self.output_path / json_filename, "w") as f:
-            json.dump(combined_data, f, indent=2)
-        logger.info(f"Exported combined results to {self.output_path / json_filename}")
 
     def export_results(self) -> None:
         os.makedirs(self.output_path, exist_ok=True)

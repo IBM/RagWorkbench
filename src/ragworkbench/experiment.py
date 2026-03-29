@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
+from ragworkbench.api.experiment_result import ExperimentResult
 from ragworkbench.api.inference import InferencePipeline
 from ragworkbench.api.inference_result import InferenceResult
 from ragworkbench.api.ingest import IngestPipeline
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 class Experiment:
     def __init__(
         self,
-        name: str,
+        experiment_id: str,
         data_loader: RagDataLoader,
         ingest_pipeline: IngestPipeline,
         inference_pipeline: InferencePipeline,
@@ -29,7 +30,7 @@ class Experiment:
         experiment_config: ExperimentConfig,
         cache_dir: Path | None = None,
     ):
-        self.name = name
+        self.experiment_id = experiment_id
         self.data_loader = data_loader
         self.ingest_pipeline = ingest_pipeline
         self.inference_pipeline = inference_pipeline
@@ -44,18 +45,15 @@ class Experiment:
             litellm_proxy_url=experiment_config.litellm_proxy_url,
         )
 
-    def run(
-        self,
-    ) -> tuple[list[InferenceResult], dict[str, dict[str, Any]], dict[str, Any]]:
+    def run(self) -> ExperimentResult:
         """
         Run the complete experiment: ingest, inference, and evaluation.
 
         Returns:
-            A tuple containing:
-            - List of inference results
-            - Dictionary mapping metric names to their evaluation results, where each
-              evaluation result contains 'per_question' scores and aggregate 'statistics'
-            - Dictionary containing cost tracking data (empty if cost tracking is disabled)
+            ExperimentResult object containing:
+            - inference_results: List of inference results
+            - evaluation_results: Dictionary mapping metric names to their evaluation results
+            - cost_data: Dictionary containing cost tracking data
         """
         # Generate tracking API key if cost tracking is enabled
         tracking_api_key = self.cost_tracker.generate_tracking_key()
@@ -128,7 +126,12 @@ class Experiment:
                     f"Cost data is empty or in unexpected format: {cost_data}"
                 )
 
-        return results, evaluation_results, cost_data
+        return ExperimentResult(
+            experiment_id=self.experiment_id,
+            inference_results=results,
+            evaluation_results=evaluation_results,
+            cost_data=cost_data,
+        )
 
     def _run_evaluation(
         self,
