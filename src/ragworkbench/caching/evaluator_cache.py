@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from ragworkbench.api.inference_result import InferenceResult
+from ragworkbench.boards.board_model import CacheMode
 from ragworkbench.caching.abstract_file_system_cache import AbstractFileSystemCache
 
 
@@ -12,8 +13,14 @@ class EvaluatorCache(AbstractFileSystemCache):
         cache_dir: Path | str,
         config_params: dict,
         cache_key_fields: set | None = None,
+        cache_mode: CacheMode = CacheMode.ON,
     ):
-        super().__init__(cache_dir, cache_name="evaluator", config_dict=config_params)
+        super().__init__(
+            cache_dir,
+            cache_name="evaluator",
+            config_dict=config_params,
+            cache_mode=cache_mode,
+        )
         self.cache_key_fields = cache_key_fields
         if self.cache_key_fields is None or len(self.cache_key_fields) == 0:
             # By default, we look at all the fields...

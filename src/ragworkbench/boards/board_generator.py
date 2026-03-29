@@ -55,6 +55,7 @@ class BoardGenerator:
                 name=config.inference.name,
                 params=config.inference.params,
                 cache_dir=self.cache_dir,
+                cache_mode=self.board.experiment.cache,
             )
 
             # save for later
@@ -246,13 +247,23 @@ class BoardGenerator:
                     ingest_pipeline=ingest_pipeline,
                     inference_pipeline=inference_pipeline,
                     eval_metrics=self.metric_definitions,
+                    experiment_config=self.board.experiment,
                     cache_dir=self.cache_dir,
                 )
 
-                # Run experiment and capture both inference and evaluation results
+                # Run experiment and capture inference, evaluation, and cost results
                 inference_results: list[InferenceResult]
                 evaluation_results: dict
-                inference_results, evaluation_results = experiment.run()
+                cost_data: dict
+                inference_results, evaluation_results, cost_data = experiment.run()
+
+                # Log cost data if tracking is enabled
+                if self.board.experiment.usage_tracking and cost_data:
+                    logger.info(
+                        f"Experiment {experiment.name} cost: "
+                        f"${cost_data.get('total_cost', 0):.4f}, "
+                        f"{cost_data.get('total_tokens', 0)} tokens"
+                    )
 
                 # Export inference results to CSV for this experiment
                 experiment_id = f"exp_{config_seq}_{dataset_seq}"

@@ -205,6 +205,58 @@ The caching system supports:
 - **Generation Cache**: Caches inference results
 - **Evaluator Cache**: Caches evaluation results
 
+## Cost Tracking
+
+RAGWorkbench supports optional cost tracking for experiments using LiteLLM proxy. This feature allows you to monitor API usage and costs during experiment runs.
+
+### Enabling Cost Tracking
+
+```python
+from ragbench import Experiment
+
+experiment = Experiment(
+    name="cost_tracked_experiment",
+    data_loader=data_loader,
+    ingest_pipeline=ingest_pipeline,
+    inference_pipeline=inference_pipeline,
+    eval_metrics=metrics,
+    track_costs=True,  # Enable cost tracking
+    litellm_proxy_url="http://localhost:4000"  # LiteLLM proxy URL
+)
+
+# Run experiment - returns results, evaluation, and cost data
+results, evaluation, cost_data = experiment.run()
+
+# Access cost information
+print(f"Total cost: ${cost_data['total_cost']:.4f}")
+print(f"Total tokens: {cost_data['total_tokens']}")
+print(f"Models used: {cost_data['models_used']}")
+```
+
+### How It Works
+
+1. **API Key Generation**: When cost tracking is enabled, a unique tracking API key is generated for each experiment run
+2. **Key Injection**: The tracking key is passed to the OpenRAG service through the ingest pipeline settings
+3. **Usage Tracking**: All LLM API calls during the experiment use this tracking key
+4. **Cost Retrieval**: After the experiment completes, usage data is retrieved from the LiteLLM proxy
+
+### Configuration
+
+Set the LiteLLM proxy URL in your environment:
+
+```bash
+# .env file
+LITELLM_PROXY_URL=http://localhost:4000
+```
+
+Or pass it directly to the Experiment constructor as shown above.
+
+### Requirements
+
+- LiteLLM proxy server must be running and accessible
+- The proxy should be configured to track usage by API key
+- See [LiteLLM documentation](https://docs.litellm.ai/) for proxy setup
+
 ## Dataset Explorer
 
 RagWorkbench includes an interactive web-based dataset explorer:

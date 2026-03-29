@@ -7,10 +7,12 @@ from typing import Any
 from ragworkbench.api.inference import InferencePipeline
 from ragworkbench.api.inference_result import InferenceResult
 from ragworkbench.api.ingest import IngestPipeline
+from ragworkbench.boards.board_model import ExperimentConfig
 from ragworkbench.caching.generation_cache import GenerationCache
 from ragworkbench.datasets_loader import RagDataLoader
 from ragworkbench.datasets_loader.data_models import RagBenchmark
 from ragworkbench.eval import MetricDefinition
+from ragworkbench.eval.cost_tracking import CostTracker
 from ragworkbench.eval.evaluator import Evaluator
 
 logger = logging.getLogger(__name__)
@@ -24,6 +26,7 @@ class Experiment:
         ingest_pipeline: IngestPipeline,
         inference_pipeline: InferencePipeline,
         eval_metrics: list[MetricDefinition],
+        experiment_config: ExperimentConfig,
         cache_dir: Path | None = None,
     ):
         self.name = name
@@ -31,10 +34,19 @@ class Experiment:
         self.ingest_pipeline = ingest_pipeline
         self.inference_pipeline = inference_pipeline
         self.cache_dir = cache_dir
+        self.cache_mode = experiment_config.cache
 
         self.metric_definitions: list[MetricDefinition] = eval_metrics
 
-    def run(self) -> tuple[list[InferenceResult], dict[str, dict[str, Any]]]:
+        # Initialize cost tracker from experiment config
+        self.cost_tracker = CostTracker(
+            enabled=experiment_config.usage_tracking,
+            litellm_proxy_url=experiment_config.litellm_proxy_url,
+        )
+
+    def run(
+        self,
+    ) -> tuple[list[InferenceResult], dict[str, dict[str, Any]], dict[str, Any]]:
         """
         Run the complete experiment: ingest, inference, and evaluation.
 
@@ -43,7 +55,21 @@ class Experiment:
             - List of inference results
             - Dictionary mapping metric names to their evaluation results, where each
               evaluation result contains 'per_question' scores and aggregate 'statistics'
+            - Dictionary containing cost tracking data (empty if cost tracking is disabled)
         """
+        # Generate tracking API key if cost tracking is enabled
+        tracking_api_key = self.cost_tracker.generate_tracking_key()
+        if tracking_api_key:
+            logger.info(
+                f"Cost tracking enabled with API key: {tracking_api_key[:20]}..."
+            )
+            # Set the tracking API key in both ingest and inference pipeline params
+            self.ingest_pipeline._params.tracking_api_key = tracking_api_key
+            self.inference_pipeline._params.tracking_api_key = tracking_api_key
+            logger.info(
+                "Tracking API key set in ingest and inference pipeline parameters"
+            )
+
         # prepare the data
         rag_benchmark: RagBenchmark = self.data_loader.get_benchmark()
 
@@ -88,7 +114,21 @@ class Experiment:
             )
             evaluation_results = future.result()
 
-        return results, evaluation_results
+        # Retrieve cost data if cost tracking is enabled
+        cost_data: dict[str, Any] = {}
+        if self.cost_tracker.enabled:
+            logger.info("Retrieving cost tracking data from LiteLLM proxy...")
+            cost_data = asyncio.run(self.cost_tracker.get_usage_data())
+            if "error" in cost_data:
+                logger.warning(
+                    f"Failed to retrieve cost data: {cost_data.get('error')}"
+                )
+            elif not cost_data:
+                logger.warning(
+                    f"Cost data is empty or in unexpected format: {cost_data}"
+                )
+
+        return results, evaluation_results, cost_data
 
     def _run_evaluation(
         self,
@@ -123,6 +163,7 @@ class Experiment:
                     rag_benchmark=rag_benchmark,
                     rag_corpus=self.data_loader.get_corpus(),
                     cache_dir=self.cache_dir,
+                    cache_mode=self.cache_mode,
                 )
 
                 # Run metrics and get per-question scores
