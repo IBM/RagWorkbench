@@ -15,6 +15,7 @@ RAGWorkbench is a powerful Python framework designed to evaluate and benchmark R
 - 📊 **Comprehensive Metrics**: Built-in evaluation metrics for context correctness (Recall@K, MRR, MAP) and answer correctness (BERT Score, Sentence-BERT, LLM-as-a-Judge)
 - 🔄 **Flexible Pipeline**: Modular architecture supporting custom ingest and inference pipelines
 - 💾 **Smart Caching**: File-system based caching for data loading, generation, and evaluation results
+- 💰 **Cost Tracking**: Automatic API usage and cost tracking via LiteLLM proxy with detailed reporting in results and boards - [see details](#viewing-cost-tracking-results)
 - 🌐 **Interactive Explorer**: Web-based dataset exploration tool with advanced filtering capabilities
 - 🧪 **Experiment Management**: End-to-end experiment orchestration from data loading to evaluation
 
@@ -207,55 +208,73 @@ The caching system supports:
 
 ## Cost Tracking
 
-RAGWorkbench supports optional cost tracking for experiments using LiteLLM proxy. This feature allows you to monitor API usage and costs during experiment runs.
+RAGWorkbench supports optional cost tracking for experiments using LiteLLM proxy. This feature allows you to monitor API usage and costs during experiment runs by generating unique tracking keys and querying usage statistics.
 
-### Enabling Cost Tracking
+### Prerequisites
 
-```python
-from ragbench import Experiment
+Before enabling cost tracking, ensure you have:
 
-experiment = Experiment(
-    name="cost_tracked_experiment",
-    data_loader=data_loader,
-    ingest_pipeline=ingest_pipeline,
-    inference_pipeline=inference_pipeline,
-    eval_metrics=metrics,
-    track_costs=True,  # Enable cost tracking
-    litellm_proxy_url="http://localhost:4000"  # LiteLLM proxy URL
-)
+1. **LiteLLM Proxy Running**: A LiteLLM proxy server must be running (default: `http://localhost:4000`), with the inference and ingestion calls going through that proxy. The proxy should be configured to track usage by API key (See [LiteLLM documentation](https://docs.litellm.ai/))
 
-# Run experiment - returns results, evaluation, and cost data
-results, evaluation, cost_data = experiment.run()
-
-# Access cost information
-print(f"Total cost: ${cost_data['total_cost']:.4f}")
-print(f"Total tokens: {cost_data['total_tokens']}")
-print(f"Models used: {cost_data['models_used']}")
-```
-
-### How It Works
-
-1. **API Key Generation**: When cost tracking is enabled, a unique tracking API key is generated for each experiment run
-2. **Key Injection**: The tracking key is passed to the OpenRAG service through the ingest pipeline settings
-3. **Usage Tracking**: All LLM API calls during the experiment use this tracking key
-4. **Cost Retrieval**: After the experiment completes, usage data is retrieved from the LiteLLM proxy
-
-### Configuration
-
-Set the LiteLLM proxy URL in your environment:
+2. **Master Key**: Set the `LITELLM_MASTER_KEY` environment variable to your LiteLLM proxy master key
 
 ```bash
 # .env file
-LITELLM_PROXY_URL=http://localhost:4000
+LITELLM_MASTER_KEY=sk-your-master-key-here
 ```
 
-Or pass it directly to the Experiment constructor as shown above.
+### Enabling Cost Tracking
 
-### Requirements
+Cost tracking is configured at the experiment level in your `board.yaml` file:
 
-- LiteLLM proxy server must be running and accessible
-- The proxy should be configured to track usage by API key
-- See [LiteLLM documentation](https://docs.litellm.ai/) for proxy setup
+```yaml
+# Experiment-level configuration
+experiment:
+  usage_tracking: true  # Enable cost tracking
+```
+
+### Viewing Cost Tracking Results
+
+When cost tracking is enabled, usage and cost information is available in:
+
+#### 1. Board Results (CSV)
+Cost data is included in the main `results.csv` file in the `output/` directory with columns:
+- `total_cost` - Total cost in USD
+- `total_tokens` - Total tokens used (prompt + completion)
+- `prompt_tokens` - Number of prompt tokens
+- `completion_tokens` - Number of completion tokens
+- `requests` - Number of API requests made
+- `models_used` - List of models used
+
+#### 2. Board Markdown Report
+Cost metrics can be displayed in the board's markdown report `board.md` by adding them to your report configuration:
+
+```yaml
+report:
+  screens:
+    - title: "Performance & Cost"
+      columns:
+        accuracy_mean: "Accuracy"
+        total_cost: "Cost ($)"
+        total_tokens: "Tokens"
+```
+
+#### 3. Experiment Results JSON
+Detailed cost data is exported to `experiment_results_<id>.json` files:
+```json
+{
+  "cost_data": {
+    "api_key": "sk-...",
+    "total_cost": 0.1234,
+    "total_tokens": 5000,
+    "prompt_tokens": 3000,
+    "completion_tokens": 2000,
+    "requests": 10,
+    "models_used": ["gpt-4", "gpt-3.5-turbo"]
+  }
+}
+```
+
 
 ## Dataset Explorer
 
