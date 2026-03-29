@@ -5,7 +5,7 @@ from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 
-from ragworkbench.eval.cost_tracking import CostTracker
+from ragworkbench.eval.cost_tracking import CostTracker, UsageData
 
 
 class TestCostTracker:
@@ -127,17 +127,24 @@ class TestCostTracker:
 
     @pytest.mark.asyncio
     async def test_get_usage_data_disabled(self):
-        """Test that get_usage_data returns empty dict when disabled."""
+        """Test that get_usage_data returns empty UsageData when disabled."""
         tracker = CostTracker(enabled=False)
         result = await tracker.get_usage_data()
-        assert result == {}
+        assert isinstance(result, UsageData)
+        assert result.api_key == ""
+        assert result.total_cost == 0.0
+        assert result.total_tokens == 0
 
     @pytest.mark.asyncio
     async def test_get_usage_data_no_api_key(self):
-        """Test that get_usage_data returns empty dict when no API key is set."""
-        tracker = CostTracker(enabled=True)
-        result = await tracker.get_usage_data()
-        assert result == {}
+        """Test that get_usage_data returns empty UsageData when no API key is set."""
+        with patch.dict("os.environ", {"LITELLM_MASTER_KEY": "sk-test-master-key"}):
+            tracker = CostTracker(enabled=True)
+            result = await tracker.get_usage_data()
+            assert isinstance(result, UsageData)
+            assert result.api_key == ""
+            assert result.total_cost == 0.0
+            assert result.total_tokens == 0
 
     @pytest.mark.asyncio
     async def test_get_usage_data_success(self):
@@ -146,25 +153,23 @@ class TestCostTracker:
             tracker = CostTracker(enabled=True, litellm_proxy_url="http://test:4000")
             tracker.api_key = "sk-track-test123"
 
-        # Mock response data
-        mock_response_data = {
-            "data": [
-                {
-                    "spend": 0.001,
-                    "total_tokens": 100,
-                    "prompt_tokens": 50,
-                    "completion_tokens": 50,
-                    "model": "gpt-3.5-turbo",
-                },
-                {
-                    "spend": 0.002,
-                    "total_tokens": 200,
-                    "prompt_tokens": 100,
-                    "completion_tokens": 100,
-                    "model": "gpt-4",
-                },
-            ]
-        }
+        # Mock response data - LiteLLM returns a list directly
+        mock_response_data = [
+            {
+                "spend": 0.001,
+                "total_tokens": 100,
+                "prompt_tokens": 50,
+                "completion_tokens": 50,
+                "model": "gpt-3.5-turbo",
+            },
+            {
+                "spend": 0.002,
+                "total_tokens": 200,
+                "prompt_tokens": 100,
+                "completion_tokens": 100,
+                "model": "gpt-4",
+            },
+        ]
 
         # Mock httpx.AsyncClient
         with patch("ragworkbench.eval.cost_tracking.httpx.AsyncClient") as mock_client:
@@ -181,13 +186,13 @@ class TestCostTracker:
             result = await tracker.get_usage_data()
 
         # Verify the aggregated results
-        assert result["api_key"] == "sk-track-test123"
-        assert result["total_cost"] == 0.003
-        assert result["total_tokens"] == 300
-        assert result["prompt_tokens"] == 150
-        assert result["completion_tokens"] == 150
-        assert result["requests"] == 2
-        assert set(result["models_used"]) == {"gpt-3.5-turbo", "gpt-4"}
+        assert result.api_key == "sk-track-test123"
+        assert result.total_cost == 0.003
+        assert result.total_tokens == 300
+        assert result.prompt_tokens == 150
+        assert result.completion_tokens == 150
+        assert result.requests == 2
+        assert set(result.models_used) == {"gpt-3.5-turbo", "gpt-4"}
 
     @pytest.mark.asyncio
     async def test_get_usage_data_http_error(self):
@@ -208,12 +213,9 @@ class TestCostTracker:
             mock_client_instance.get = AsyncMock(return_value=mock_response)
             mock_client.return_value = mock_client_instance
 
-            result = await tracker.get_usage_data()
-
-        # Verify error is captured
-        assert "error" in result
-        assert result["error"] == "HTTP 500"
-        assert result["api_key"] == "sk-track-test123"
+            # Verify RuntimeError is raised
+            with pytest.raises(RuntimeError, match="Failed to retrieve usage data"):
+                await tracker.get_usage_data()
 
     @pytest.mark.asyncio
     async def test_get_usage_data_exception(self):
@@ -232,12 +234,9 @@ class TestCostTracker:
             )
             mock_client.return_value = mock_client_instance
 
-            result = await tracker.get_usage_data()
-
-        # Verify error is captured
-        assert "error" in result
-        assert "Connection failed" in result["error"]
-        assert result["api_key"] == "sk-track-test123"
+            # Verify RuntimeError is raised with the original exception
+            with pytest.raises(RuntimeError, match="Failed to retrieve cost data"):
+                await tracker.get_usage_data()
 
     def test_parse_usage_response_empty(self):
         """Test parsing of empty usage response."""
@@ -247,20 +246,23 @@ class TestCostTracker:
 
         result = tracker._parse_usage_response([])
 
-        assert result["api_key"] == "sk-track-test123"
-        assert result["total_cost"] == 0.0
-        assert result["total_tokens"] == 0
-        assert result["prompt_tokens"] == 0
-        assert result["completion_tokens"] == 0
-        assert result["requests"] == 0
-        assert result["models_used"] == []
+        assert result.api_key == "sk-track-test123"
+        assert result.total_cost == 0.0
+        assert result.total_tokens == 0
+        assert result.prompt_tokens == 0
+        assert result.completion_tokens == 0
+        assert result.requests == 0
+        assert result.models_used == []
 
     def test_get_cost_data_no_data(self):
         """Test get_cost_data when no data has been retrieved."""
         with patch.dict("os.environ", {"LITELLM_MASTER_KEY": "sk-test-master-key"}):
             tracker = CostTracker(enabled=True)
             result = tracker.get_cost_data()
-            assert result == {}
+            assert isinstance(result, UsageData)
+            assert result.api_key == ""
+            assert result.total_cost == 0.0
+            assert result.total_tokens == 0
 
     @pytest.mark.asyncio
     async def test_get_cost_data_after_retrieval(self):
@@ -269,17 +271,15 @@ class TestCostTracker:
             tracker = CostTracker(enabled=True, litellm_proxy_url="http://test:4000")
             tracker.api_key = "sk-track-test123"
 
-        mock_response_data = {
-            "data": [
-                {
-                    "spend": 0.001,
-                    "total_tokens": 100,
-                    "prompt_tokens": 50,
-                    "completion_tokens": 50,
-                    "model": "gpt-3.5-turbo",
-                }
-            ]
-        }
+        mock_response_data = [
+            {
+                "spend": 0.001,
+                "total_tokens": 100,
+                "prompt_tokens": 50,
+                "completion_tokens": 50,
+                "model": "gpt-3.5-turbo",
+            }
+        ]
 
         with patch("ragworkbench.eval.cost_tracking.httpx.AsyncClient") as mock_client:
             mock_response = MagicMock()
@@ -296,8 +296,8 @@ class TestCostTracker:
 
         # Now get_cost_data should return the cached data
         result = tracker.get_cost_data()
-        assert result["total_cost"] == 0.001
-        assert result["total_tokens"] == 100
+        assert result.total_cost == 0.001
+        assert result.total_tokens == 100
 
 
 @pytest.mark.integration
@@ -368,20 +368,20 @@ class TestCostTrackerIntegration:
         usage_data = await tracker.get_usage_data()
 
         # Verify usage data
-        assert "error" not in usage_data
-        assert usage_data["api_key"] == api_key
-        assert usage_data["total_cost"] >= 0, "Expected non-negative cost"
-        assert usage_data["total_tokens"] >= 0, "Expected non-negative tokens"
-        assert usage_data["requests"] >= 0, "Expected non-negative request count"
+        assert isinstance(usage_data, UsageData), "Expected UsageData instance"
+        assert usage_data.api_key == api_key
+        assert usage_data.total_cost >= 0, "Expected non-negative cost"
+        assert usage_data.total_tokens >= 0, "Expected non-negative tokens"
+        assert usage_data.requests >= 0, "Expected non-negative request count"
         assert isinstance(
-            usage_data["models_used"], list
+            usage_data.models_used, list
         ), "Expected models_used to be a list"
 
         print("Usage data retrieved successfully:")
-        print(f"  Total cost: ${usage_data['total_cost']:.6f}")
-        print(f"  Total tokens: {usage_data['total_tokens']}")
-        print(f"  Requests: {usage_data['requests']}")
-        print(f"  Models used: {usage_data['models_used']}")
+        print(f"  Total cost: ${usage_data.total_cost:.6f}")
+        print(f"  Total tokens: {usage_data.total_tokens}")
+        print(f"  Requests: {usage_data.requests}")
+        print(f"  Models used: {usage_data.models_used}")
 
         # Verify cached data
         cached_data = tracker.get_cost_data()

@@ -116,15 +116,11 @@ class Experiment:
         cost_data: dict[str, Any] = {}
         if self.cost_tracker.enabled:
             logger.info("Retrieving cost tracking data from LiteLLM proxy...")
-            cost_data = asyncio.run(self.cost_tracker.get_usage_data())
-            if "error" in cost_data:
-                logger.warning(
-                    f"Failed to retrieve cost data: {cost_data.get('error')}"
-                )
-            elif not cost_data:
-                logger.warning(
-                    f"Cost data is empty or in unexpected format: {cost_data}"
-                )
+            try:
+                usage_data = asyncio.run(self.cost_tracker.get_usage_data())
+                cost_data = usage_data.model_dump()
+            except RuntimeError as e:
+                logger.warning(f"Failed to retrieve cost data: {e}")
 
         return ExperimentResult(
             experiment_id=self.experiment_id,

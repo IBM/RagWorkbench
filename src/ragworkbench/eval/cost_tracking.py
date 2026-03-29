@@ -11,8 +11,39 @@ import uuid
 from typing import Any
 
 import httpx
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
+
+
+class UsageData(BaseModel):
+    """
+    Data model for API usage statistics from LiteLLM proxy.
+
+    This model encapsulates all usage and cost information for a tracking session,
+    including token counts, costs, and metadata about the API calls made.
+
+    Attributes:
+        api_key: The API key used for tracking this session
+        total_cost: Total cost in USD for all API calls
+        total_tokens: Total number of tokens used (prompt + completion)
+        prompt_tokens: Number of tokens in prompts
+        completion_tokens: Number of tokens in completions
+        requests: Number of API requests made
+        models_used: Sorted list of model names used during the session
+    """
+
+    api_key: str = Field(default="", description="The API key used for tracking")
+    total_cost: float = Field(default=0.0, description="Total cost in USD", ge=0.0)
+    total_tokens: int = Field(default=0, description="Total tokens used", ge=0)
+    prompt_tokens: int = Field(default=0, description="Prompt tokens used", ge=0)
+    completion_tokens: int = Field(
+        default=0, description="Completion tokens used", ge=0
+    )
+    requests: int = Field(default=0, description="Number of requests made", ge=0)
+    models_used: list[str] = Field(
+        description="Sorted list of models used", default_factory=list
+    )
 
 
 class CostTracker:
@@ -52,7 +83,7 @@ class CostTracker:
             )
 
         self.api_key: str | None = None
-        self._cost_data: dict[str, Any] | None = None
+        self._cost_data: UsageData | None = None
 
     def generate_tracking_key(self) -> str | None:
         """
@@ -113,7 +144,7 @@ class CostTracker:
             logger.error(f"Failed to generate tracking API key: {e}")
             raise RuntimeError(f"Failed to generate tracking API key: {e}") from e
 
-    async def get_usage_data(self) -> dict[str, Any]:
+    async def get_usage_data(self) -> UsageData:
         """
         Query LiteLLM proxy for usage statistics for the current API key.
 
@@ -121,19 +152,22 @@ class CostTracker:
         to retrieve detailed usage data for the current tracking API key.
 
         Returns:
-            Dictionary containing cost data with keys:
+            UsageData instance containing cost data with:
+            - api_key: The API key used for tracking
             - total_cost: Total cost in USD
             - total_tokens: Total tokens used
             - prompt_tokens: Prompt tokens used
             - completion_tokens: Completion tokens used
-            - api_key: The API key used for tracking
             - requests: Number of requests made
             - models_used: List of models used
 
-            Returns empty dict if tracking is disabled or if retrieval fails.
+            Returns empty UsageData instance if tracking is disabled or no API key is set.
+
+        Raises:
+            RuntimeError: If the HTTP request fails or if there's an error retrieving cost data.
         """
         if not self.enabled or not self.api_key:
-            return {}
+            return UsageData()
 
         try:
             # Query LiteLLM proxy for usage statistics using master key
@@ -154,30 +188,27 @@ class CostTracker:
                     cost_data = self._parse_usage_response(data)
 
                     logger.info(
-                        f"Cost tracking complete. Total cost: ${cost_data.get('total_cost', 0):.4f}, "
-                        f"Total tokens: {cost_data.get('total_tokens', 0)}"
+                        f"Cost tracking complete. Total cost: ${cost_data.total_cost:.4f}, "
+                        f"Total tokens: {cost_data.total_tokens}"
                     )
 
                     self._cost_data = cost_data
                     return cost_data
                 else:
-                    logger.error(
+                    error_msg = (
                         f"Failed to retrieve usage data from LiteLLM proxy. "
                         f"Status: {response.status_code}, Response: {response.text}"
                     )
-                    return {
-                        "error": f"HTTP {response.status_code}",
-                        "api_key": self.api_key,
-                    }
+                    logger.error(error_msg)
+                    raise RuntimeError(error_msg)
 
         except Exception as e:
             logger.error(f"Failed to retrieve cost data from LiteLLM proxy: {e}")
-            return {
-                "error": str(e),
-                "api_key": self.api_key,
-            }
+            raise RuntimeError(
+                f"Failed to retrieve cost data from LiteLLM proxy: {e}"
+            ) from e
 
-    def _parse_usage_response(self, data: list[dict[str, Any]]) -> dict[str, Any]:
+    def _parse_usage_response(self, data: list[dict[str, Any]]) -> UsageData:
         """
         Parse the usage response from LiteLLM proxy and aggregate statistics.
 
@@ -185,7 +216,7 @@ class CostTracker:
             data: Response data from LiteLLM proxy (list of log entries)
 
         Returns:
-            Aggregated usage statistics
+            UsageData instance with aggregated usage statistics
         """
         # Initialize aggregated data
         total_cost = 0.0
@@ -217,21 +248,25 @@ class CostTracker:
 
             requests += 1
 
-        return {
-            "api_key": self.api_key,
-            "total_cost": total_cost,
-            "total_tokens": total_tokens,
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "requests": requests,
-            "models_used": sorted(models_used),
-        }
+        # Ensure api_key is not None before creating UsageData
+        if self.api_key is None:
+            raise ValueError("API key must be set before parsing usage data")
 
-    def get_cost_data(self) -> dict[str, Any]:
+        return UsageData(
+            api_key=self.api_key,
+            total_cost=total_cost,
+            total_tokens=total_tokens,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            requests=requests,
+            models_used=sorted(models_used),
+        )
+
+    def get_cost_data(self) -> UsageData:
         """
         Get the cost data from the last tracking session.
 
         Returns:
-            Dictionary containing cost data, or empty dict if no data available
+            UsageData instance containing cost data, or empty UsageData if no data available
         """
-        return self._cost_data or {}
+        return self._cost_data or UsageData()
