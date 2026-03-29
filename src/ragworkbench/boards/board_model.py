@@ -34,7 +34,7 @@ class Chart(BaseModel):
 
 class Screen(BaseModel):
     title: str
-    scores: dict[str, str]
+    columns: dict[str, str]
     chart: Chart
 
 

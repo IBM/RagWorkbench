@@ -381,7 +381,7 @@ class BoardGenerator:
     def serialize_results(self, board: Board):
         md = ""
         for screen in board.report.screens:
-            config_row_span = 1 + (1 if len(screen.scores) > 1 else 0)
+            config_row_span = 1 + (1 if len(screen.columns) > 1 else 0)
             md += f"### {screen.title}\n"
             md += "<table>\n"
             md += "<tr>\n"
@@ -389,31 +389,47 @@ class BoardGenerator:
                 "\n".join(
                     [f'\t<th rowspan="{config_row_span}">Configuration</th>']
                     + [
-                        f'\t<th colspan="{len(screen.scores)}">{dataset.name}</th>'
+                        f'\t<th colspan="{len(screen.columns)}">{dataset.name}</th>'
                         for dataset in board.datasets
                     ]
                 )
                 + "\n"
             )
             md += "</tr>\n"
-            if len(screen.scores) > 1:
+            if len(screen.columns) > 1:
                 md += "<tr>\n"
                 for _ in self.board.datasets:
-                    for score_title in screen.scores.values():
+                    for score_title in screen.columns.values():
                         md += f"\t<td>{score_title}</td>\n"
                 md += "</tr>\n"
             for config_seq, config in enumerate(self.board.configurations):
                 md += "<tr>\n"
                 md += f"\t<td>{config.name}</td>\n"
                 for dataset_seq, _dataset in enumerate(self.board.datasets):
-                    for score in screen.scores.keys():
-                        df = self.results[
-                            (self.results["board_configuration_seq"] == config_seq)
-                            & (self.results["board_dataset_seq"] == dataset_seq)
-                        ]
-                        row = df.iloc[0]
+                    df = self.results[
+                        (self.results["board_configuration_seq"] == config_seq)
+                        & (self.results["board_dataset_seq"] == dataset_seq)
+                    ]
+
+                    if len(df) > 1:
+                        raise ValueError(
+                            f"Expected at most 1 result for config_seq={config_seq} and "
+                            f"dataset_seq={dataset_seq}, but found {len(df)} results:\n{df}"
+                        )
+
+                    row = df.iloc[0]
+                    for score in screen.columns.keys():
                         try:
-                            md += f"\t<td>{row[score]:.2f}</td>\n"
+                            value = row[score]
+                            # Handle different value types
+                            if isinstance(value, (int, float)):
+                                md += f"\t<td>{value:.2f}</td>\n"
+                            elif isinstance(value, list):
+                                # Format lists as comma-separated strings
+                                md += f"\t<td>{', '.join(str(v) for v in value)}</td>\n"
+                            else:
+                                # Handle strings and other types
+                                md += f"\t<td>{value}</td>\n"
                         except KeyError as e:
                             available_keys = list(row.index)
                             raise KeyError(
