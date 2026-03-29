@@ -257,8 +257,8 @@ class BoardGenerator:
                 if self.board.experiment.usage_tracking and experiment_result.cost_data:
                     logger.info(
                         f"Experiment {experiment_id} cost: "
-                        f"${experiment_result.cost_data.get('total_cost', 0):.4f}, "
-                        f"{experiment_result.cost_data.get('total_tokens', 0)} tokens"
+                        f"${experiment_result.cost_data.total_cost:.4f}, "
+                        f"{experiment_result.cost_data.total_tokens} tokens"
                     )
 
                 # Export results using ExperimentResult methods
@@ -271,24 +271,14 @@ class BoardGenerator:
                     dataset.id(),
                 )
 
-                config_dataset_df = pd.DataFrame(
-                    [
-                        {
-                            "board_configuration_seq": config_seq,
-                            "board_dataset_seq": dataset_seq,
-                            "board_configuration_name": config.name,
-                            "board_dataset_id": dataset.id(),
-                            "board_experiment_id": experiment_id,
-                        }
-                    ]
+                # Create experiment summary using the new method
+                summary_dict = experiment_result.create_summary(
+                    config_seq=config_seq,
+                    dataset_seq=dataset_seq,
+                    config_name=config.name,
+                    dataset_id=dataset.id(),
                 )
-                for metric_name in experiment_result.evaluation_results.keys():
-                    metric_stats: dict[str, dict] = (
-                        experiment_result.evaluation_results[metric_name]["statistics"]
-                    )
-                    for sub_metric_name in metric_stats.keys():
-                        for k, v in metric_stats[sub_metric_name].items():
-                            config_dataset_df[f"{sub_metric_name}_{k}"] = v
+                config_dataset_df = pd.DataFrame([summary_dict])
 
                 results_list.append(config_dataset_df)
         #

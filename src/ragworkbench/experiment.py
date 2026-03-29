@@ -113,12 +113,13 @@ class Experiment:
             evaluation_results = future.result()
 
         # Retrieve cost data if cost tracking is enabled
-        cost_data: dict[str, Any] = {}
+        from ragworkbench.eval.cost_tracking import UsageData
+
+        cost_data: UsageData = UsageData()
         if self.cost_tracker.enabled:
             logger.info("Retrieving cost tracking data from LiteLLM proxy...")
             try:
-                usage_data = asyncio.run(self.cost_tracker.get_usage_data())
-                cost_data = usage_data.model_dump()
+                cost_data = asyncio.run(self.cost_tracker.get_usage_data())
             except RuntimeError as e:
                 logger.warning(f"Failed to retrieve cost data: {e}")
 
