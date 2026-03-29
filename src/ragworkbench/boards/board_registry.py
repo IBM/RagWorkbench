@@ -3,6 +3,7 @@ from typing import Any, TypeVar
 
 from ragworkbench.api.inference import InferenceParams, InferencePipeline
 from ragworkbench.api.ingest import IngestParams, IngestPipeline
+from ragworkbench.boards.board_model import CacheMode
 
 INGEST_T1 = TypeVar("INGEST_T1", bound=IngestPipeline)
 INGEST_T2 = TypeVar("INGEST_T2", bound=IngestParams)
@@ -91,6 +92,7 @@ class BoardRegistry:
         name: str,
         params: dict[str, Any],
         cache_dir: Path | None = None,
+        cache_mode: CacheMode = CacheMode.ON,
     ):
         if name not in cls._inference_pipelines:
             raise ValueError(
@@ -101,5 +103,7 @@ class BoardRegistry:
 
         inference_class, inference_params = cls._inference_pipelines[name]
         return inference_class(
-            inference_params.model_validate(params), cache_dir=cache_dir
+            inference_params.model_validate(params),
+            cache_dir=cache_dir,
+            cache_mode=cache_mode,
         )

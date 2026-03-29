@@ -4,6 +4,7 @@ from io import UnsupportedOperation
 from pathlib import Path
 
 from ragworkbench.api.inference_result import InferenceResult
+from ragworkbench.boards.board_model import CacheMode
 from ragworkbench.caching.evaluator_cache import EvaluatorCache
 from ragworkbench.datasets_loader.data_models import (
     RagBenchmark,
@@ -32,6 +33,7 @@ class Evaluator:
         rag_benchmark: RagBenchmark | None = None,
         rag_corpus: RagCorpus | None = None,
         cache_dir: Path | None = None,
+        cache_mode: CacheMode = CacheMode.ON,
     ):
 
         self.metric: BaseEvaluationMetric = self.evaluation_metric_factory[
@@ -50,7 +52,7 @@ class Evaluator:
         self._score_names: list[str] = self.metric.get_score_names()
 
         self.evaluation_cache = None
-        if cache_dir:
+        if cache_dir and cache_mode != CacheMode.OFF:
             self.evaluation_cache = EvaluatorCache(
                 cache_dir=cache_dir,
                 config_params={
@@ -59,6 +61,7 @@ class Evaluator:
                     "metric_params": metric_definition.metric_params,
                 },
                 cache_key_fields=set(fields),
+                cache_mode=cache_mode,
             )
 
     def run_metrics(

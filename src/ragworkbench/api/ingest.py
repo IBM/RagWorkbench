@@ -7,7 +7,7 @@ from ragworkbench.api.ingest_artifact import IngestArtifact
 
 
 class IngestParams(BaseModel):
-    pass
+    tracking_api_key: str | None = None
 
 
 class IngestRuntimeParams(BaseModel):
@@ -16,9 +16,14 @@ class IngestRuntimeParams(BaseModel):
 
 class IngestPipeline(ABC):
 
-    @abstractmethod
     def __init__(self, _params: IngestParams) -> None:
-        pass
+        """
+        Initialize the ingest pipeline.
+
+        Args:
+            _params: Ingest parameters for the pipeline.
+        """
+        self._params = _params
 
     @abstractmethod
     def process(

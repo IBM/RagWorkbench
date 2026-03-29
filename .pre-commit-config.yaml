@@ -48,5 +48,6 @@ repos:
           - pandas-stubs
           - pandas
           - types-PyYAML
+          - httpx
         args: [--config-file=pyproject.toml, --explicit-package-bases]
         files: ^src/

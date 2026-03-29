@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from ragworkbench.api.inference_result import InferenceResult
 from ragworkbench.api.ingest_artifact import IngestArtifact
+from ragworkbench.boards.board_model import CacheMode
 from ragworkbench.datasets_loader.data_models import RagBenchmarkEntry
 
 if TYPE_CHECKING:
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class InferenceParams(BaseModel):
-    pass
+    tracking_api_key: str | None = None
 
 
 class InferenceRuntimeParams(BaseModel):
@@ -28,6 +29,7 @@ class InferencePipeline(ABC):
         self,
         _params: InferenceParams,
         cache_dir: Path | str | None = None,
+        cache_mode: CacheMode = CacheMode.ON,
     ) -> None:
         """
         Initialize the inference pipeline.
@@ -36,10 +38,12 @@ class InferencePipeline(ABC):
             _params: Inference parameters for the pipeline.
             cache_dir: Optional directory for caching generation results.
                       If provided, a GenerationCache will be created.
+            cache_mode: Cache operation mode (on/off/refresh).
         """
         self._params = _params
         self.generation_cache: GenerationCache | None = None
         self._cache_dir = cache_dir
+        self._cache_mode = cache_mode
 
     @abstractmethod
     def set_ingest_artifacts(self, ingest_artifacts: list[IngestArtifact]) -> None:
@@ -61,7 +65,11 @@ class InferencePipeline(ABC):
         """
         Lazily initialize the generation cache.
         """
-        if self._cache_dir is not None and self.generation_cache is None:
+        if (
+            self._cache_dir is not None
+            and self.generation_cache is None
+            and self._cache_mode != CacheMode.OFF
+        ):
             # Import here to avoid circular import
             from ragworkbench.caching.generation_cache import GenerationCache
 
@@ -70,6 +78,7 @@ class InferencePipeline(ABC):
                 cache_dir=self._cache_dir,
                 inference_params=self._params,
                 additional_cache_params=additional_params,
+                cache_mode=self._cache_mode,
             )
 
     def process(self, benchmark_entry: RagBenchmarkEntry) -> InferenceResult:

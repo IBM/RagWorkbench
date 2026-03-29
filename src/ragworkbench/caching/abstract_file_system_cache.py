@@ -9,6 +9,8 @@ from typing import Any, ClassVar
 
 import yaml
 
+from ragworkbench.boards.board_model import CacheMode
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,10 +23,19 @@ class AbstractFileSystemCache(ABC):
 
     The class maintains a class-level cache to avoid reloading the same cache
     directory multiple times across different instances.
+
+    Cache Mode Behavior:
+    - ON: Load from disk on first access, share in-memory cache across instances
+    - REFRESH: Skip disk loading, use empty in-memory cache shared across instances
+    - OFF: Cache should not be instantiated (raises ValueError)
+
+    Important Assumption:
+    All instances sharing the same cache_path are assumed to use the same cache_mode.
+    Mixing cache modes for the same cache_path may lead to unexpected behavior.
     """
 
     # A class level cache of cache contents intended to make sure each cache is loaded from
-    # the disk just once.
+    # the disk just once. All instances sharing the same cache_path will share this cache.
     cache_path_to_contents: ClassVar[dict[Path, dict[str, Any]]] = {}
 
     def __init__(
@@ -32,6 +43,7 @@ class AbstractFileSystemCache(ABC):
         cache_dir: Path | str,
         cache_name: str,
         config_dict: dict[str, Any] | None = None,
+        cache_mode: CacheMode = CacheMode.ON,
     ):
         """
         Initialize the file system cache.
@@ -41,7 +53,16 @@ class AbstractFileSystemCache(ABC):
             cache_name: Name of the cache (used as subdirectory)
             config_dict: Optional configuration dictionary that will be hashed
                         to create a unique subdirectory
+            cache_mode: Cache operation mode (on/off/refresh)
         """
+        # Validate cache mode - OFF should not reach here
+        if cache_mode == CacheMode.OFF:
+            raise ValueError(
+                f"{self.__class__.__name__} should not be created when cache_mode is OFF"
+            )
+
+        self.cache_mode = cache_mode
+
         cache_dir = Path(cache_dir)
         self.cache_path = cache_dir / cache_name
         if config_dict is not None:
@@ -60,18 +81,25 @@ class AbstractFileSystemCache(ABC):
         cached_dict = self.cache_path_to_contents.get(self.cache_path)
         self.read_files = 0
         if cached_dict is None:
-            # The cache_dict maps from the file stem (a hash of the parameter without *json suffix) to the cache object
-            cache_files = list(self.cache_path.glob("*.json"))
-            start_time = time.time()
-            self.cache_dict: dict[str, Any] = {
-                f.stem: self._read_content(f) for f in cache_files
-            }
-            elapsed_time = time.time() - start_time
-            logger.info(
-                f"Loaded in {elapsed_time:.2f}s: {len(cache_files)} cache files from '{self.cache_path}'"
-            )
+            # First instance for this cache_path
+            if self.cache_mode == CacheMode.REFRESH:
+                # In REFRESH mode, skip loading from disk, init a clean cache
+                # Assumption: All instances for this cache_path will use REFRESH mode
+                self.cache_dict = {}
+                logger.info(
+                    f"REFRESH mode: Initialized empty cache at '{self.cache_path}' (disk loading skipped)"
+                )
+            else:
+                cache_files = list(self.cache_path.glob("*.json"))
+                start_time = time.time()
+                self.cache_dict = {f.stem: self._read_content(f) for f in cache_files}
+                elapsed_time = time.time() - start_time
+                logger.info(
+                    f"Loaded in {elapsed_time:.2f}s: {len(cache_files)} cache files from '{self.cache_path}'"
+                )
+                self.read_files = len(self.cache_dict)
+
             self.cache_path_to_contents[self.cache_path] = self.cache_dict
-            self.read_files = len(self.cache_dict)
         else:
             self.cache_dict = cached_dict
         self.cache_hit = 0

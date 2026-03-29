@@ -4,13 +4,16 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
+from ragworkbench.api.experiment_result import ExperimentResult
 from ragworkbench.api.inference import InferencePipeline
 from ragworkbench.api.inference_result import InferenceResult
 from ragworkbench.api.ingest import IngestPipeline
+from ragworkbench.boards.board_model import ExperimentConfig
 from ragworkbench.caching.generation_cache import GenerationCache
 from ragworkbench.datasets_loader import RagDataLoader
 from ragworkbench.datasets_loader.data_models import RagBenchmark
 from ragworkbench.eval import MetricDefinition
+from ragworkbench.eval.cost_tracking import CostTracker
 from ragworkbench.eval.evaluator import Evaluator
 
 logger = logging.getLogger(__name__)
@@ -19,31 +22,52 @@ logger = logging.getLogger(__name__)
 class Experiment:
     def __init__(
         self,
-        name: str,
+        experiment_id: str,
         data_loader: RagDataLoader,
         ingest_pipeline: IngestPipeline,
         inference_pipeline: InferencePipeline,
         eval_metrics: list[MetricDefinition],
+        experiment_config: ExperimentConfig,
         cache_dir: Path | None = None,
     ):
-        self.name = name
+        self.experiment_id = experiment_id
         self.data_loader = data_loader
         self.ingest_pipeline = ingest_pipeline
         self.inference_pipeline = inference_pipeline
         self.cache_dir = cache_dir
+        self.cache_mode = experiment_config.cache
 
         self.metric_definitions: list[MetricDefinition] = eval_metrics
 
-    def run(self) -> tuple[list[InferenceResult], dict[str, dict[str, Any]]]:
+        # Initialize cost tracker from experiment config
+        self.cost_tracker = CostTracker(
+            enabled=experiment_config.usage_tracking,
+            litellm_proxy_url=experiment_config.litellm_proxy_url,
+        )
+
+    def run(self) -> ExperimentResult:
         """
         Run the complete experiment: ingest, inference, and evaluation.
 
         Returns:
-            A tuple containing:
-            - List of inference results
-            - Dictionary mapping metric names to their evaluation results, where each
-              evaluation result contains 'per_question' scores and aggregate 'statistics'
+            ExperimentResult object containing:
+            - inference_results: List of inference results
+            - evaluation_results: Dictionary mapping metric names to their evaluation results
+            - cost_data: Dictionary containing cost tracking data
         """
+        # Generate tracking API key if cost tracking is enabled
+        tracking_api_key = self.cost_tracker.generate_tracking_key()
+        if tracking_api_key:
+            logger.info(
+                f"Cost tracking enabled with API key: {tracking_api_key[:20]}..."
+            )
+            # Set the tracking API key in both ingest and inference pipeline params
+            self.ingest_pipeline._params.tracking_api_key = tracking_api_key
+            self.inference_pipeline._params.tracking_api_key = tracking_api_key
+            logger.info(
+                "Tracking API key set in ingest and inference pipeline parameters"
+            )
+
         # prepare the data
         rag_benchmark: RagBenchmark = self.data_loader.get_benchmark()
 
@@ -88,7 +112,23 @@ class Experiment:
             )
             evaluation_results = future.result()
 
-        return results, evaluation_results
+        # Retrieve cost data if cost tracking is enabled
+        from ragworkbench.eval.cost_tracking import UsageData
+
+        cost_data: UsageData = UsageData()
+        if self.cost_tracker.enabled:
+            logger.info("Retrieving cost tracking data from LiteLLM proxy...")
+            try:
+                cost_data = asyncio.run(self.cost_tracker.get_usage_data())
+            except RuntimeError as e:
+                logger.warning(f"Failed to retrieve cost data: {e}")
+
+        return ExperimentResult(
+            experiment_id=self.experiment_id,
+            inference_results=results,
+            evaluation_results=evaluation_results,
+            cost_data=cost_data,
+        )
 
     def _run_evaluation(
         self,
@@ -123,6 +163,7 @@ class Experiment:
                     rag_benchmark=rag_benchmark,
                     rag_corpus=self.data_loader.get_corpus(),
                     cache_dir=self.cache_dir,
+                    cache_mode=self.cache_mode,
                 )
 
                 # Run metrics and get per-question scores
