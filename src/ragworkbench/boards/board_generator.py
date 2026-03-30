@@ -41,6 +41,11 @@ class BoardGenerator:
         with yaml_file.open("r") as f:
             data = yaml.full_load(f)
 
+        # Copy board.yaml to output directory
+        self.output_path.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(yaml_file, self.output_path / self.BOARD_YAML)
+
+
         # Expand configurations with list parameters into multiple configurations
         data["configurations"] = self._expand_configurations(data["configurations"])
 
