@@ -230,6 +230,7 @@ class CostTracker:
         logs = data if isinstance(data, list) else []
 
         for log_entry in logs:
+            logger.debug(f"Processing log entry: {log_entry}")
             # Aggregate cost
             if "spend" in log_entry:
                 total_cost += float(log_entry["spend"])
