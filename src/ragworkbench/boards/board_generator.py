@@ -255,10 +255,8 @@ class BoardGenerator:
 
                 # Log cost data if tracking is enabled
                 if self.board.experiment.usage_tracking and experiment_result.cost_data:
-                    logger.info(
-                        f"Experiment {experiment_id} cost: "
-                        f"${experiment_result.cost_data.total_cost:.4f}, "
-                        f"{experiment_result.cost_data.total_tokens} tokens"
+                    experiment_result.cost_data.log_summary(
+                        prefix=f"Experiment {experiment_id} - "
                     )
 
                 # Export results using ExperimentResult methods

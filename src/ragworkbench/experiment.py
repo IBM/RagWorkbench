@@ -113,9 +113,9 @@ class Experiment:
             evaluation_results = future.result()
 
         # Retrieve cost data if cost tracking is enabled
-        from ragworkbench.eval.cost_tracking import UsageData
+        from ragworkbench.eval.cost_tracking import AggregatedUsageData
 
-        cost_data: UsageData = UsageData()
+        cost_data: AggregatedUsageData = AggregatedUsageData()
         if self.cost_tracker.enabled:
             logger.info("Retrieving cost tracking data from LiteLLM proxy...")
             try:

@@ -18,22 +18,19 @@ logger = logging.getLogger(__name__)
 
 class UsageData(BaseModel):
     """
-    Data model for API usage statistics from LiteLLM proxy.
+    Base data model for API usage statistics.
 
-    This model encapsulates all usage and cost information for a tracking session,
-    including token counts, costs, and metadata about the API calls made.
+    This model contains the core usage and cost metrics that are common
+    to both per-model and aggregated usage tracking.
 
     Attributes:
-        api_key: The API key used for tracking this session
-        total_cost: Total cost in USD for all API calls
+        total_cost: Total cost in USD
         total_tokens: Total number of tokens used (prompt + completion)
         prompt_tokens: Number of tokens in prompts
         completion_tokens: Number of tokens in completions
         requests: Number of API requests made
-        models_used: Sorted list of model names used during the session
     """
 
-    api_key: str = Field(default="", description="The API key used for tracking")
     total_cost: float = Field(default=0.0, description="Total cost in USD", ge=0.0)
     total_tokens: int = Field(default=0, description="Total tokens used", ge=0)
     prompt_tokens: int = Field(default=0, description="Prompt tokens used", ge=0)
@@ -41,9 +38,71 @@ class UsageData(BaseModel):
         default=0, description="Completion tokens used", ge=0
     )
     requests: int = Field(default=0, description="Number of requests made", ge=0)
+
+
+class ModelUsageData(UsageData):
+    """
+    Data model for API usage statistics for a single model.
+
+    Extends UsageData with model identification to track usage
+    for a specific model independently.
+
+    Attributes:
+        model: The model name/identifier
+        (inherits all UsageData fields)
+    """
+
+    model: str = Field(description="Model name/identifier")
+
+
+class AggregatedUsageData(UsageData):
+    """
+    Data model for aggregated API usage statistics across all models.
+
+    Extends UsageData with tracking information and per-model breakdowns.
+    This is the main data structure returned by the cost tracker.
+
+    Attributes:
+        api_key: The API key used for tracking this session
+        models_used: Sorted list of model names used during the session
+        per_model_usage: Dictionary mapping model names to their individual usage data
+        (inherits all UsageData fields for aggregate totals)
+    """
+
+    api_key: str = Field(default="", description="The API key used for tracking")
     models_used: list[str] = Field(
         description="Sorted list of models used", default_factory=list
     )
+    per_model_usage: dict[str, ModelUsageData] = Field(
+        description="Per-model usage breakdown",
+        default_factory=dict,
+    )
+
+    def log_summary(self, prefix: str = "") -> None:
+        """
+        Log a summary of the usage data including aggregate and per-model breakdowns.
+
+        Args:
+            prefix: Optional prefix to add before each log line (e.g., experiment ID)
+        """
+        if not self.total_cost and not self.total_tokens:
+            return  # Nothing to log if no usage data
+
+        # Log aggregate summary
+        logger.info(
+            f"{prefix}Total cost: ${self.total_cost:.4f}, "
+            f"Total tokens: {self.total_tokens}"
+        )
+
+        # Log per-model breakdown if available
+        if self.per_model_usage:
+            logger.info(f"{prefix}Per-model breakdown:")
+            for model, model_data in self.per_model_usage.items():
+                logger.info(
+                    f"{prefix}  {model}: ${model_data.total_cost:.4f}, "
+                    f"{model_data.total_tokens} tokens, "
+                    f"{model_data.requests} requests"
+                )
 
 
 class CostTracker:
@@ -83,7 +142,7 @@ class CostTracker:
             )
 
         self.api_key: str | None = None
-        self._cost_data: UsageData | None = None
+        self._cost_data: AggregatedUsageData | None = None
 
     def generate_tracking_key(self) -> str | None:
         """
@@ -144,7 +203,7 @@ class CostTracker:
             logger.error(f"Failed to generate tracking API key: {e}")
             raise RuntimeError(f"Failed to generate tracking API key: {e}") from e
 
-    async def get_usage_data(self) -> UsageData:
+    async def get_usage_data(self) -> AggregatedUsageData:
         """
         Query LiteLLM proxy for usage statistics for the current API key.
 
@@ -152,22 +211,23 @@ class CostTracker:
         to retrieve detailed usage data for the current tracking API key.
 
         Returns:
-            UsageData instance containing cost data with:
+            AggregatedUsageData instance containing cost data with:
             - api_key: The API key used for tracking
-            - total_cost: Total cost in USD
-            - total_tokens: Total tokens used
-            - prompt_tokens: Prompt tokens used
-            - completion_tokens: Completion tokens used
-            - requests: Number of requests made
+            - total_cost: Total cost in USD (aggregate)
+            - total_tokens: Total tokens used (aggregate)
+            - prompt_tokens: Prompt tokens used (aggregate)
+            - completion_tokens: Completion tokens used (aggregate)
+            - requests: Number of requests made (aggregate)
             - models_used: List of models used
+            - per_model_usage: Dictionary of per-model usage breakdowns
 
-            Returns empty UsageData instance if tracking is disabled or no API key is set.
+            Returns empty AggregatedUsageData instance if tracking is disabled or no API key is set.
 
         Raises:
             RuntimeError: If the HTTP request fails or if there's an error retrieving cost data.
         """
         if not self.enabled or not self.api_key:
-            return UsageData()
+            return AggregatedUsageData()
 
         try:
             # Query LiteLLM proxy for usage statistics using master key
@@ -208,66 +268,67 @@ class CostTracker:
                 f"Failed to retrieve cost data from LiteLLM proxy: {e}"
             ) from e
 
-    def _parse_usage_response(self, data: list[dict[str, Any]]) -> UsageData:
+    def _parse_usage_response(self, data: list[dict[str, Any]]) -> AggregatedUsageData:
         """
         Parse the usage response from LiteLLM proxy and aggregate statistics.
+
+        This method processes log entries and creates both aggregate statistics
+        and per-model breakdowns for detailed cost analysis.
 
         Args:
             data: Response data from LiteLLM proxy (list of log entries)
 
         Returns:
-            UsageData instance with aggregated usage statistics
+            AggregatedUsageData instance with aggregated usage statistics and per-model breakdowns
         """
-        # Initialize aggregated data
-        total_cost = 0.0
-        total_tokens = 0
-        prompt_tokens = 0
-        completion_tokens = 0
-        requests = 0
-        models_used = set()
+        # Ensure api_key is not None before creating AggregatedUsageData
+        if self.api_key is None:
+            raise ValueError("API key must be set before parsing usage data")
+
+        # Initialize result with empty per-model tracking
+        result = AggregatedUsageData(api_key=self.api_key)
 
         # The /spend/logs endpoint returns a list of log entries directly
         logs = data if isinstance(data, list) else []
 
         for log_entry in logs:
             logger.debug(f"Processing log entry: {log_entry}")
-            # Aggregate cost
-            if "spend" in log_entry:
-                total_cost += float(log_entry["spend"])
 
-            # Aggregate tokens
-            if "total_tokens" in log_entry:
-                total_tokens += int(log_entry["total_tokens"])
-            if "prompt_tokens" in log_entry:
-                prompt_tokens += int(log_entry["prompt_tokens"])
-            if "completion_tokens" in log_entry:
-                completion_tokens += int(log_entry["completion_tokens"])
+            # Extract model name and usage data from log entry
+            model = log_entry.get("model", "unknown")
+            spend = float(log_entry.get("spend", 0))
+            total_tok = int(log_entry.get("total_tokens", 0))
+            prompt_tok = int(log_entry.get("prompt_tokens", 0))
+            completion_tok = int(log_entry.get("completion_tokens", 0))
 
-            # Track models used
-            if "model" in log_entry:
-                models_used.add(log_entry["model"])
+            # Aggregate totals
+            result.total_cost += spend
+            result.total_tokens += total_tok
+            result.prompt_tokens += prompt_tok
+            result.completion_tokens += completion_tok
+            result.requests += 1
 
-            requests += 1
+            # Initialize or update per-model data
+            if model not in result.per_model_usage:
+                result.per_model_usage[model] = ModelUsageData(model=model)
 
-        # Ensure api_key is not None before creating UsageData
-        if self.api_key is None:
-            raise ValueError("API key must be set before parsing usage data")
+            model_data = result.per_model_usage[model]
+            model_data.total_cost += spend
+            model_data.total_tokens += total_tok
+            model_data.prompt_tokens += prompt_tok
+            model_data.completion_tokens += completion_tok
+            model_data.requests += 1
 
-        return UsageData(
-            api_key=self.api_key,
-            total_cost=total_cost,
-            total_tokens=total_tokens,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
-            requests=requests,
-            models_used=sorted(models_used),
-        )
+        # Update models_used list
+        result.models_used = sorted(result.per_model_usage.keys())
 
-    def get_cost_data(self) -> UsageData:
+        return result
+
+    def get_cost_data(self) -> AggregatedUsageData:
         """
         Get the cost data from the last tracking session.
 
         Returns:
-            UsageData instance containing cost data, or empty UsageData if no data available
+            AggregatedUsageData instance containing cost data, or empty AggregatedUsageData if no data available
         """
-        return self._cost_data or UsageData()
+        return self._cost_data or AggregatedUsageData()

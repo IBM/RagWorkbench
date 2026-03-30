@@ -5,7 +5,11 @@ from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 
-from ragworkbench.eval.cost_tracking import CostTracker, UsageData
+from ragworkbench.eval.cost_tracking import (
+    AggregatedUsageData,
+    CostTracker,
+    ModelUsageData,
+)
 
 
 class TestCostTracker:
@@ -127,21 +131,21 @@ class TestCostTracker:
 
     @pytest.mark.asyncio
     async def test_get_usage_data_disabled(self):
-        """Test that get_usage_data returns empty UsageData when disabled."""
+        """Test that get_usage_data returns empty AggregatedUsageData when disabled."""
         tracker = CostTracker(enabled=False)
         result = await tracker.get_usage_data()
-        assert isinstance(result, UsageData)
+        assert isinstance(result, AggregatedUsageData)
         assert result.api_key == ""
         assert result.total_cost == 0.0
         assert result.total_tokens == 0
 
     @pytest.mark.asyncio
     async def test_get_usage_data_no_api_key(self):
-        """Test that get_usage_data returns empty UsageData when no API key is set."""
+        """Test that get_usage_data returns empty AggregatedUsageData when no API key is set."""
         with patch.dict("os.environ", {"LITELLM_MASTER_KEY": "sk-test-master-key"}):
             tracker = CostTracker(enabled=True)
             result = await tracker.get_usage_data()
-            assert isinstance(result, UsageData)
+            assert isinstance(result, AggregatedUsageData)
             assert result.api_key == ""
             assert result.total_cost == 0.0
             assert result.total_tokens == 0
@@ -193,6 +197,31 @@ class TestCostTracker:
         assert result.completion_tokens == 150
         assert result.requests == 2
         assert set(result.models_used) == {"gpt-3.5-turbo", "gpt-4"}
+
+        # Verify per-model usage data
+        assert len(result.per_model_usage) == 2
+        assert "gpt-3.5-turbo" in result.per_model_usage
+        assert "gpt-4" in result.per_model_usage
+
+        # Check gpt-3.5-turbo model data
+        gpt35_data = result.per_model_usage["gpt-3.5-turbo"]
+        assert isinstance(gpt35_data, ModelUsageData)
+        assert gpt35_data.model == "gpt-3.5-turbo"
+        assert gpt35_data.total_cost == 0.001
+        assert gpt35_data.total_tokens == 100
+        assert gpt35_data.prompt_tokens == 50
+        assert gpt35_data.completion_tokens == 50
+        assert gpt35_data.requests == 1
+
+        # Check gpt-4 model data
+        gpt4_data = result.per_model_usage["gpt-4"]
+        assert isinstance(gpt4_data, ModelUsageData)
+        assert gpt4_data.model == "gpt-4"
+        assert gpt4_data.total_cost == 0.002
+        assert gpt4_data.total_tokens == 200
+        assert gpt4_data.prompt_tokens == 100
+        assert gpt4_data.completion_tokens == 100
+        assert gpt4_data.requests == 1
 
     @pytest.mark.asyncio
     async def test_get_usage_data_http_error(self):
@@ -253,13 +282,14 @@ class TestCostTracker:
         assert result.completion_tokens == 0
         assert result.requests == 0
         assert result.models_used == []
+        assert result.per_model_usage == {}
 
     def test_get_cost_data_no_data(self):
         """Test get_cost_data when no data has been retrieved."""
         with patch.dict("os.environ", {"LITELLM_MASTER_KEY": "sk-test-master-key"}):
             tracker = CostTracker(enabled=True)
             result = tracker.get_cost_data()
-            assert isinstance(result, UsageData)
+            assert isinstance(result, AggregatedUsageData)
             assert result.api_key == ""
             assert result.total_cost == 0.0
             assert result.total_tokens == 0
@@ -368,7 +398,9 @@ class TestCostTrackerIntegration:
         usage_data = await tracker.get_usage_data()
 
         # Verify usage data
-        assert isinstance(usage_data, UsageData), "Expected UsageData instance"
+        assert isinstance(
+            usage_data, AggregatedUsageData
+        ), "Expected AggregatedUsageData instance"
         assert usage_data.api_key == api_key
         assert usage_data.total_cost >= 0, "Expected non-negative cost"
         assert usage_data.total_tokens >= 0, "Expected non-negative tokens"
@@ -376,12 +408,24 @@ class TestCostTrackerIntegration:
         assert isinstance(
             usage_data.models_used, list
         ), "Expected models_used to be a list"
+        assert isinstance(
+            usage_data.per_model_usage, dict
+        ), "Expected per_model_usage to be a dict"
 
         print("Usage data retrieved successfully:")
         print(f"  Total cost: ${usage_data.total_cost:.6f}")
         print(f"  Total tokens: {usage_data.total_tokens}")
         print(f"  Requests: {usage_data.requests}")
         print(f"  Models used: {usage_data.models_used}")
+
+        # Print per-model breakdown
+        if usage_data.per_model_usage:
+            print("\n  Per-model breakdown:")
+            for model, model_data in usage_data.per_model_usage.items():
+                print(f"    {model}:")
+                print(f"      Cost: ${model_data.total_cost:.6f}")
+                print(f"      Tokens: {model_data.total_tokens}")
+                print(f"      Requests: {model_data.requests}")
 
         # Verify cached data
         cached_data = tracker.get_cost_data()

@@ -8,7 +8,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from ragworkbench.api.inference_result import InferenceResult
-from ragworkbench.eval.cost_tracking import UsageData
+from ragworkbench.eval.cost_tracking import AggregatedUsageData
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +23,9 @@ class ExperimentResult(BaseModel):
     evaluation_results: dict[str, Any] = Field(
         description="Dictionary of evaluation metrics and scores"
     )
-    cost_data: UsageData = Field(
-        default_factory=UsageData,
-        description="Usage data containing cost tracking information",
+    cost_data: AggregatedUsageData = Field(
+        default_factory=AggregatedUsageData,
+        description="Aggregated usage data containing cost tracking information and per-model breakdowns",
     )
 
     def create_summary(
@@ -72,6 +72,21 @@ class ExperimentResult(BaseModel):
             summary["completion_tokens"] = self.cost_data.completion_tokens
             summary["requests"] = self.cost_data.requests
             summary["models_used"] = self.cost_data.models_used
+
+            # Add per-model usage data
+            if self.cost_data.per_model_usage:
+                for model, model_data in self.cost_data.per_model_usage.items():
+                    # Sanitize model name for use as dictionary key
+                    safe_model_name = model.replace("/", "_").replace(":", "_")
+                    summary[f"model_{safe_model_name}_cost"] = model_data.total_cost
+                    summary[f"model_{safe_model_name}_tokens"] = model_data.total_tokens
+                    summary[f"model_{safe_model_name}_prompt_tokens"] = (
+                        model_data.prompt_tokens
+                    )
+                    summary[f"model_{safe_model_name}_completion_tokens"] = (
+                        model_data.completion_tokens
+                    )
+                    summary[f"model_{safe_model_name}_requests"] = model_data.requests
 
         return summary
 
