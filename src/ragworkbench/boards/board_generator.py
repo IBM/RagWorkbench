@@ -3,6 +3,7 @@ import os
 import shutil
 from collections.abc import Sequence
 from copy import deepcopy
+from datetime import datetime
 from itertools import product
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,9 @@ class BoardGenerator:
 
     def __init__(self, board_path: Path):
         self.input_path: Path = board_path
-        self.output_path: Path = board_path / "output"
+        # Create unique output directory name with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.output_path: Path = board_path / f"output_{timestamp}"
         self.cache_dir: Path = board_path / "cache"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
