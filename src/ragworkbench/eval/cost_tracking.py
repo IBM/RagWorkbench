@@ -159,17 +159,13 @@ class CostTracker:
                 cache_mode=cache_mode,
             )
 
-    def generate_tracking_key(self, config_hash: str) -> str | None:
+    def generate_tracking_key(self, experiment_id: str) -> str | None:
         """
         Generate a unique API key for this tracking session by calling LiteLLM proxy.
         Uses cache if available to avoid regenerating keys for the same session.
 
-        The caller should compute config_hash as a hash of all parameters that define
-        the tracking session to ensure consistent caching behavior.
-
         Args:
-            config_hash: Unique configuration hash for cache key. Should be computed
-                        as a hash of all relevant parameters by the caller.
+            experiment_id: Unique experiment identifier for cache key.
 
         Returns:
             The generated API key, or None if tracking is disabled
@@ -183,11 +179,11 @@ class CostTracker:
 
         # Try to get cached API key first
         if self.cache is not None:
-            cached_key = self.cache.get(config_hash)
+            cached_key = self.cache.get(experiment_id)
             if cached_key:
                 self.api_key = cached_key
                 logger.info(
-                    f"Using cached cost tracking API key for config {config_hash[:16]}..."
+                    f"Using cached cost tracking API key for experiment {experiment_id}"
                 )
                 return self.api_key
 
@@ -206,7 +202,7 @@ class CostTracker:
                         "metadata": {
                             "user": "ragworkbench",
                             "purpose": "cost_tracking",
-                            "config_hash": config_hash,
+                            "experiment_id": experiment_id,
                         },
                     },
                 )
@@ -221,12 +217,12 @@ class CostTracker:
                         )
 
                     logger.info(
-                        f"Generated cost tracking API key from LiteLLM for config {config_hash[:16]}..."
+                        f"Generated cost tracking API key from LiteLLM for experiment {experiment_id}"
                     )
 
                     # Cache the generated API key
                     if self.cache is not None:
-                        self.cache.add(config_hash, self.api_key)
+                        self.cache.add(experiment_id, self.api_key)
 
                     return self.api_key
                 else:
