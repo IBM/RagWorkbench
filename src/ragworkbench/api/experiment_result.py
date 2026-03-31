@@ -17,6 +17,9 @@ class ExperimentResult(BaseModel):
     """Encapsulates all results from running an experiment including inference, evaluation, and cost data."""
 
     experiment_id: str = Field(description="Unique identifier for the experiment")
+    config_name: str = Field(default="", description="Name of the configuration used")
+    dataset_name: str = Field(default="", description="Name of the dataset used")
+
     inference_results: list[InferenceResult] = Field(
         description="List of inference results from the experiment"
     )
@@ -170,24 +173,8 @@ class ExperimentResult(BaseModel):
         combined_data = {
             "board_configuration_seq": config_seq,
             "board_dataset_seq": dataset_seq,
-            "board_configuration_name": config_name,
             "board_dataset_id": dataset_id,
-            "board_experiment_id": self.experiment_id,
-            "inference_results": [
-                {
-                    "question_id": inf_result.question_id,
-                    "question": inf_result.question,
-                    "answer": inf_result.answer,
-                    "ground_truth_answers": inf_result.ground_truth_answers,
-                    "is_answerable": inf_result.is_answerable,
-                    "context_ids": inf_result.context_ids,
-                    "contexts": inf_result.contexts,
-                    "trajectory": inf_result.trajectory,
-                }
-                for inf_result in self.inference_results
-            ],
-            "evaluation_results": self.evaluation_results,
-            "cost_data": self.cost_data.model_dump(),
+            "experiment_result": self.model_dump(),
         }
 
         json_filename = f"experiment_results_{self.experiment_id}.json"
