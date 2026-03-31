@@ -42,7 +42,7 @@ class TestCostTracker:
     def test_generate_tracking_key_disabled(self):
         """Test that generate_tracking_key returns None when disabled."""
         tracker = CostTracker(enabled=False)
-        key = tracker.generate_tracking_key(config_hash="test_config")
+        key = tracker.generate_tracking_key(experiment_id="test_config")
         assert key is None
         assert tracker.api_key is None
 
@@ -63,7 +63,7 @@ class TestCostTracker:
                 mock_client_instance.post.return_value = mock_response
                 mock_client.return_value = mock_client_instance
 
-                key = tracker.generate_tracking_key(config_hash="test_config_123")
+                key = tracker.generate_tracking_key(experiment_id="test_config_123")
 
             assert key == "sk-generated-api-key-123"
             assert tracker.api_key == "sk-generated-api-key-123"
@@ -79,7 +79,7 @@ class TestCostTracker:
                     "metadata": {
                         "user": "ragworkbench",
                         "purpose": "cost_tracking",
-                        "config_hash": "test_config_123",
+                        "experiment_id": "test_config_123",
                     },
                 },
             )
@@ -104,7 +104,7 @@ class TestCostTracker:
                 with pytest.raises(
                     RuntimeError, match="Failed to generate API key from LiteLLM proxy"
                 ):
-                    tracker.generate_tracking_key(config_hash="test_config")
+                    tracker.generate_tracking_key(experiment_id="test_config")
 
     def test_generate_tracking_key_no_key_in_response(self):
         """Test that generate_tracking_key raises RuntimeError when no key in response."""
@@ -127,7 +127,7 @@ class TestCostTracker:
                     RuntimeError,
                     match="LiteLLM proxy returned success but no API key in response",
                 ):
-                    tracker.generate_tracking_key(config_hash="test_config")
+                    tracker.generate_tracking_key(experiment_id="test_config")
 
     @pytest.mark.asyncio
     async def test_get_usage_data_disabled(self):
@@ -356,7 +356,7 @@ class TestCostTrackerIntegration:
         tracker = CostTracker(enabled=True, litellm_proxy_url="http://localhost:4000")
 
         # Step 1: Generate a real API key
-        api_key = tracker.generate_tracking_key(config_hash="integration_test_config")
+        api_key = tracker.generate_tracking_key(experiment_id="integration_test_config")
         assert api_key is not None
         assert api_key.startswith("sk-")
         print(f"Generated API key: {api_key[:20]}...")

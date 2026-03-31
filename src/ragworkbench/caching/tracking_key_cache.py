@@ -52,21 +52,21 @@ class TrackingKeyCache(AbstractFileSystemCache):
     def _content_to_json(self, api_key: str) -> str:
         return json.dumps({"api_key": api_key}, indent=4)
 
-    def _get_parameters_hash(self, config_hash: str) -> str:
-        return AbstractFileSystemCache.get_hash_string(config_hash)
+    def _get_parameters_hash(self, experiment_id: str) -> str:
+        return AbstractFileSystemCache.get_hash_string(experiment_id)
 
     # We force signature
-    def get(self, config_hash: str) -> str | None:
-        cached_value, cache_key = super()._get(config_hash)
+    def get(self, experiment_id: str) -> str | None:
+        cached_value, cache_key = super()._get(experiment_id)
         return cached_value
 
     # We force signature
     def add(
         self,
-        config_hash: str,
+        experiment_id: str,
         api_key: str,
     ):
-        super().add(config_hash, api_key)
+        super().add(experiment_id, api_key)
 
 
 # Made with Bob

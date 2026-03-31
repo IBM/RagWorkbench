@@ -31,14 +31,14 @@ class TestTrackingKeyCache:
                 cache_mode=CacheMode.ON,
             )
 
-            config_hash = "test_config_123"
+            experiment_id = "test_config_123"
             api_key = "sk-test-key-abc123"
 
             # Add to cache
-            cache.add(config_hash, api_key)
+            cache.add(experiment_id, api_key)
 
             # Retrieve from cache
-            cached_key = cache.get(config_hash)
+            cached_key = cache.get(experiment_id)
             assert cached_key == api_key
 
     def test_cache_miss(self):
@@ -91,7 +91,7 @@ class TestCostTrackerWithCache:
                 mock_response
             )
 
-            config_hash = "test_config_456"
+            experiment_id = "test_config_456"
 
             # First tracker - should generate key
             tracker1 = CostTracker(
@@ -99,17 +99,17 @@ class TestCostTrackerWithCache:
                 cache_dir=tmpdir,
                 cache_mode=CacheMode.ON,
             )
-            key1 = tracker1.generate_tracking_key(config_hash=config_hash)
+            key1 = tracker1.generate_tracking_key(experiment_id=experiment_id)
             assert key1 == "sk-generated-key-123"
             assert mock_client.return_value.__enter__.return_value.post.call_count == 1
 
-            # Second tracker with same config_hash - should use cache
+            # Second tracker with same experiment_id - should use cache
             tracker2 = CostTracker(
                 enabled=True,
                 cache_dir=tmpdir,
                 cache_mode=CacheMode.ON,
             )
-            key2 = tracker2.generate_tracking_key(config_hash=config_hash)
+            key2 = tracker2.generate_tracking_key(experiment_id=experiment_id)
             assert key2 == "sk-generated-key-123"
             # Should still be 1 because second call used cache
             assert mock_client.return_value.__enter__.return_value.post.call_count == 1
