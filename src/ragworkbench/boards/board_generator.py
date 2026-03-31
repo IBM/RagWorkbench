@@ -47,7 +47,6 @@ class BoardGenerator:
         self.output_path.mkdir(parents=True, exist_ok=True)
         shutil.copy2(yaml_file, self.output_path / self.BOARD_YAML)
 
-
         # Expand configurations with list parameters into multiple configurations
         data["configurations"] = self._expand_configurations(data["configurations"])
 
@@ -233,11 +232,11 @@ class BoardGenerator:
     @staticmethod
     def _generate_experiment_id(config, dataset) -> tuple[str, dict[str, Any]]:
         """Generate a unique experiment ID based on all configuration and dataset parameters.
-        
+
         Args:
             config: Configuration object containing ingest and inference parameters
             dataset: Dataset object containing name, split, and sampling parameters
-            
+
         Returns:
             A tuple of (experiment_id, experiment_params) where:
             - experiment_id: A unique string identifier based on a hash of all parameters
@@ -251,22 +250,24 @@ class BoardGenerator:
             "ingest_params": config.ingest.params,
             "inference_name": config.inference.name,
             "inference_params": config.inference.params,
-            "dataset_name": dataset.name if isinstance(dataset.name, str) else dataset.name.value,
+            "dataset_name": (
+                dataset.name if isinstance(dataset.name, str) else dataset.name.value
+            ),
             "dataset_split": dataset.split.value if dataset.split else None,
             "sampling_question_limit": dataset.sampling.question_limit,
             "sampling_document_factor": dataset.sampling.document_factor,
             "sampling_seed": dataset.sampling.seed,
         }
-        
+
         # Create a stable JSON representation (sorted keys for consistency)
         params_json = json.dumps(experiment_params, sort_keys=True, default=str)
-        
+
         # Generate a hash of the parameters (8 characters)
         params_hash = hashlib.sha256(params_json.encode()).hexdigest()[:8]
-        
+
         # Create a readable experiment ID with the hash
         experiment_id = f"exp_{params_hash}"
-        
+
         return experiment_id, experiment_params
 
     def process(self) -> None:
@@ -290,11 +291,13 @@ class BoardGenerator:
                 )
 
                 # Generate unique experiment ID based on all parameters
-                experiment_id, experiment_params = BoardGenerator._generate_experiment_id(config, dataset)
-                
+                experiment_id, experiment_params = (
+                    BoardGenerator._generate_experiment_id(config, dataset)
+                )
+
                 # Store the mapping from experiment_id to full configuration
                 self.experiment_id_mapping[experiment_id] = experiment_params
-                
+
                 experiment = Experiment(
                     experiment_id=experiment_id,
                     data_loader=data_loader,
