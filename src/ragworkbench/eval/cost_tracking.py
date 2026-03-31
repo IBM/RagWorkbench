@@ -7,11 +7,14 @@ by generating unique API keys and querying usage statistics from LiteLLM proxy.
 
 import logging
 import os
-import uuid
+from pathlib import Path
 from typing import Any
 
 import httpx
 from pydantic import BaseModel, Field
+
+from ragworkbench.boards.board_model import CacheMode
+from ragworkbench.caching.tracking_key_cache import TrackingKeyCache
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +120,8 @@ class CostTracker:
         self,
         enabled: bool = False,
         litellm_proxy_url: str = "http://localhost:4000",
+        cache_dir: Path | str | None = None,
+        cache_mode: CacheMode = CacheMode.ON,
     ):
         """
         Initialize the cost tracker.
@@ -124,6 +129,8 @@ class CostTracker:
         Args:
             enabled: Whether cost tracking is enabled. If False, all operations are no-ops.
             litellm_proxy_url: Base URL for the LiteLLM proxy server
+            cache_dir: Directory for caching tracking keys. If None, caching is disabled.
+            cache_mode: Cache operation mode (on/off/refresh)
 
         Raises:
             ValueError: If enabled=True but LITELLM_MASTER_KEY environment variable is not set
@@ -144,9 +151,25 @@ class CostTracker:
         self.api_key: str | None = None
         self._cost_data: AggregatedUsageData | None = None
 
-    def generate_tracking_key(self) -> str | None:
+        # Initialize cache if cache_dir is provided and cache_mode is not OFF
+        self.cache: TrackingKeyCache | None = None
+        if cache_dir is not None and cache_mode != CacheMode.OFF:
+            self.cache = TrackingKeyCache(
+                cache_dir=cache_dir,
+                cache_mode=cache_mode,
+            )
+
+    def generate_tracking_key(self, config_hash: str) -> str | None:
         """
         Generate a unique API key for this tracking session by calling LiteLLM proxy.
+        Uses cache if available to avoid regenerating keys for the same session.
+
+        The caller should compute config_hash as a hash of all parameters that define
+        the tracking session to ensure consistent caching behavior.
+
+        Args:
+            config_hash: Unique configuration hash for cache key. Should be computed
+                        as a hash of all relevant parameters by the caller.
 
         Returns:
             The generated API key, or None if tracking is disabled
@@ -157,6 +180,16 @@ class CostTracker:
         """
         if not self.enabled:
             return None
+
+        # Try to get cached API key first
+        if self.cache is not None:
+            cached_key = self.cache.get(config_hash)
+            if cached_key:
+                self.api_key = cached_key
+                logger.info(
+                    f"Using cached cost tracking API key for config {config_hash[:16]}..."
+                )
+                return self.api_key
 
         try:
             # Call LiteLLM proxy to generate a new API key
@@ -173,7 +206,7 @@ class CostTracker:
                         "metadata": {
                             "user": "ragworkbench",
                             "purpose": "cost_tracking",
-                            "session_id": uuid.uuid4().hex[:16],
+                            "config_hash": config_hash,
                         },
                     },
                 )
@@ -188,8 +221,13 @@ class CostTracker:
                         )
 
                     logger.info(
-                        f"Generated cost tracking API key from LiteLLM: {self.api_key[:20]}..."
+                        f"Generated cost tracking API key from LiteLLM for config {config_hash[:16]}..."
                     )
+
+                    # Cache the generated API key
+                    if self.cache is not None:
+                        self.cache.add(config_hash, self.api_key)
+
                     return self.api_key
                 else:
                     error_msg = (

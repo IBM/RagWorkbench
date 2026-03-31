@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -56,7 +57,17 @@ class Experiment:
             - cost_data: Dictionary containing cost tracking data
         """
         # Generate tracking API key if cost tracking is enabled
-        tracking_api_key = self.cost_tracker.generate_tracking_key()
+        # Compute config_hash from experiment parameters for consistent caching
+        config_params = {
+            "experiment_id": self.experiment_id,
+            "data_loader": str(self.data_loader),
+            "ingest_params": str(self.ingest_pipeline._params),
+            "inference_params": str(self.inference_pipeline._params),
+        }
+        config_hash = hashlib.sha256(str(config_params).encode()).hexdigest()
+        tracking_api_key = self.cost_tracker.generate_tracking_key(
+            config_hash=config_hash
+        )
         if tracking_api_key:
             logger.info(
                 f"Cost tracking enabled with API key: {tracking_api_key[:20]}..."
