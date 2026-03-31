@@ -244,9 +244,9 @@ class BoardGenerator:
         """
         # Collect all parameters that define the experiment
         experiment_params = {
-            "config_name": config.name,
-            "config_description": config.description,
-            "ingest_name": config.ingest.name,
+            # "config_name": config.name,
+            # "config_description": config.description,
+            # "ingest_name": config.ingest.name,
             "ingest_params": config.ingest.params,
             "inference_name": config.inference.name,
             "inference_params": config.inference.params,
