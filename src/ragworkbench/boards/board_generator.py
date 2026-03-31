@@ -1,8 +1,11 @@
+import hashlib
+import json
 import logging
 import os
 import shutil
 from collections.abc import Sequence
 from copy import deepcopy
+from datetime import datetime
 from itertools import product
 from pathlib import Path
 from typing import Any
@@ -30,13 +33,19 @@ class BoardGenerator:
 
     def __init__(self, board_path: Path):
         self.input_path: Path = board_path
-        self.output_path: Path = board_path / "output"
+        # Create unique output directory name with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.output_path: Path = board_path / f"output_{timestamp}"
         self.cache_dir: Path = board_path / "cache"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         yaml_file = self.input_path / self.BOARD_YAML
         with yaml_file.open("r") as f:
             data = yaml.full_load(f)
+
+        # Copy board.yaml to output directory
+        self.output_path.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(yaml_file, self.output_path / self.BOARD_YAML)
 
         # Expand configurations with list parameters into multiple configurations
         data["configurations"] = self._expand_configurations(data["configurations"])
@@ -68,6 +77,7 @@ class BoardGenerator:
             ]
 
         self.results: DataFrame = pd.DataFrame()
+        self.experiment_id_mapping: dict[str, dict[str, Any]] = {}
 
     @staticmethod
     def _find_list_params(
@@ -219,6 +229,47 @@ class BoardGenerator:
 
         return expanded_configs
 
+    @staticmethod
+    def _generate_experiment_id(config, dataset) -> tuple[str, dict[str, Any]]:
+        """Generate a unique experiment ID based on all configuration and dataset parameters.
+
+        Args:
+            config: Configuration object containing ingest and inference parameters
+            dataset: Dataset object containing name, split, and sampling parameters
+
+        Returns:
+            A tuple of (experiment_id, experiment_params) where:
+            - experiment_id: A unique string identifier based on a hash of all parameters
+            - experiment_params: Dictionary containing all the parameters
+        """
+        # Collect all parameters that define the experiment
+        experiment_params = {
+            # "config_name": config.name,
+            # "config_description": config.description,
+            # "ingest_name": config.ingest.name,
+            "ingest_params": config.ingest.params,
+            "inference_name": config.inference.name,
+            "inference_params": config.inference.params,
+            "dataset_name": (
+                dataset.name if isinstance(dataset.name, str) else dataset.name.value
+            ),
+            "dataset_split": dataset.split.value if dataset.split else None,
+            "sampling_question_limit": dataset.sampling.question_limit,
+            "sampling_document_factor": dataset.sampling.document_factor,
+            "sampling_seed": dataset.sampling.seed,
+        }
+
+        # Create a stable JSON representation (sorted keys for consistency)
+        params_json = json.dumps(experiment_params, sort_keys=True, default=str)
+
+        # Generate a hash of the parameters (8 characters)
+        params_hash = hashlib.sha256(params_json.encode()).hexdigest()[:8]
+
+        # Create a readable experiment ID with the hash
+        experiment_id = f"exp_{params_hash}"
+
+        return experiment_id, experiment_params
+
     def process(self) -> None:
         # iterate over configurations and then over datasets
         results_list = []
@@ -239,7 +290,14 @@ class BoardGenerator:
                     cache_dir=self.cache_dir,
                 )
 
-                experiment_id = f"experiment_{config_seq}_{dataset_seq}"
+                # Generate unique experiment ID based on all parameters
+                experiment_id, experiment_params = (
+                    BoardGenerator._generate_experiment_id(config, dataset)
+                )
+
+                # Store the mapping from experiment_id to full configuration
+                self.experiment_id_mapping[experiment_id] = experiment_params
+
                 experiment = Experiment(
                     experiment_id=experiment_id,
                     data_loader=data_loader,
@@ -284,11 +342,20 @@ class BoardGenerator:
 
         # Export results and markdown at the end of processing
         self.export_results()
+        self.export_experiment_id_mapping()
         self.export_md()
 
     def export_results(self) -> None:
         os.makedirs(self.output_path, exist_ok=True)
         self.results.to_csv(self.output_path / self.RESULTS_CSV, index=False)
+
+    def export_experiment_id_mapping(self) -> None:
+        """Export the mapping from experiment IDs to their full configurations."""
+        os.makedirs(self.output_path, exist_ok=True)
+        mapping_file = self.output_path / "experiment_id_mapping.json"
+        with open(mapping_file, "w") as f:
+            json.dump(self.experiment_id_mapping, f, indent=2, default=str)
+        logger.info(f"Exported experiment ID mapping to {mapping_file}")
 
     def load_results(self) -> None:
         self.results = pd.read_csv(self.output_path / self.RESULTS_CSV)
