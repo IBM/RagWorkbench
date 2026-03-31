@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import json
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -44,7 +45,47 @@ class Experiment:
         self.cost_tracker = CostTracker(
             enabled=experiment_config.usage_tracking,
             litellm_proxy_url=experiment_config.litellm_proxy_url,
+            cache_dir=cache_dir,
+            cache_mode=experiment_config.cache,
         )
+
+    def compute_config_hash(self) -> str:
+        """
+        Compute a deterministic hash from experiment configuration parameters.
+
+        Returns:
+            SHA256 hash string of the configuration
+        """
+        # Exclude tracking_api_key as it's set after hash generation
+        ingest_params_dict = self.ingest_pipeline._params.model_dump(
+            exclude={"tracking_api_key"}
+        )
+        inference_params_dict = self.inference_pipeline._params.model_dump(
+            exclude={"tracking_api_key"}
+        )
+
+        # Extract data_loader attributes for deterministic hashing
+        data_loader_config = {
+            "dataset_name": str(self.data_loader.dataset_name),
+            "split": str(self.data_loader.split) if self.data_loader.split else None,
+            "sampling_params": self.data_loader.sampling_params.model_dump(),
+        }
+
+        config_params = {
+            "experiment_id": self.experiment_id,
+            "data_loader": data_loader_config,
+            "ingest_params": ingest_params_dict,
+            "inference_params": inference_params_dict,
+        }
+        logger.debug(f"config_params: {config_params}")
+
+        # Use JSON with sorted keys for deterministic hashing
+        config_hash = hashlib.sha256(
+            json.dumps(config_params, sort_keys=True).encode()
+        ).hexdigest()
+        logger.info(f"Config hash: '{config_hash}'")
+
+        return config_hash
 
     def run(self) -> ExperimentResult:
         """
@@ -58,13 +99,7 @@ class Experiment:
         """
         # Generate tracking API key if cost tracking is enabled
         # Compute config_hash from experiment parameters for consistent caching
-        config_params = {
-            "experiment_id": self.experiment_id,
-            "data_loader": str(self.data_loader),
-            "ingest_params": str(self.ingest_pipeline._params),
-            "inference_params": str(self.inference_pipeline._params),
-        }
-        config_hash = hashlib.sha256(str(config_params).encode()).hexdigest()
+        config_hash = self.compute_config_hash()
         tracking_api_key = self.cost_tracker.generate_tracking_key(
             config_hash=config_hash
         )
