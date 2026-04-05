@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -122,6 +123,8 @@ class Experiment:
 
         cost_data: AggregatedUsageData = AggregatedUsageData()
         if self.cost_tracker.enabled:
+            logger.info("Waiting 60 seconds before retrieving cost tracking data...")
+            time.sleep(60)
             logger.info("Retrieving cost tracking data from LiteLLM proxy...")
             try:
                 cost_data = asyncio.run(self.cost_tracker.get_usage_data())
