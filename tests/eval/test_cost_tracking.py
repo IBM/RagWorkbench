@@ -726,6 +726,7 @@ class TestCostTrackerIntegration:
             print(f"      Start time: {model_call.start_time}")
             print(f"      End time: {model_call.end_time}")
             print(f"      Messages: {len(model_call.messages)} message(s)")
+            print(f"      Response message: {model_call.response_message}")
             if model_call.usage:
                 print(f"      Total tokens: {model_call.usage.total_tokens}")
                 print(f"      Prompt tokens: {model_call.usage.prompt_tokens}")
@@ -735,6 +736,9 @@ class TestCostTrackerIntegration:
             assert model_call.request_id is not None, "Expected request_id to be set"
             assert model_call.start_time is not None, "Expected start_time to be set"
             assert model_call.end_time is not None, "Expected end_time to be set"
+            assert (
+                model_call.response_message is not None
+            ), "Expected response_message to be set"
             assert isinstance(
                 model_call.usage, ModelCallUsage
             ), "Expected usage to be ModelCallUsage instance"
