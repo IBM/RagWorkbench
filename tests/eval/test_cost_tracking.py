@@ -26,6 +26,13 @@ def sample_log_entries():
             "total_tokens": 100,
             "prompt_tokens": 80,
             "completion_tokens": 20,
+            "metadata": {
+                "cost_breakdown": {
+                    "input_cost": 0.0008,
+                    "output_cost": 0.0002,
+                    "total_cost": 0.001,
+                }
+            },
             "proxy_server_request": {
                 "messages": [
                     {"role": "system", "content": "You are a helpful assistant."},
@@ -53,6 +60,13 @@ def sample_log_entries():
             "prompt_tokens": 100,
             "completion_tokens": 400,
             "usage": {"reasoning_tokens": 200},
+            "metadata": {
+                "cost_breakdown": {
+                    "input_cost": 0.001,
+                    "output_cost": 0.004,
+                    "total_cost": 0.005,
+                }
+            },
             "proxy_server_request": {
                 "messages": [
                     {"role": "user", "content": "Solve this problem step by step."},
@@ -522,6 +536,9 @@ class TestAggregatedUsageData:
         assert model_call.usage.prompt_tokens == 80
         assert model_call.usage.completion_tokens == 20
         assert model_call.usage.reasoning_tokens == 0
+        assert model_call.usage.input_cost == 0.0008
+        assert model_call.usage.output_cost == 0.0002
+        assert model_call.usage.total_cost == 0.001
         assert model_call.response_message["role"] == "assistant"
         assert (
             model_call.response_message["content"] == "The capital of France is Paris."
@@ -534,6 +551,9 @@ class TestAggregatedUsageData:
 
         assert model_call.usage.reasoning_tokens == 200
         assert model_call.usage.total_tokens == 500
+        assert model_call.usage.input_cost == 0.001
+        assert model_call.usage.output_cost == 0.004
+        assert model_call.usage.total_cost == 0.005
         assert model_call.request_id == "req-2"
 
     def test_get_model_calls_for_query(self, sample_log_entries):
@@ -578,6 +598,45 @@ class TestAggregatedUsageData:
         )
 
         assert model_calls == []
+
+    def test_log_entry_to_model_call_missing_cost_breakdown(self):
+        """Test converting a log entry without cost breakdown to ModelCall object."""
+        log_entry = {
+            "request_id": "req-3",
+            "startTime": "2026-04-06T10:00:00.000Z",
+            "endTime": "2026-04-06T10:00:05.000Z",
+            "model": "gpt-3.5-turbo",
+            "spend": 0.0005,
+            "total_tokens": 50,
+            "prompt_tokens": 30,
+            "completion_tokens": 20,
+            "proxy_server_request": {
+                "messages": [
+                    {"role": "user", "content": "Hello"},
+                ]
+            },
+            "response": {
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": "Hi there!",
+                        }
+                    }
+                ]
+            },
+        }
+
+        model_call = AggregatedUsageData._log_entry_to_model_call(log_entry)
+
+        # Verify cost fields default to 0.0 when metadata is missing
+        assert model_call.usage.input_cost == 0.0
+        assert model_call.usage.output_cost == 0.0
+        assert model_call.usage.total_cost == 0.0
+        # Verify other fields are still populated correctly
+        assert model_call.usage.total_tokens == 50
+        assert model_call.usage.prompt_tokens == 30
+        assert model_call.usage.completion_tokens == 20
 
 
 @pytest.mark.integration

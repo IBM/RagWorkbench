@@ -147,11 +147,27 @@ class AggregatedUsageData(UsageData):
             if isinstance(usage_dict, dict):
                 reasoning_tokens = int(usage_dict.get("reasoning_tokens", 0))
 
+        # Extract cost breakdown from metadata.cost_breakdown
+        input_cost = 0.0
+        output_cost = 0.0
+        total_cost = 0.0
+
+        metadata = log_entry.get("metadata", {})
+        if isinstance(metadata, dict):
+            cost_breakdown = metadata.get("cost_breakdown", {})
+            if isinstance(cost_breakdown, dict):
+                input_cost = float(cost_breakdown.get("input_cost", 0.0))
+                output_cost = float(cost_breakdown.get("output_cost", 0.0))
+                total_cost = float(cost_breakdown.get("total_cost", 0.0))
+
         usage = ModelCallUsage(
             total_tokens=total_tokens,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             reasoning_tokens=reasoning_tokens,
+            input_cost=input_cost,
+            output_cost=output_cost,
+            total_cost=total_cost,
         )
 
         # Extract response message

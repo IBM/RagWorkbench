@@ -18,6 +18,9 @@ class ModelCallUsage(BaseModel):
         prompt_tokens: Number of tokens in the prompt
         completion_tokens: Number of tokens in the completion
         reasoning_tokens: Number of tokens used for reasoning (if applicable)
+        input_cost: Cost in USD for input tokens
+        output_cost: Cost in USD for output tokens
+        total_cost: Total cost in USD for this call
     """
 
     total_tokens: int = Field(default=0, description="Total tokens used", ge=0)
@@ -26,6 +29,9 @@ class ModelCallUsage(BaseModel):
         default=0, description="Completion tokens used", ge=0
     )
     reasoning_tokens: int = Field(default=0, description="Reasoning tokens used", ge=0)
+    input_cost: float = Field(default=0.0, description="Input cost in USD", ge=0.0)
+    output_cost: float = Field(default=0.0, description="Output cost in USD", ge=0.0)
+    total_cost: float = Field(default=0.0, description="Total cost in USD", ge=0.0)
 
 
 class ModelCall(BaseModel):
