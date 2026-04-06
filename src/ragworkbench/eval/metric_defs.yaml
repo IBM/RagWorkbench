@@ -89,7 +89,7 @@ workbench.tool_use_count:
 workbench.usage:
   metric_id: "workbench.usage"
   metric_params:
-    sub_scores: ["total_tokens", "prompt_tokens", "completion_tokens"]
+    sub_scores: ["total_tokens", "prompt_tokens", "completion_tokens", "input_cost", "output_cost", "total_cost"]
   metric_fields:
     - "model_calls"
   vendor: "workbench"

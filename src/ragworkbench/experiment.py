@@ -103,22 +103,11 @@ class Experiment:
                     f"Inference progress: {idx}/{total_entries} entries processed ({idx/total_entries*100:.1f}%)"
                 )
 
-        # Log cache statistics before evaluation
+        # Log cache statistics before cost tracking
         self._log_cache_statistics(self.inference_pipeline.generation_cache)
 
-        # Now run the evaluation via the evaluator code!
-        # Run evaluation in a separate thread to avoid event loop conflicts
-        # Unitxt's inference engine uses asyncio internally with run_until_complete,
-        # which cannot be nested. Running in a thread allows it to create its own event loop.
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(
-                self._run_evaluation,
-                results=results,
-                rag_benchmark=rag_benchmark,
-            )
-            evaluation_results = future.result()
-
         # Retrieve cost data if cost tracking is enabled
+        # This must happen BEFORE evaluation so that model_calls are populated
         from ragworkbench.eval.cost_tracking import AggregatedUsageData
 
         cost_data: AggregatedUsageData = AggregatedUsageData()
@@ -132,6 +121,20 @@ class Experiment:
                 self._update_inference_results_with_model_calls(results, cost_data)
             except RuntimeError as e:
                 logger.warning(f"Failed to retrieve cost data: {e}")
+
+        # Now run the evaluation via the evaluator code!
+        # Run evaluation in a separate thread to avoid event loop conflicts
+        # Unitxt's inference engine uses asyncio internally with run_until_complete,
+        # which cannot be nested. Running in a thread allows it to create its own event loop.
+        # NOTE: Evaluation must run AFTER cost tracking so that model_calls are populated
+        # for the workbench.usage metric to compute token and cost statistics.
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(
+                self._run_evaluation,
+                results=results,
+                rag_benchmark=rag_benchmark,
+            )
+            evaluation_results = future.result()
 
         return ExperimentResult(
             experiment_id=self.experiment_id,
