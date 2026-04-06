@@ -13,6 +13,7 @@ from typing import Any
 import httpx
 from pydantic import BaseModel, Field
 
+from ragworkbench.api.inference_result import ModelCall, ModelCallUsage
 from ragworkbench.boards.board_model import CacheMode
 from ragworkbench.caching.tracking_key_cache import TrackingKeyCache
 
@@ -52,10 +53,15 @@ class ModelUsageData(UsageData):
 
     Attributes:
         model: The model name/identifier
+        query_to_log_entries: Dictionary mapping queries to lists of log entry dictionaries
         (inherits all UsageData fields)
     """
 
     model: str = Field(description="Model name/identifier")
+    query_to_log_entries: dict[str, list[dict[str, Any]]] = Field(
+        description="Dictionary mapping queries to lists of log entries",
+        default_factory=dict,
+    )
 
 
 class AggregatedUsageData(UsageData):
@@ -106,6 +112,190 @@ class AggregatedUsageData(UsageData):
                     f"{model_data.total_tokens} tokens, "
                     f"{model_data.requests} requests"
                 )
+
+    @staticmethod
+    def _log_entry_to_model_call(log_entry: dict[str, Any]) -> ModelCall:
+        """
+        Convert a LiteLLM log entry into a ModelCall object.
+
+        Args:
+            log_entry: A log entry dictionary from LiteLLM
+
+        Returns:
+            ModelCall object with extracted information
+        """
+        # Extract request ID
+        request_id = log_entry.get("request_id", "")
+
+        # Extract timestamps
+        start_time = log_entry.get("startTime", "")
+        end_time = log_entry.get("endTime", "")
+
+        # Extract messages from proxy_server_request
+        proxy_request = log_entry.get("proxy_server_request", {})
+        messages = proxy_request.get("messages", [])
+
+        # Extract usage data
+        total_tokens = int(log_entry.get("total_tokens", 0))
+        prompt_tokens = int(log_entry.get("prompt_tokens", 0))
+        completion_tokens = int(log_entry.get("completion_tokens", 0))
+
+        # Extract reasoning tokens if available (some models like o1 provide this)
+        reasoning_tokens = 0
+        if "usage" in log_entry:
+            usage_dict = log_entry["usage"]
+            if isinstance(usage_dict, dict):
+                reasoning_tokens = int(usage_dict.get("reasoning_tokens", 0))
+
+        usage = ModelCallUsage(
+            total_tokens=total_tokens,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            reasoning_tokens=reasoning_tokens,
+        )
+
+        # Extract response message
+        response_message = {}
+        if "response" in log_entry:
+            response = log_entry["response"]
+            if isinstance(response, dict):
+                # Extract the assistant message from the response
+                choices = response.get("choices", [])
+                if choices and len(choices) > 0:
+                    message = choices[0].get("message", {})
+                    if message:
+                        response_message = message
+
+        return ModelCall(
+            request_id=request_id,
+            start_time=start_time,
+            end_time=end_time,
+            messages=messages,
+            usage=usage,
+            response_message=response_message,
+        )
+
+    @staticmethod
+    def _extract_query_from_log_entry(log_entry: dict[str, Any]) -> str:
+        """
+        Extract the query from a log entry by finding the first user message.
+
+        Args:
+            log_entry: A log entry dictionary from LiteLLM
+
+        Returns:
+            The query string from the first user message, or "unknown query" if not found
+        """
+        try:
+            # Get messages from proxy_server_request
+            proxy_request = log_entry.get("proxy_server_request", {})
+            messages = proxy_request.get("messages", [])
+
+            # Find the first message with role "user"
+            for message in messages:
+                if isinstance(message, dict) and message.get("role") == "user":
+                    content = message.get("content", "")
+                    if content:
+                        return str(content)
+
+            # If no user message found, return a default
+            return "unknown query"
+        except Exception as e:
+            logger.debug(f"Failed to extract query from log entry: {e}")
+            return "unknown query"
+
+    @staticmethod
+    def create_from_log_entries(
+        api_key: str, log_entries: list[dict[str, Any]]
+    ) -> "AggregatedUsageData":
+        """
+        Create an AggregatedUsageData instance from LiteLLM log entries.
+
+        This static method processes log entries and creates both aggregate statistics
+        and per-model breakdowns for detailed cost analysis.
+
+        Args:
+            api_key: The API key used for tracking
+            log_entries: List of log entry dictionaries from LiteLLM proxy
+
+        Returns:
+            AggregatedUsageData instance with aggregated usage statistics and per-model breakdowns
+        """
+        # Initialize result with empty per-model tracking
+        result = AggregatedUsageData(api_key=api_key)
+
+        for log_entry in log_entries:
+            logger.debug(f"Processing log entry: {log_entry}")
+
+            # Extract model name and usage data from log entry
+            model = log_entry.get("model", "unknown")
+            spend = float(log_entry.get("spend", 0))
+            total_tok = int(log_entry.get("total_tokens", 0))
+            prompt_tok = int(log_entry.get("prompt_tokens", 0))
+            completion_tok = int(log_entry.get("completion_tokens", 0))
+
+            # Aggregate totals
+            result.total_cost += spend
+            result.total_tokens += total_tok
+            result.prompt_tokens += prompt_tok
+            result.completion_tokens += completion_tok
+            result.requests += 1
+
+            # Initialize or update per-model data
+            if model not in result.per_model_usage:
+                result.per_model_usage[model] = ModelUsageData(model=model)
+
+            model_data = result.per_model_usage[model]
+            model_data.total_cost += spend
+            model_data.total_tokens += total_tok
+            model_data.prompt_tokens += prompt_tok
+            model_data.completion_tokens += completion_tok
+            model_data.requests += 1
+
+            # Extract query from log entry and add to query_to_log_entries
+            query = AggregatedUsageData._extract_query_from_log_entry(log_entry)
+            if query not in model_data.query_to_log_entries:
+                model_data.query_to_log_entries[query] = []
+            model_data.query_to_log_entries[query].append(log_entry)
+
+        # Sort log entries by startTime for each query in each model
+        # startTime format: "2026-04-05T14:54:51.808000Z" (ISO 8601)
+        # ISO 8601 strings are lexicographically sortable
+        for model_data in result.per_model_usage.values():
+            for query in model_data.query_to_log_entries:
+                model_data.query_to_log_entries[query].sort(
+                    key=lambda entry: entry.get("startTime", "")
+                )
+
+        # Update models_used list
+        result.models_used = sorted(result.per_model_usage.keys())
+
+        return result
+
+    def get_model_calls_for_query(self, query: str) -> list[ModelCall]:
+        """
+        Get all model calls for a specific query across all models.
+
+        Args:
+            query: The query string to get model calls for
+
+        Returns:
+            List of ModelCall objects for the query, sorted by start time
+        """
+        model_calls: list[ModelCall] = []
+
+        # Iterate through all models and their calls
+        for model_data in self.per_model_usage.values():
+            if query in model_data.query_to_log_entries:
+                # Convert each log entry to a ModelCall
+                for log_entry in model_data.query_to_log_entries[query]:
+                    model_call = AggregatedUsageData._log_entry_to_model_call(log_entry)
+                    model_calls.append(model_call)
+
+        # Sort by start time (ISO 8601 strings are lexicographically sortable)
+        model_calls.sort(key=lambda call: call.start_time)
+
+        return model_calls
 
 
 class CostTracker:
@@ -279,7 +469,9 @@ class CostTracker:
                     data = response.json()
 
                     # Parse the response and aggregate usage data
-                    cost_data = self._parse_usage_response(data)
+                    cost_data = AggregatedUsageData.create_from_log_entries(
+                        self.api_key, data
+                    )
 
                     logger.info(
                         f"Cost tracking complete. Total cost: ${cost_data.total_cost:.4f}, "
@@ -301,62 +493,6 @@ class CostTracker:
             raise RuntimeError(
                 f"Failed to retrieve cost data from LiteLLM proxy: {e}"
             ) from e
-
-    def _parse_usage_response(self, data: list[dict[str, Any]]) -> AggregatedUsageData:
-        """
-        Parse the usage response from LiteLLM proxy and aggregate statistics.
-
-        This method processes log entries and creates both aggregate statistics
-        and per-model breakdowns for detailed cost analysis.
-
-        Args:
-            data: Response data from LiteLLM proxy (list of log entries)
-
-        Returns:
-            AggregatedUsageData instance with aggregated usage statistics and per-model breakdowns
-        """
-        # Ensure api_key is not None before creating AggregatedUsageData
-        if self.api_key is None:
-            raise ValueError("API key must be set before parsing usage data")
-
-        # Initialize result with empty per-model tracking
-        result = AggregatedUsageData(api_key=self.api_key)
-
-        # The /spend/logs endpoint returns a list of log entries directly
-        logs = data if isinstance(data, list) else []
-
-        for log_entry in logs:
-            logger.debug(f"Processing log entry: {log_entry}")
-
-            # Extract model name and usage data from log entry
-            model = log_entry.get("model", "unknown")
-            spend = float(log_entry.get("spend", 0))
-            total_tok = int(log_entry.get("total_tokens", 0))
-            prompt_tok = int(log_entry.get("prompt_tokens", 0))
-            completion_tok = int(log_entry.get("completion_tokens", 0))
-
-            # Aggregate totals
-            result.total_cost += spend
-            result.total_tokens += total_tok
-            result.prompt_tokens += prompt_tok
-            result.completion_tokens += completion_tok
-            result.requests += 1
-
-            # Initialize or update per-model data
-            if model not in result.per_model_usage:
-                result.per_model_usage[model] = ModelUsageData(model=model)
-
-            model_data = result.per_model_usage[model]
-            model_data.total_cost += spend
-            model_data.total_tokens += total_tok
-            model_data.prompt_tokens += prompt_tok
-            model_data.completion_tokens += completion_tok
-            model_data.requests += 1
-
-        # Update models_used list
-        result.models_used = sorted(result.per_model_usage.keys())
-
-        return result
 
     def get_cost_data(self) -> AggregatedUsageData:
         """

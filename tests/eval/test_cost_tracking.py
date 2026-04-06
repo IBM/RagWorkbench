@@ -5,11 +5,71 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from ragworkbench.api.inference_result import ModelCall, ModelCallUsage
 from ragworkbench.eval.cost_tracking import (
     AggregatedUsageData,
     CostTracker,
     ModelUsageData,
 )
+
+
+@pytest.fixture
+def sample_log_entries():
+    """Shared fixture for sample log entries used across tests."""
+    return [
+        {
+            "request_id": "req-1",
+            "startTime": "2026-04-06T10:00:00.000Z",
+            "endTime": "2026-04-06T10:00:05.000Z",
+            "model": "gpt-4",
+            "spend": 0.001,
+            "total_tokens": 100,
+            "prompt_tokens": 80,
+            "completion_tokens": 20,
+            "proxy_server_request": {
+                "messages": [
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": "What is the capital of France?"},
+                ]
+            },
+            "response": {
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": "The capital of France is Paris.",
+                        }
+                    }
+                ]
+            },
+        },
+        {
+            "request_id": "req-2",
+            "startTime": "2026-04-06T10:00:30.000Z",
+            "endTime": "2026-04-06T10:00:40.000Z",
+            "model": "gpt-4",
+            "spend": 0.005,
+            "total_tokens": 500,
+            "prompt_tokens": 100,
+            "completion_tokens": 400,
+            "usage": {"reasoning_tokens": 200},
+            "proxy_server_request": {
+                "messages": [
+                    {"role": "user", "content": "Solve this problem step by step."},
+                ]
+            },
+            "response": {
+                "choices": [
+                    {
+                        "message": {
+                            "role": "assistant",
+                            "content": "Here's the solution...",
+                        }
+                    }
+                ]
+            },
+        },
+    ]
 
 
 class TestCostTracker:
@@ -267,23 +327,6 @@ class TestCostTracker:
             with pytest.raises(RuntimeError, match="Failed to retrieve cost data"):
                 await tracker.get_usage_data()
 
-    def test_parse_usage_response_empty(self):
-        """Test parsing of empty usage response."""
-        with patch.dict("os.environ", {"LITELLM_MASTER_KEY": "sk-test-master-key"}):
-            tracker = CostTracker(enabled=True)
-            tracker.api_key = "sk-track-test123"
-
-        result = tracker._parse_usage_response([])
-
-        assert result.api_key == "sk-track-test123"
-        assert result.total_cost == 0.0
-        assert result.total_tokens == 0
-        assert result.prompt_tokens == 0
-        assert result.completion_tokens == 0
-        assert result.requests == 0
-        assert result.models_used == []
-        assert result.per_model_usage == {}
-
     def test_get_cost_data_no_data(self):
         """Test get_cost_data when no data has been retrieved."""
         with patch.dict("os.environ", {"LITELLM_MASTER_KEY": "sk-test-master-key"}):
@@ -330,6 +373,213 @@ class TestCostTracker:
         assert result.total_tokens == 100
 
 
+class TestAggregatedUsageData:
+    """Test suite for AggregatedUsageData class."""
+
+    def test_create_from_log_entries_empty(self):
+        """Test creating AggregatedUsageData from empty log entries."""
+        result = AggregatedUsageData.create_from_log_entries("sk-track-test123", [])
+
+        assert result.api_key == "sk-track-test123"
+        assert result.total_cost == 0.0
+        assert result.total_tokens == 0
+        assert result.prompt_tokens == 0
+        assert result.completion_tokens == 0
+        assert result.requests == 0
+        assert result.models_used == []
+        assert result.per_model_usage == {}
+
+    def test_extract_query_from_log_entry(self):
+        """Test extracting query from log entry with messages."""
+        # Test with valid log entry containing messages
+        log_entry = {
+            "model": "gpt-4",
+            "proxy_server_request": {
+                "messages": [
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {
+                        "role": "user",
+                        "content": "How old was Southwest Airlines's president in 2018?",
+                    },
+                ],
+            },
+        }
+
+        query = AggregatedUsageData._extract_query_from_log_entry(log_entry)
+        assert query == "How old was Southwest Airlines's president in 2018?"
+
+    def test_extract_query_from_log_entry_no_user_message(self):
+        """Test extracting query when no user message exists."""
+        log_entry = {
+            "model": "gpt-4",
+            "proxy_server_request": {
+                "messages": [
+                    {"role": "system", "content": "You are a helpful assistant."},
+                ],
+            },
+        }
+
+        query = AggregatedUsageData._extract_query_from_log_entry(log_entry)
+        assert query == "unknown query"
+
+    def test_extract_query_from_log_entry_no_messages(self):
+        """Test extracting query when messages field is missing."""
+        log_entry = {"model": "gpt-4"}
+
+        query = AggregatedUsageData._extract_query_from_log_entry(log_entry)
+        assert query == "unknown query"
+
+    def test_parse_usage_response_with_model_calls(self):
+        """Test that model_calls are populated correctly."""
+        # Mock log entries with messages
+        log_entries = [
+            {
+                "model": "gpt-4",
+                "spend": 0.001,
+                "total_tokens": 100,
+                "prompt_tokens": 80,
+                "completion_tokens": 20,
+                "proxy_server_request": {
+                    "messages": [
+                        {"role": "user", "content": "What is the capital of France?"},
+                    ],
+                },
+            },
+            {
+                "model": "gpt-4",
+                "spend": 0.002,
+                "total_tokens": 150,
+                "prompt_tokens": 100,
+                "completion_tokens": 50,
+                "proxy_server_request": {
+                    "messages": [
+                        {"role": "user", "content": "What is the capital of France?"},
+                    ],
+                },
+            },
+            {
+                "model": "gpt-4",
+                "spend": 0.0015,
+                "total_tokens": 120,
+                "prompt_tokens": 90,
+                "completion_tokens": 30,
+                "proxy_server_request": {
+                    "messages": [
+                        {"role": "user", "content": "What is 2+2?"},
+                    ],
+                },
+            },
+        ]
+
+        result = AggregatedUsageData.create_from_log_entries("test-key", log_entries)
+
+        # Verify query_to_log_entries structure
+        assert "gpt-4" in result.per_model_usage
+        model_data = result.per_model_usage["gpt-4"]
+
+        # Check that query_to_log_entries is a dictionary
+        assert isinstance(model_data.query_to_log_entries, dict)
+
+        # Check that we have two queries
+        assert len(model_data.query_to_log_entries) == 2
+
+        # Check that the first query has 2 log entries
+        assert "What is the capital of France?" in model_data.query_to_log_entries
+        assert (
+            len(model_data.query_to_log_entries["What is the capital of France?"]) == 2
+        )
+
+        # Check that the second query has 1 log entry
+        assert "What is 2+2?" in model_data.query_to_log_entries
+        assert len(model_data.query_to_log_entries["What is 2+2?"]) == 1
+
+        # Verify the log entries are stored correctly
+        first_query_logs = model_data.query_to_log_entries[
+            "What is the capital of France?"
+        ]
+        assert first_query_logs[0]["spend"] == 0.001
+        assert first_query_logs[1]["spend"] == 0.002
+
+    def test_model_usage_data_query_to_log_entries_default(self):
+        """Test that query_to_log_entries has a default empty dict."""
+        model_data = ModelUsageData(model="gpt-4")
+        assert model_data.query_to_log_entries == {}
+        assert isinstance(model_data.query_to_log_entries, dict)
+
+    def test_log_entry_to_model_call(self, sample_log_entries):
+        """Test converting a log entry to a ModelCall object."""
+        log_entry = sample_log_entries[0]
+        model_call = AggregatedUsageData._log_entry_to_model_call(log_entry)
+
+        assert isinstance(model_call, ModelCall)
+        assert model_call.request_id == "req-1"
+        assert model_call.start_time == "2026-04-06T10:00:00.000Z"
+        assert model_call.end_time == "2026-04-06T10:00:05.000Z"
+        assert len(model_call.messages) == 2
+        assert model_call.messages[0]["role"] == "system"
+        assert model_call.messages[1]["role"] == "user"
+        assert model_call.usage.total_tokens == 100
+        assert model_call.usage.prompt_tokens == 80
+        assert model_call.usage.completion_tokens == 20
+        assert model_call.usage.reasoning_tokens == 0
+        assert model_call.response_message["role"] == "assistant"
+        assert (
+            model_call.response_message["content"] == "The capital of France is Paris."
+        )
+
+    def test_log_entry_to_model_call_with_reasoning_tokens(self, sample_log_entries):
+        """Test converting a log entry with reasoning tokens to a ModelCall object."""
+        log_entry = sample_log_entries[1]  # Entry with reasoning tokens
+        model_call = AggregatedUsageData._log_entry_to_model_call(log_entry)
+
+        assert model_call.usage.reasoning_tokens == 200
+        assert model_call.usage.total_tokens == 500
+        assert model_call.request_id == "req-2"
+
+    def test_get_model_calls_for_query(self, sample_log_entries):
+        """Test retrieving model calls for a specific query."""
+        # Use only the first entry
+        log_entries = [sample_log_entries[0]]
+
+        # Parse the log entries to populate cost data
+        usage_data = AggregatedUsageData.create_from_log_entries(
+            "test-key", log_entries
+        )
+
+        # Get model calls for the query
+        model_calls = usage_data.get_model_calls_for_query(
+            "What is the capital of France?"
+        )
+
+        assert len(model_calls) == 1
+        assert all(isinstance(call, ModelCall) for call in model_calls)
+        assert model_calls[0].request_id == "req-1"
+
+    def test_get_model_calls_for_query_no_data(self):
+        """Test retrieving model calls when no cost data exists."""
+        usage_data = AggregatedUsageData()
+
+        model_calls = usage_data.get_model_calls_for_query("Some query")
+
+        assert model_calls == []
+
+    def test_get_model_calls_for_query_not_found(self, sample_log_entries):
+        """Test retrieving model calls for a query that doesn't exist."""
+        # Use only the second entry with a different query
+        log_entries = [sample_log_entries[1]]
+
+        usage_data = AggregatedUsageData.create_from_log_entries(
+            "test-key", log_entries
+        )
+
+        # Query for a different question
+        model_calls = usage_data.get_model_calls_for_query(
+            "What is the capital of France?"
+        )
+
+        assert model_calls == []
+
+
 @pytest.mark.integration
 @pytest.mark.skipif(
     not os.getenv("LITELLM_MASTER_KEY") or not os.getenv("RUN_INTEGRATION_TESTS"),
@@ -361,6 +611,9 @@ class TestCostTrackerIntegration:
         assert api_key.startswith("sk-")
         print(f"Generated API key: {api_key[:20]}...")
 
+        # Define the query to use for testing
+        expected_query = "Say 'test' in one word"
+
         # Step 2: Make a real API call using the generated key
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
@@ -371,7 +624,7 @@ class TestCostTrackerIntegration:
                 },
                 json={
                     "model": "claude-opus-4-6",
-                    "messages": [{"role": "user", "content": "Say 'test' in one word"}],
+                    "messages": [{"role": "user", "content": expected_query}],
                     "max_tokens": 5,
                 },
             )
@@ -392,6 +645,7 @@ class TestCostTrackerIntegration:
         # Wait for LiteLLM proxy to write usage logs to database
         import asyncio
 
+        print("Waiting 60 seconds for LiteLLM proxy to write usage logs to database...")
         await asyncio.sleep(60)
 
         # Step 3: Retrieve usage data
@@ -427,9 +681,67 @@ class TestCostTrackerIntegration:
                 print(f"      Tokens: {model_data.total_tokens}")
                 print(f"      Requests: {model_data.requests}")
 
+                # Verify query_to_log_entries exist and are properly structured
+                assert isinstance(
+                    model_data.query_to_log_entries, dict
+                ), f"Expected query_to_log_entries to be a dict for model {model}"
+                assert (
+                    len(model_data.query_to_log_entries) > 0
+                ), f"Expected at least one query in query_to_log_entries for model {model}"
+
+                # Verify that the expected query is present
+                assert expected_query in model_data.query_to_log_entries, (
+                    f"Expected query '{expected_query}' not found in query_to_log_entries. "
+                    f"Available queries: {list(model_data.query_to_log_entries.keys())}"
+                )
+
+                # Print query_to_log_entries breakdown
+                print("      Model calls by query:")
+                for query, log_entries in model_data.query_to_log_entries.items():
+                    print(
+                        f"        Query: '{query[:50]}...' - {len(log_entries)} call(s)"
+                    )
+                    assert isinstance(
+                        log_entries, list
+                    ), f"Expected log_entries to be a list for query '{query}'"
+                    assert (
+                        len(log_entries) > 0
+                    ), f"Expected at least one log entry for query '{query}'"
+
+        # Step 4: Test conversion to ModelCall objects using expected_query
+        model_calls = usage_data.get_model_calls_for_query(expected_query)
+
+        # Verify ModelCall objects were created
+        assert isinstance(
+            model_calls, list
+        ), "Expected get_model_calls_for_query to return a list"
+        assert (
+            len(model_calls) > 0
+        ), f"Expected at least one ModelCall for query '{expected_query}'"
+
+        print(f"\n  ModelCall objects for query '{expected_query}':")
+        for i, model_call in enumerate(model_calls):
+            print(f"    Call {i + 1}:")
+            print(f"      Request ID: {model_call.request_id}")
+            print(f"      Start time: {model_call.start_time}")
+            print(f"      End time: {model_call.end_time}")
+            print(f"      Messages: {len(model_call.messages)} message(s)")
+            if model_call.usage:
+                print(f"      Total tokens: {model_call.usage.total_tokens}")
+                print(f"      Prompt tokens: {model_call.usage.prompt_tokens}")
+                print(f"      Completion tokens: {model_call.usage.completion_tokens}")
+
+            # Verify ModelCall structure
+            assert model_call.request_id is not None, "Expected request_id to be set"
+            assert model_call.start_time is not None, "Expected start_time to be set"
+            assert model_call.end_time is not None, "Expected end_time to be set"
+            assert isinstance(
+                model_call.usage, ModelCallUsage
+            ), "Expected usage to be ModelCallUsage instance"
+            assert (
+                model_call.usage.total_tokens >= 0
+            ), "Expected non-negative total_tokens"
+
         # Verify cached data
         cached_data = tracker.get_cost_data()
         assert cached_data == usage_data
-
-
-# Made with Bob
