@@ -22,7 +22,7 @@ class PipelineConfiguration(BaseModel):
 
 class Configuration(BaseModel):
     name: str
-    description: str
+    description: str | dict[str, Any]
     ingest: PipelineConfiguration
     inference: PipelineConfiguration
 

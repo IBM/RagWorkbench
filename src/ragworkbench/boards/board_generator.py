@@ -182,27 +182,25 @@ class BoardGenerator:
                 # Deep copy the original configuration
                 new_config = deepcopy(config)
 
-                # Build a suffix for the configuration name based on parameter values
-                param_suffix_parts = []
+                # Build parameter dictionary
+                param_dict = {}
                 for param_path, param_value in zip(
                     param_paths, combo_values, strict=True
                 ):
-                    # Extract the last part of the path for the suffix
+                    # Extract the last part of the path for the parameter name
                     param_name = param_path.split(".")[-1]
-                    param_suffix_parts.append(f"{param_name}={param_value}")
+                    param_dict[param_name] = param_value
 
                 # Update configuration name with parameter values
                 original_name = config["name"]
                 new_config["name"] = f"{original_name}__{combo_idx + 1}"
 
-                # Update description to include parameter values
-                param_description = ", ".join(param_suffix_parts)
+                # Update description to include parameter values as dictionary
                 original_description = config.get("description", "")
-                new_config["description"] = (
-                    f"{original_description} [{param_description}]"
-                    if original_description
-                    else f"[{param_description}]"
-                )
+                new_config["description"] = {
+                    "description": original_description,
+                    **param_dict,
+                }
 
                 # Set each parameter value in the new configuration
                 for param_path, param_value in zip(
@@ -221,7 +219,7 @@ class BoardGenerator:
                 expanded_configs.append(new_config)
                 logger.debug(
                     f"Created configuration '{new_config['name']}' with parameters: "
-                    f"{param_description}"
+                    f"{param_dict}"
                 )
 
         logger.info(
@@ -385,13 +383,13 @@ class BoardGenerator:
 
         os.makedirs(self.output_path, exist_ok=True)
 
-        # define the structure of the markdown
+        # define the structure of the markdown board
         md_struct = [
             (1, self.board.name, lambda x: x.description),
-            (2, "Results", self.serialize_results),
-            (2, "Usage", self.serialize_usage),
-            (2, "Configurations", self.serialize_configs),
             (2, "Datasets", self.serialize_datasets),
+            (2, "Configurations", self.serialize_configs),
+            (2, "Results", self.serialize_results),
+            (2, "Model Usage", self.serialize_usage),
         ]
 
         # create the md
@@ -447,10 +445,46 @@ class BoardGenerator:
 
     @classmethod
     def serialize_configs(cls, board: Board):
-        return cls.tuples_to_md_table(
-            headers=["Name", "Description"],
-            rows=[(c.name, c.description) for c in board.configurations],
+        # Check if any configuration has a dictionary description
+        has_dict_description = any(
+            isinstance(c.description, dict) for c in board.configurations
         )
+
+        if has_dict_description:
+            # Collect all unique keys from dictionary descriptions
+            all_keys: set[str] = set()
+            for c in board.configurations:
+                if isinstance(c.description, dict):
+                    all_keys.update(c.description.keys())
+
+            # Sort keys to ensure consistent column order, with "description" first
+            sorted_keys = sorted(all_keys)
+            if "description" in sorted_keys:
+                sorted_keys.remove("description")
+                sorted_keys.insert(0, "description")
+
+            # Create headers: Name + all dictionary keys (capitalize "description")
+            headers = ["Name"] + [
+                key.capitalize() if key == "description" else key for key in sorted_keys
+            ]
+
+            # Create rows
+            rows = []
+            for c in board.configurations:
+                if isinstance(c.description, dict):
+                    row = [c.name] + [c.description.get(key, "") for key in sorted_keys]
+                else:
+                    # For string descriptions, put in first column after Name
+                    row = [c.name, c.description] + [""] * (len(sorted_keys) - 1)
+                rows.append(tuple(row))
+
+            return cls.tuples_to_md_table(headers=headers, rows=rows)
+        else:
+            # All descriptions are strings, use simple format
+            return cls.tuples_to_md_table(
+                headers=["Name", "Description"],
+                rows=[(c.name, c.description) for c in board.configurations],
+            )
 
     def serialize_usage(self, board: Board) -> str:
         """
@@ -495,11 +529,11 @@ class BoardGenerator:
                             (
                                 exp_result.config_name,
                                 exp_result.dataset_name,
-                                f"${model_data.total_cost:.4f}",
-                                model_data.total_tokens,
-                                model_data.prompt_tokens,
-                                model_data.completion_tokens,
-                                model_data.requests,
+                                f"${self.value_to_string(model_data.total_cost)}",
+                                self.value_to_string(model_data.total_tokens),
+                                self.value_to_string(model_data.prompt_tokens),
+                                self.value_to_string(model_data.completion_tokens),
+                                self.value_to_string(model_data.requests),
                             )
                         )
 
@@ -524,30 +558,98 @@ class BoardGenerator:
 
         return "\n".join(md_sections)
 
+    def create_screen_title(self, screen, datasets) -> str:
+        """Generate the HTML table header for a screen.
+
+        Args:
+            screen: The screen object containing title and columns
+            datasets: List of dataset objects
+
+        Returns:
+            str: HTML table header markup
+        """
+        config_row_span = 1 + (1 if len(screen.columns) > 1 else 0)
+        md = f"### {screen.title}\n"
+        md += "<table>\n"
+        md += "<tr>\n"
+        md += (
+            "\n".join(
+                [f'\t<th rowspan="{config_row_span}">Configuration</th>']
+                + [
+                    f'\t<th colspan="{len(screen.columns)}">{dataset.name}</th>'
+                    for dataset in datasets
+                ]
+            )
+            + "\n"
+        )
+        md += "</tr>\n"
+        if len(screen.columns) > 1:
+            md += "<tr>\n"
+            for _ in datasets:
+                for score_title in screen.columns.values():
+                    md += f"\t<td>{score_title}</td>\n"
+            md += "</tr>\n"
+        return md
+
+    def value_to_string(self, value: Any) -> str:
+        """Format a value according to its type and magnitude.
+
+        Args:
+            value: The value to format (int, float, list, or other)
+
+        Returns:
+            Formatted string representation of the value
+        """
+        # Handle different value types
+        if isinstance(value, (int, float)):
+            abs_value = abs(value)
+            if abs_value < 1:
+                return f"{value:.2f}"
+            elif abs_value < 1000:
+                is_integer = isinstance(value, int) or value == int(value)
+                # For integers, don't show decimal point
+                if is_integer:
+                    return f"{int(value)}"
+                else:
+                    return f"{value:.1f}"
+            else:
+                # For K suffix, always show one decimal
+                return f"{value / 1000:.1f}K"
+        elif isinstance(value, list):
+            # Format lists as comma-separated strings
+            return ", ".join(str(v) for v in value)
+        else:
+            # Handle strings and other types
+            return str(value)
+
+    def create_screen_values(self, screen_columns: dict, row: pd.Series) -> str:
+        """Create screen values for markdown table.
+
+        Args:
+            screen_columns: Dictionary of screen columns
+            row: DataFrame row containing the values
+
+        Returns:
+            Markdown string with table cell values
+        """
+        md = ""
+        for score in screen_columns.keys():
+            try:
+                value = row[score]
+                formatted_value = self.value_to_string(value)
+                md += f"\t<td>{formatted_value}</td>\n"
+            except KeyError as e:
+                available_keys = list(row.index)
+                raise KeyError(
+                    f"Score key '{score}' not found in DataFrame row. "
+                    f"Available keys: {available_keys}"
+                ) from e
+        return md
+
     def serialize_results(self, board: Board):
         md = ""
         for screen in board.report.screens:
-            config_row_span = 1 + (1 if len(screen.columns) > 1 else 0)
-            md += f"### {screen.title}\n"
-            md += "<table>\n"
-            md += "<tr>\n"
-            md += (
-                "\n".join(
-                    [f'\t<th rowspan="{config_row_span}">Configuration</th>']
-                    + [
-                        f'\t<th colspan="{len(screen.columns)}">{dataset.name}</th>'
-                        for dataset in board.datasets
-                    ]
-                )
-                + "\n"
-            )
-            md += "</tr>\n"
-            if len(screen.columns) > 1:
-                md += "<tr>\n"
-                for _ in self.board.datasets:
-                    for score_title in screen.columns.values():
-                        md += f"\t<td>{score_title}</td>\n"
-                md += "</tr>\n"
+            md += self.create_screen_title(screen, board.datasets)
             for config_seq, config in enumerate(self.board.configurations):
                 md += "<tr>\n"
                 md += f"\t<td>{config.name}</td>\n"
@@ -564,24 +666,7 @@ class BoardGenerator:
                         )
 
                     row = df.iloc[0]
-                    for score in screen.columns.keys():
-                        try:
-                            value = row[score]
-                            # Handle different value types
-                            if isinstance(value, (int, float)):
-                                md += f"\t<td>{value:.2f}</td>\n"
-                            elif isinstance(value, list):
-                                # Format lists as comma-separated strings
-                                md += f"\t<td>{', '.join(str(v) for v in value)}</td>\n"
-                            else:
-                                # Handle strings and other types
-                                md += f"\t<td>{value}</td>\n"
-                        except KeyError as e:
-                            available_keys = list(row.index)
-                            raise KeyError(
-                                f"Score key '{score}' not found in DataFrame row. "
-                                f"Available keys: {available_keys}"
-                            ) from e
+                    md += self.create_screen_values(screen.columns, row)
                 md += "</tr>\n"
             md += "</table>\n\n"
         return md

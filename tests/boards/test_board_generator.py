@@ -283,7 +283,7 @@ class TestConfigurationExpansion:
         )
 
     def test_expand_configurations_description_updated(self):
-        """Test that descriptions are updated with parameter values."""
+        """Test that descriptions are updated with parameter values as dictionary."""
         configs = [
             {
                 "name": "config1",
@@ -303,9 +303,17 @@ class TestConfigurationExpansion:
 
         expanded = BoardGenerator._expand_configurations(configs)
 
-        assert "model_id=model-1" in expanded[0]["description"]
-        assert "model_id=model-2" in expanded[1]["description"]
-        assert "Original description" in expanded[0]["description"]
+        # Check that description is now a dictionary
+        assert isinstance(expanded[0]["description"], dict)
+        assert isinstance(expanded[1]["description"], dict)
+
+        # Check that original description is preserved under "description" key
+        assert expanded[0]["description"]["description"] == "Original description"
+        assert expanded[1]["description"]["description"] == "Original description"
+
+        # Check that parameter values are in the dictionary
+        assert expanded[0]["description"]["model_id"] == "model-1"
+        assert expanded[1]["description"]["model_id"] == "model-2"
 
     def test_expand_configurations_multiple_configs(self):
         """Test expansion with multiple original configurations."""
@@ -464,5 +472,158 @@ class TestConfigurationExpansion:
         assert expanded[0]["name"] == "config1__1"
         assert expanded[0]["ingest"]["params"]["model_id"] == "single-model"
 
+    def test_serialize_configs_with_dict_descriptions(self):
+        """Test serialization of configurations with dictionary descriptions."""
+        from ragworkbench.boards.board_model import (
+            Board,
+            Configuration,
+            PipelineConfiguration,
+            Report,
+        )
 
-# Made with Bob
+        # Create configurations with dictionary descriptions
+        configs = [
+            Configuration(
+                name="config1",
+                description={
+                    "description": "Base config",
+                    "model_id": "model-1",
+                    "temperature": 0.5,
+                },
+                ingest=PipelineConfiguration(name="test_ingest", params={}),
+                inference=PipelineConfiguration(name="test_inference", params={}),
+            ),
+            Configuration(
+                name="config2",
+                description={
+                    "description": "Another config",
+                    "model_id": "model-2",
+                    "temperature": 0.7,
+                },
+                ingest=PipelineConfiguration(name="test_ingest", params={}),
+                inference=PipelineConfiguration(name="test_inference", params={}),
+            ),
+        ]
+
+        board = Board(
+            name="Test Board",
+            description="Test board",
+            datasets=[],
+            configurations=configs,
+            metrics=[],
+            report=Report(screens=[]),
+        )
+
+        result = BoardGenerator.serialize_configs(board)
+
+        # Verify the table has the correct headers
+        assert "| Name |" in result
+        assert "| Description |" in result
+        assert "| model_id |" in result
+        assert "| temperature |" in result
+
+        # Verify the data rows
+        assert "| config1 |" in result
+        assert "| Base config |" in result
+        assert "| model-1 |" in result
+        assert "| 0.5 |" in result
+        assert "| config2 |" in result
+        assert "| Another config |" in result
+        assert "| model-2 |" in result
+        assert "| 0.7 |" in result
+
+    def test_serialize_configs_with_string_descriptions(self):
+        """Test serialization of configurations with string descriptions."""
+        from ragworkbench.boards.board_model import (
+            Board,
+            Configuration,
+            PipelineConfiguration,
+            Report,
+        )
+
+        # Create configurations with string descriptions
+        configs = [
+            Configuration(
+                name="config1",
+                description="Simple string description",
+                ingest=PipelineConfiguration(name="test_ingest", params={}),
+                inference=PipelineConfiguration(name="test_inference", params={}),
+            ),
+            Configuration(
+                name="config2",
+                description="Another string description",
+                ingest=PipelineConfiguration(name="test_ingest", params={}),
+                inference=PipelineConfiguration(name="test_inference", params={}),
+            ),
+        ]
+
+        board = Board(
+            name="Test Board",
+            description="Test board",
+            datasets=[],
+            configurations=configs,
+            metrics=[],
+            report=Report(screens=[]),
+        )
+
+        result = BoardGenerator.serialize_configs(board)
+
+        # Verify the table has simple headers
+        assert "| Name |" in result
+        assert "| Description |" in result
+
+        # Verify the data rows
+        assert "| config1 |" in result
+        assert "| Simple string description |" in result
+        assert "| config2 |" in result
+        assert "| Another string description |" in result
+
+    def test_serialize_configs_with_mixed_descriptions(self):
+        """Test serialization with mixed string and dictionary descriptions."""
+        from ragworkbench.boards.board_model import (
+            Board,
+            Configuration,
+            PipelineConfiguration,
+            Report,
+        )
+
+        # Create configurations with mixed descriptions
+        configs = [
+            Configuration(
+                name="config1",
+                description="Simple string",
+                ingest=PipelineConfiguration(name="test_ingest", params={}),
+                inference=PipelineConfiguration(name="test_inference", params={}),
+            ),
+            Configuration(
+                name="config2",
+                description={"description": "Dict desc", "model_id": "model-1"},
+                ingest=PipelineConfiguration(name="test_ingest", params={}),
+                inference=PipelineConfiguration(name="test_inference", params={}),
+            ),
+        ]
+
+        board = Board(
+            name="Test Board",
+            description="Test board",
+            datasets=[],
+            configurations=configs,
+            metrics=[],
+            report=Report(screens=[]),
+        )
+
+        result = BoardGenerator.serialize_configs(board)
+
+        # When there's at least one dict, use dict format
+        assert "| Name |" in result
+        assert "| Description |" in result
+        assert "| model_id |" in result
+
+        # String description should be in first column
+        assert "| config1 |" in result
+        assert "| Simple string |" in result
+
+        # Dict description should be spread across columns
+        assert "| config2 |" in result
+        assert "| Dict desc |" in result
+        assert "| model-1 |" in result
