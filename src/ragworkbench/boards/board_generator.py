@@ -385,7 +385,7 @@ class BoardGenerator:
 
         os.makedirs(self.output_path, exist_ok=True)
 
-        # define the structure of the markdown
+        # define the structure of the markdown board
         md_struct = [
             (1, self.board.name, lambda x: x.description),
             (2, "Results", self.serialize_results),
