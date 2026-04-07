@@ -524,30 +524,80 @@ class BoardGenerator:
 
         return "\n".join(md_sections)
 
+    def create_screen_title(self, screen, datasets) -> str:
+        """Generate the HTML table header for a screen.
+
+        Args:
+            screen: The screen object containing title and columns
+            datasets: List of dataset objects
+
+        Returns:
+            str: HTML table header markup
+        """
+        config_row_span = 1 + (1 if len(screen.columns) > 1 else 0)
+        md = f"### {screen.title}\n"
+        md += "<table>\n"
+        md += "<tr>\n"
+        md += (
+            "\n".join(
+                [f'\t<th rowspan="{config_row_span}">Configuration</th>']
+                + [
+                    f'\t<th colspan="{len(screen.columns)}">{dataset.name}</th>'
+                    for dataset in datasets
+                ]
+            )
+            + "\n"
+        )
+        md += "</tr>\n"
+        if len(screen.columns) > 1:
+            md += "<tr>\n"
+            for _ in datasets:
+                for score_title in screen.columns.values():
+                    md += f"\t<td>{score_title}</td>\n"
+            md += "</tr>\n"
+        return md
+
+    def create_screen_values(self, screen_columns: dict, row: pd.Series) -> str:
+        """Create screen values for markdown table.
+
+        Args:
+            screen_columns: Dictionary of screen columns
+            row: DataFrame row containing the values
+
+        Returns:
+            Markdown string with table cell values
+        """
+        md = ""
+        for score in screen_columns.keys():
+            try:
+                value = row[score]
+                # Handle different value types
+                if isinstance(value, (int, float)):
+                    abs_value = abs(value)
+                    if abs_value < 1:
+                        md += f"\t<td>{value:.2f}</td>\n"
+                    elif abs_value < 1000:
+                        md += f"\t<td>{value:.1f}</td>\n"
+                    else:
+                        md += f"\t<td>{value / 1000:.1f}K</td>\n"
+                elif isinstance(value, list):
+                    # Format lists as comma-separated strings
+                    md += f"\t<td>{', '.join(str(v) for v in value)}</td>\n"
+                else:
+                    # Handle strings and other types
+                    md += f"\t<td>{value}</td>\n"
+            except KeyError as e:
+                available_keys = list(row.index)
+                raise KeyError(
+                    f"Score key '{score}' not found in DataFrame row. "
+                    f"Available keys: {available_keys}"
+                ) from e
+        return md
+
     def serialize_results(self, board: Board):
         md = ""
         for screen in board.report.screens:
-            config_row_span = 1 + (1 if len(screen.columns) > 1 else 0)
-            md += f"### {screen.title}\n"
-            md += "<table>\n"
-            md += "<tr>\n"
-            md += (
-                "\n".join(
-                    [f'\t<th rowspan="{config_row_span}">Configuration</th>']
-                    + [
-                        f'\t<th colspan="{len(screen.columns)}">{dataset.name}</th>'
-                        for dataset in board.datasets
-                    ]
-                )
-                + "\n"
-            )
-            md += "</tr>\n"
-            if len(screen.columns) > 1:
-                md += "<tr>\n"
-                for _ in self.board.datasets:
-                    for score_title in screen.columns.values():
-                        md += f"\t<td>{score_title}</td>\n"
-                md += "</tr>\n"
+            md += self.create_screen_title(screen, board.datasets)
             for config_seq, config in enumerate(self.board.configurations):
                 md += "<tr>\n"
                 md += f"\t<td>{config.name}</td>\n"
@@ -564,24 +614,7 @@ class BoardGenerator:
                         )
 
                     row = df.iloc[0]
-                    for score in screen.columns.keys():
-                        try:
-                            value = row[score]
-                            # Handle different value types
-                            if isinstance(value, (int, float)):
-                                md += f"\t<td>{value:.2f}</td>\n"
-                            elif isinstance(value, list):
-                                # Format lists as comma-separated strings
-                                md += f"\t<td>{', '.join(str(v) for v in value)}</td>\n"
-                            else:
-                                # Handle strings and other types
-                                md += f"\t<td>{value}</td>\n"
-                        except KeyError as e:
-                            available_keys = list(row.index)
-                            raise KeyError(
-                                f"Score key '{score}' not found in DataFrame row. "
-                                f"Available keys: {available_keys}"
-                            ) from e
+                    md += self.create_screen_values(screen.columns, row)
                 md += "</tr>\n"
             md += "</table>\n\n"
         return md
