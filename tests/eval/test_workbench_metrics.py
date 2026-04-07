@@ -244,6 +244,9 @@ class TestUsageMetric:
             "total_tokens",
             "prompt_tokens",
             "completion_tokens",
+            "input_cost",
+            "output_cost",
+            "total_cost",
         ]
 
     def test_token_counts_computation(
