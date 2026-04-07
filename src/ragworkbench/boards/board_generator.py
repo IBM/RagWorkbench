@@ -389,7 +389,7 @@ class BoardGenerator:
         md_struct = [
             (1, self.board.name, lambda x: x.description),
             (2, "Results", self.serialize_results),
-            (2, "Usage", self.serialize_usage),
+            (2, "Model Usage", self.serialize_usage),
             (2, "Configurations", self.serialize_configs),
             (2, "Datasets", self.serialize_datasets),
         ]
@@ -495,11 +495,11 @@ class BoardGenerator:
                             (
                                 exp_result.config_name,
                                 exp_result.dataset_name,
-                                f"${model_data.total_cost:.4f}",
-                                model_data.total_tokens,
-                                model_data.prompt_tokens,
-                                model_data.completion_tokens,
-                                model_data.requests,
+                                f"${self.value_to_string(model_data.total_cost)}",
+                                self.value_to_string(model_data.total_tokens),
+                                self.value_to_string(model_data.prompt_tokens),
+                                self.value_to_string(model_data.completion_tokens),
+                                self.value_to_string(model_data.requests),
                             )
                         )
 
@@ -557,6 +557,37 @@ class BoardGenerator:
             md += "</tr>\n"
         return md
 
+    def value_to_string(self, value: Any) -> str:
+        """Format a value according to its type and magnitude.
+
+        Args:
+            value: The value to format (int, float, list, or other)
+
+        Returns:
+            Formatted string representation of the value
+        """
+        # Handle different value types
+        if isinstance(value, (int, float)):
+            abs_value = abs(value)
+            if abs_value < 1:
+                return f"{value:.2f}"
+            elif abs_value < 1000:
+                is_integer = isinstance(value, int) or value == int(value)
+                # For integers, don't show decimal point
+                if is_integer:
+                    return f"{int(value)}"
+                else:
+                    return f"{value:.1f}"
+            else:
+                # For K suffix, always show one decimal
+                return f"{value / 1000:.1f}K"
+        elif isinstance(value, list):
+            # Format lists as comma-separated strings
+            return ", ".join(str(v) for v in value)
+        else:
+            # Handle strings and other types
+            return str(value)
+
     def create_screen_values(self, screen_columns: dict, row: pd.Series) -> str:
         """Create screen values for markdown table.
 
@@ -571,21 +602,8 @@ class BoardGenerator:
         for score in screen_columns.keys():
             try:
                 value = row[score]
-                # Handle different value types
-                if isinstance(value, (int, float)):
-                    abs_value = abs(value)
-                    if abs_value < 1:
-                        md += f"\t<td>{value:.2f}</td>\n"
-                    elif abs_value < 1000:
-                        md += f"\t<td>{value:.1f}</td>\n"
-                    else:
-                        md += f"\t<td>{value / 1000:.1f}K</td>\n"
-                elif isinstance(value, list):
-                    # Format lists as comma-separated strings
-                    md += f"\t<td>{', '.join(str(v) for v in value)}</td>\n"
-                else:
-                    # Handle strings and other types
-                    md += f"\t<td>{value}</td>\n"
+                formatted_value = self.value_to_string(value)
+                md += f"\t<td>{formatted_value}</td>\n"
             except KeyError as e:
                 available_keys = list(row.index)
                 raise KeyError(

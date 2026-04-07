@@ -9,7 +9,8 @@ from ragworkbench.api.experiment_result import ExperimentResult
 from ragworkbench.api.inference import InferencePipeline
 from ragworkbench.api.inference_result import InferenceResult
 from ragworkbench.api.ingest import IngestPipeline
-from ragworkbench.boards.board_model import ExperimentConfig
+from ragworkbench.boards.board_model import CacheMode, ExperimentConfig
+from ragworkbench.caching.experiment_cache import ExperimentCache
 from ragworkbench.caching.generation_cache import GenerationCache
 from ragworkbench.datasets_loader import RagDataLoader
 from ragworkbench.datasets_loader.data_models import RagBenchmark
@@ -40,6 +41,14 @@ class Experiment:
 
         self.metric_definitions: list[MetricDefinition] = eval_metrics
 
+        # Initialize experiment cache
+        self.experiment_cache: ExperimentCache | None = None
+        if self.cache_dir and self.cache_mode != CacheMode.OFF:
+            self.experiment_cache = ExperimentCache(
+                cache_dir=self.cache_dir,
+                cache_mode=self.cache_mode,
+            )
+
         # Initialize cost tracker from experiment config
         self.cost_tracker = CostTracker(
             enabled=experiment_config.usage_tracking,
@@ -58,6 +67,15 @@ class Experiment:
             - evaluation_results: Dictionary mapping metric names to their evaluation results
             - cost_data: Dictionary containing cost tracking data
         """
+        # Check if experiment result is already cached
+        if self.experiment_cache:
+            cached_result = self.experiment_cache.get(self.experiment_id)
+            if cached_result:
+                logger.info(
+                    f"Experiment '{self.experiment_id}' found in cache, returning cached result"
+                )
+                return cached_result
+
         # Generate tracking API key if cost tracking is enabled
         # Use experiment_id for consistent caching
         tracking_api_key = self.cost_tracker.generate_tracking_key(
@@ -136,12 +154,19 @@ class Experiment:
             )
             evaluation_results = future.result()
 
-        return ExperimentResult(
+        experiment_result = ExperimentResult(
             experiment_id=self.experiment_id,
             inference_results=results,
             evaluation_results=evaluation_results,
             cost_data=cost_data,
         )
+
+        # Cache the experiment result
+        if self.experiment_cache:
+            self.experiment_cache.add(self.experiment_id, experiment_result)
+            logger.info(f"Experiment '{self.experiment_id}' result cached successfully")
+
+        return experiment_result
 
     def _run_evaluation(
         self,
