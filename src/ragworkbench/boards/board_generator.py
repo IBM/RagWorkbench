@@ -182,27 +182,25 @@ class BoardGenerator:
                 # Deep copy the original configuration
                 new_config = deepcopy(config)
 
-                # Build a suffix for the configuration name based on parameter values
-                param_suffix_parts = []
+                # Build parameter dictionary
+                param_dict = {}
                 for param_path, param_value in zip(
                     param_paths, combo_values, strict=True
                 ):
-                    # Extract the last part of the path for the suffix
+                    # Extract the last part of the path for the parameter name
                     param_name = param_path.split(".")[-1]
-                    param_suffix_parts.append(f"{param_name}={param_value}")
+                    param_dict[param_name] = param_value
 
                 # Update configuration name with parameter values
                 original_name = config["name"]
                 new_config["name"] = f"{original_name}__{combo_idx + 1}"
 
-                # Update description to include parameter values
-                param_description = ", ".join(param_suffix_parts)
+                # Update description to include parameter values as dictionary
                 original_description = config.get("description", "")
-                new_config["description"] = (
-                    f"{original_description} [{param_description}]"
-                    if original_description
-                    else f"[{param_description}]"
-                )
+                new_config["description"] = {
+                    "description": original_description,
+                    **param_dict,
+                }
 
                 # Set each parameter value in the new configuration
                 for param_path, param_value in zip(
@@ -221,7 +219,7 @@ class BoardGenerator:
                 expanded_configs.append(new_config)
                 logger.debug(
                     f"Created configuration '{new_config['name']}' with parameters: "
-                    f"{param_description}"
+                    f"{param_dict}"
                 )
 
         logger.info(
@@ -388,10 +386,10 @@ class BoardGenerator:
         # define the structure of the markdown board
         md_struct = [
             (1, self.board.name, lambda x: x.description),
+            (2, "Datasets", self.serialize_datasets),
+            (2, "Configurations", self.serialize_configs),
             (2, "Results", self.serialize_results),
             (2, "Model Usage", self.serialize_usage),
-            (2, "Configurations", self.serialize_configs),
-            (2, "Datasets", self.serialize_datasets),
         ]
 
         # create the md
@@ -447,10 +445,46 @@ class BoardGenerator:
 
     @classmethod
     def serialize_configs(cls, board: Board):
-        return cls.tuples_to_md_table(
-            headers=["Name", "Description"],
-            rows=[(c.name, c.description) for c in board.configurations],
+        # Check if any configuration has a dictionary description
+        has_dict_description = any(
+            isinstance(c.description, dict) for c in board.configurations
         )
+
+        if has_dict_description:
+            # Collect all unique keys from dictionary descriptions
+            all_keys: set[str] = set()
+            for c in board.configurations:
+                if isinstance(c.description, dict):
+                    all_keys.update(c.description.keys())
+
+            # Sort keys to ensure consistent column order, with "description" first
+            sorted_keys = sorted(all_keys)
+            if "description" in sorted_keys:
+                sorted_keys.remove("description")
+                sorted_keys.insert(0, "description")
+
+            # Create headers: Name + all dictionary keys (capitalize "description")
+            headers = ["Name"] + [
+                key.capitalize() if key == "description" else key for key in sorted_keys
+            ]
+
+            # Create rows
+            rows = []
+            for c in board.configurations:
+                if isinstance(c.description, dict):
+                    row = [c.name] + [c.description.get(key, "") for key in sorted_keys]
+                else:
+                    # For string descriptions, put in first column after Name
+                    row = [c.name, c.description] + [""] * (len(sorted_keys) - 1)
+                rows.append(tuple(row))
+
+            return cls.tuples_to_md_table(headers=headers, rows=rows)
+        else:
+            # All descriptions are strings, use simple format
+            return cls.tuples_to_md_table(
+                headers=["Name", "Description"],
+                rows=[(c.name, c.description) for c in board.configurations],
+            )
 
     def serialize_usage(self, board: Board) -> str:
         """
