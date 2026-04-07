@@ -8,7 +8,7 @@ import pandas as pd
 from pydantic import BaseModel, Field
 
 from ragworkbench.api.inference_result import InferenceResult
-from ragworkbench.eval.cost_tracking import UsageData
+from ragworkbench.eval.cost_tracking import AggregatedUsageData
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +17,18 @@ class ExperimentResult(BaseModel):
     """Encapsulates all results from running an experiment including inference, evaluation, and cost data."""
 
     experiment_id: str = Field(description="Unique identifier for the experiment")
+    config_name: str = Field(default="", description="Name of the configuration used")
+    dataset_name: str = Field(default="", description="Name of the dataset used")
+
     inference_results: list[InferenceResult] = Field(
         description="List of inference results from the experiment"
     )
     evaluation_results: dict[str, Any] = Field(
         description="Dictionary of evaluation metrics and scores"
     )
-    cost_data: UsageData = Field(
-        default_factory=UsageData,
-        description="Usage data containing cost tracking information",
+    cost_data: AggregatedUsageData = Field(
+        default_factory=AggregatedUsageData,
+        description="Aggregated usage data containing cost tracking information and per-model breakdowns",
     )
 
     def create_summary(
@@ -72,6 +75,21 @@ class ExperimentResult(BaseModel):
             summary["completion_tokens"] = self.cost_data.completion_tokens
             summary["requests"] = self.cost_data.requests
             summary["models_used"] = self.cost_data.models_used
+
+            # Add per-model usage data
+            if self.cost_data.per_model_usage:
+                for model, model_data in self.cost_data.per_model_usage.items():
+                    # Sanitize model name for use as dictionary key
+                    safe_model_name = model.replace("/", "_").replace(":", "_")
+                    summary[f"model_{safe_model_name}_cost"] = model_data.total_cost
+                    summary[f"model_{safe_model_name}_tokens"] = model_data.total_tokens
+                    summary[f"model_{safe_model_name}_prompt_tokens"] = (
+                        model_data.prompt_tokens
+                    )
+                    summary[f"model_{safe_model_name}_completion_tokens"] = (
+                        model_data.completion_tokens
+                    )
+                    summary[f"model_{safe_model_name}_requests"] = model_data.requests
 
         return summary
 
@@ -155,24 +173,8 @@ class ExperimentResult(BaseModel):
         combined_data = {
             "board_configuration_seq": config_seq,
             "board_dataset_seq": dataset_seq,
-            "board_configuration_name": config_name,
             "board_dataset_id": dataset_id,
-            "board_experiment_id": self.experiment_id,
-            "inference_results": [
-                {
-                    "question_id": inf_result.question_id,
-                    "question": inf_result.question,
-                    "answer": inf_result.answer,
-                    "ground_truth_answers": inf_result.ground_truth_answers,
-                    "is_answerable": inf_result.is_answerable,
-                    "context_ids": inf_result.context_ids,
-                    "contexts": inf_result.contexts,
-                    "trajectory": inf_result.trajectory,
-                }
-                for inf_result in self.inference_results
-            ],
-            "evaluation_results": self.evaluation_results,
-            "cost_data": self.cost_data.model_dump(),
+            "experiment_result": self.model_dump(),
         }
 
         json_filename = f"experiment_results_{self.experiment_id}.json"

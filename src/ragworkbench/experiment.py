@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,7 @@ from ragworkbench.caching.generation_cache import GenerationCache
 from ragworkbench.datasets_loader import RagDataLoader
 from ragworkbench.datasets_loader.data_models import RagBenchmark
 from ragworkbench.eval import MetricDefinition
-from ragworkbench.eval.cost_tracking import CostTracker
+from ragworkbench.eval.cost_tracking import AggregatedUsageData, CostTracker
 from ragworkbench.eval.evaluator import Evaluator
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,8 @@ class Experiment:
         self.cost_tracker = CostTracker(
             enabled=experiment_config.usage_tracking,
             litellm_proxy_url=experiment_config.litellm_proxy_url,
+            cache_dir=cache_dir,
+            cache_mode=experiment_config.cache,
         )
 
     def run(self) -> ExperimentResult:
@@ -56,7 +59,10 @@ class Experiment:
             - cost_data: Dictionary containing cost tracking data
         """
         # Generate tracking API key if cost tracking is enabled
-        tracking_api_key = self.cost_tracker.generate_tracking_key()
+        # Use experiment_id for consistent caching
+        tracking_api_key = self.cost_tracker.generate_tracking_key(
+            experiment_id=self.experiment_id
+        )
         if tracking_api_key:
             logger.info(
                 f"Cost tracking enabled with API key: {tracking_api_key[:20]}..."
@@ -97,13 +103,31 @@ class Experiment:
                     f"Inference progress: {idx}/{total_entries} entries processed ({idx/total_entries*100:.1f}%)"
                 )
 
-        # Log cache statistics before evaluation
+        # Log cache statistics before cost tracking
         self._log_cache_statistics(self.inference_pipeline.generation_cache)
+
+        # Retrieve cost data if cost tracking is enabled
+        # This must happen BEFORE evaluation so that model_calls are populated
+        from ragworkbench.eval.cost_tracking import AggregatedUsageData
+
+        cost_data: AggregatedUsageData = AggregatedUsageData()
+        if self.cost_tracker.enabled:
+            logger.info("Waiting 60 seconds before retrieving cost tracking data...")
+            time.sleep(60)
+            logger.info("Retrieving cost tracking data from LiteLLM proxy...")
+            try:
+                cost_data = asyncio.run(self.cost_tracker.get_usage_data())
+                # Update InferenceResults with ModelCall objects from usage data
+                self._update_inference_results_with_model_calls(results, cost_data)
+            except RuntimeError as e:
+                logger.warning(f"Failed to retrieve cost data: {e}")
 
         # Now run the evaluation via the evaluator code!
         # Run evaluation in a separate thread to avoid event loop conflicts
         # Unitxt's inference engine uses asyncio internally with run_until_complete,
         # which cannot be nested. Running in a thread allows it to create its own event loop.
+        # NOTE: Evaluation must run AFTER cost tracking so that model_calls are populated
+        # for the workbench.usage metric to compute token and cost statistics.
         with ThreadPoolExecutor(max_workers=1) as executor:
             future = executor.submit(
                 self._run_evaluation,
@@ -111,17 +135,6 @@ class Experiment:
                 rag_benchmark=rag_benchmark,
             )
             evaluation_results = future.result()
-
-        # Retrieve cost data if cost tracking is enabled
-        from ragworkbench.eval.cost_tracking import UsageData
-
-        cost_data: UsageData = UsageData()
-        if self.cost_tracker.enabled:
-            logger.info("Retrieving cost tracking data from LiteLLM proxy...")
-            try:
-                cost_data = asyncio.run(self.cost_tracker.get_usage_data())
-            except RuntimeError as e:
-                logger.warning(f"Failed to retrieve cost data: {e}")
 
         return ExperimentResult(
             experiment_id=self.experiment_id,
@@ -243,3 +256,42 @@ class Experiment:
                 )
         else:
             logger.info("Inference complete: Caching disabled")
+
+    @staticmethod
+    def _update_inference_results_with_model_calls(
+        results: list[InferenceResult],
+        cost_data: AggregatedUsageData,
+    ) -> None:
+        """
+        Update InferenceResults with ModelCall objects from usage data.
+
+        This method matches questions from InferenceResults to the usage data and populates
+        the model_calls field with detailed information about each API call made for that question.
+
+        Args:
+            results: List of InferenceResult objects to update
+            cost_data: AggregatedUsageData containing model call information
+        """
+        if not cost_data or not cost_data.per_model_usage:
+            logger.warning("No usage data available to update InferenceResults")
+            return
+
+        updated_count = 0
+        for result in results:
+            # Get the question from the inference result
+            question = result.question
+
+            # Get model calls for this question from the usage data
+            model_calls = cost_data.get_model_calls_for_query(question)
+
+            if model_calls:
+                # Update the inference result with the model calls
+                result.model_calls = model_calls
+                updated_count += 1
+                logger.debug(
+                    f"Updated InferenceResult for question '{question[:50]}...' with {len(model_calls)} model call(s)"
+                )
+
+        logger.info(
+            f"Updated {updated_count}/{len(results)} InferenceResults with ModelCall objects"
+        )

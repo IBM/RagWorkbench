@@ -15,6 +15,7 @@ import yaml
 from pandas import DataFrame
 
 from ragworkbench import DataLoaderFactory, Experiment
+from ragworkbench.api.experiment_result import ExperimentResult
 from ragworkbench.boards.board_model import Board
 from ragworkbench.boards.board_registry import BoardRegistry
 from ragworkbench.eval import (
@@ -78,6 +79,7 @@ class BoardGenerator:
 
         self.results: DataFrame = pd.DataFrame()
         self.experiment_id_mapping: dict[str, dict[str, Any]] = {}
+        self.experiment_results: list[ExperimentResult] = []
 
     @staticmethod
     def _find_list_params(
@@ -272,7 +274,7 @@ class BoardGenerator:
 
     def process(self) -> None:
         # iterate over configurations and then over datasets
-        results_list = []
+        experiment_summaries: list[dict[str, Any]] = []
         for config_seq, config in enumerate(self.board.configurations):
             logger.info(
                 f"Running configuration: {config.name} ({config_seq+1}/{len(self.board.configurations)})"
@@ -311,12 +313,14 @@ class BoardGenerator:
                 # Run experiment and get ExperimentResult object
                 experiment_result = experiment.run()
 
+                # Set config and dataset names in the experiment result
+                experiment_result.config_name = config.name
+                experiment_result.dataset_name = dataset.name
+
                 # Log cost data if tracking is enabled
                 if self.board.experiment.usage_tracking and experiment_result.cost_data:
-                    logger.info(
-                        f"Experiment {experiment_id} cost: "
-                        f"${experiment_result.cost_data.total_cost:.4f}, "
-                        f"{experiment_result.cost_data.total_tokens} tokens"
+                    experiment_result.cost_data.log_summary(
+                        prefix=f"Experiment {experiment_id} - "
                     )
 
                 # Export results using ExperimentResult methods
@@ -329,18 +333,20 @@ class BoardGenerator:
                     dataset.id(),
                 )
 
-                # Create experiment summary using the new method
+                # Create experiment summary
                 summary_dict = experiment_result.create_summary(
                     config_seq=config_seq,
                     dataset_seq=dataset_seq,
                     config_name=config.name,
                     dataset_id=dataset.id(),
                 )
-                config_dataset_df = pd.DataFrame([summary_dict])
 
-                results_list.append(config_dataset_df)
+                experiment_summaries.append(summary_dict)
+
+                # Store the ExperimentResult for usage reporting
+                self.experiment_results.append(experiment_result)
         #
-        self.results = pd.concat(results_list)
+        self.results = pd.DataFrame(experiment_summaries)
 
         # Export results and markdown at the end of processing
         self.export_results()
@@ -383,6 +389,7 @@ class BoardGenerator:
         md_struct = [
             (1, self.board.name, lambda x: x.description),
             (2, "Results", self.serialize_results),
+            (2, "Usage", self.serialize_usage),
             (2, "Configurations", self.serialize_configs),
             (2, "Datasets", self.serialize_datasets),
         ]
@@ -401,7 +408,7 @@ class BoardGenerator:
     @classmethod
     def tuples_to_md_table(
         cls,
-        rows: list[Sequence],
+        rows: Sequence[Sequence[Any]],
         headers: list[str],
     ) -> str:
         rows = list(rows)
@@ -444,6 +451,78 @@ class BoardGenerator:
             headers=["Name", "Description"],
             rows=[(c.name, c.description) for c in board.configurations],
         )
+
+    def serialize_usage(self, board: Board) -> str:
+        """
+        Serialize usage data from all experiment results.
+
+        Creates one table per model, where each row represents a configuration
+        and displays that configuration's usage stats for the specific model.
+
+        Args:
+            board: The Board object (for consistency with other serialize methods)
+
+        Returns:
+            Markdown formatted tables of usage data, one table per model
+        """
+        if not self.experiment_results:
+            return "No usage data available."
+
+        # Collect all models used across all experiments
+        all_models: set[str] = set()
+        for exp_result in self.experiment_results:
+            if exp_result.cost_data and exp_result.cost_data.per_model_usage:
+                all_models.update(exp_result.cost_data.per_model_usage.keys())
+
+        if not all_models:
+            return "No usage data available."
+
+        # Sort models for consistent output
+        sorted_models = sorted(all_models)
+
+        # Create one table per model
+        md_sections = []
+        for model in sorted_models:
+            md_sections.append(f"### {model}\n")
+
+            # Build rows for this model - one row per configuration-dataset combination
+            rows = []
+            for exp_result in self.experiment_results:
+                if exp_result.cost_data and exp_result.cost_data.per_model_usage:
+                    model_data = exp_result.cost_data.per_model_usage.get(model)
+                    if model_data:
+                        rows.append(
+                            (
+                                exp_result.config_name,
+                                exp_result.dataset_name,
+                                f"${model_data.total_cost:.4f}",
+                                model_data.total_tokens,
+                                model_data.prompt_tokens,
+                                model_data.completion_tokens,
+                                model_data.requests,
+                            )
+                        )
+
+            if rows:
+                table = self.tuples_to_md_table(
+                    headers=[
+                        "Configuration",
+                        "Dataset",
+                        "Total Cost",
+                        "Total Tokens",
+                        "Prompt Tokens",
+                        "Completion Tokens",
+                        "Requests",
+                    ],
+                    rows=rows,
+                )
+                md_sections.append(table)
+            else:
+                md_sections.append("No usage data for this model.")
+
+            md_sections.append("")  # Add blank line between tables
+
+        return "\n".join(md_sections)
 
     def serialize_results(self, board: Board):
         md = ""
