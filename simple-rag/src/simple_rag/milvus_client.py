@@ -4,6 +4,7 @@ import logging
 from typing import Any
 
 from pymilvus import Collection, CollectionSchema, DataType, FieldSchema, connections
+
 from simple_rag.config import MilvusConfig
 
 logger = logging.getLogger(__name__)

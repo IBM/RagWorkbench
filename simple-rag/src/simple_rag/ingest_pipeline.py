@@ -8,13 +8,13 @@ import litellm
 from docling.chunking import HybridChunker
 from docling.document_converter import DocumentConverter
 from pydantic import Field
-from simple_rag.config import SimpleRagIngestParams
-from simple_rag.milvus_client import MilvusVectorStore
 
 from ragworkbench.api.ingest import IngestPipeline
 from ragworkbench.api.ingest_artifact import IngestArtifact
 from ragworkbench.datasets_loader import RagDataLoader
 from ragworkbench.datasets_loader.data_models import DocumentObject
+from simple_rag.config import SimpleRagIngestParams
+from simple_rag.milvus_client import MilvusVectorStore
 
 logger = logging.getLogger(__name__)
 

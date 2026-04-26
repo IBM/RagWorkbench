@@ -3,14 +3,14 @@
 import logging
 
 import litellm
-from simple_rag.config import MilvusConfig, SimpleRagInferenceParams
-from simple_rag.ingest_pipeline import SimpleRagIngestArtifact
-from simple_rag.milvus_client import MilvusVectorStore
 
 from ragworkbench.api.inference import InferencePipeline
 from ragworkbench.api.inference_result import InferenceResult
 from ragworkbench.api.ingest_artifact import IngestArtifact
 from ragworkbench.datasets_loader.data_models import RagBenchmarkEntry
+from simple_rag.config import MilvusConfig, SimpleRagInferenceParams
+from simple_rag.ingest_pipeline import SimpleRagIngestArtifact
+from simple_rag.milvus_client import MilvusVectorStore
 
 logger = logging.getLogger(__name__)
 
