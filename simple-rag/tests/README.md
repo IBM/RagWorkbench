@@ -32,7 +32,7 @@ Run integration tests:
 ```bash
 cd RagWorkbench/simple-rag
 export OPENAI_API_KEY="your-api-key"
-uv run pytest tests/test_integration_simple_rag.py -v
+uv run pytest tests/test_integration_simple_rag.py -v -s
 ```
 
 ### Run All Tests

@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 class SimpleRagInferencePipeline(InferencePipeline):
     """Simple RAG inference pipeline."""
 
+    EMBEDDING_TIMEOUT = 30  # seconds
+
     def __init__(
         self,
         params: SimpleRagInferenceParams,
@@ -71,6 +73,7 @@ class SimpleRagInferencePipeline(InferencePipeline):
             model=self.embedding_model,
             input=[query],
             api_key=self._params.tracking_api_key,
+            timeout=self.EMBEDDING_TIMEOUT,
         )
         return response.data[0]["embedding"]
 

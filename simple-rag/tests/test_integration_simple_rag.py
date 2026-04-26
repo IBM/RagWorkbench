@@ -8,6 +8,7 @@ This test validates the complete RAG workflow:
 """
 
 import os
+from pathlib import Path
 
 import pytest
 from simple_rag.config import (
@@ -28,14 +29,23 @@ from ragworkbench.experiment import Experiment
 
 
 @pytest.fixture
-def minimal_ait_qa_loader():
+def ragworkbench_data_dir():
+    """Return the shared RagWorkbench data directory for integration tests."""
+    return Path(__file__).resolve().parents[2] / "ragworkbench_data"
+
+
+@pytest.fixture
+def minimal_ait_qa_loader(ragworkbench_data_dir):
     """Create a data loader with minimal AIT-QA data (2 samples)."""
     sampling_params = DataSamplingParams(
-        max_samples=2,  # Use only 2 questions for fast testing
+        question_limit=2,  # Use only 2 questions for fast testing
+        document_factor=0,
     )
+    os.environ["RAGBENCH_DATA_DIR"] = str(ragworkbench_data_dir)
     return AITQaDataLoader(
-        split=DatasetSplit.TEST,
+        split=DatasetSplit.TRAIN,
         sampling_params=sampling_params,
+        cache_dir=ragworkbench_data_dir,
     )
 
 
@@ -57,7 +67,7 @@ def ingest_params(tmp_path):
 def inference_params():
     """Create inference parameters for the test."""
     return SimpleRagInferenceParams(
-        llm_model="gpt-3.5-turbo",
+        llm_model="llama3.2-1b",
         top_k=3,  # Retrieve fewer chunks for faster testing
     )
 

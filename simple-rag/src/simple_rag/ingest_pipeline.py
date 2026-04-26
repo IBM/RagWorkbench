@@ -30,6 +30,8 @@ class SimpleRagIngestArtifact(IngestArtifact):
 class SimpleRagIngestPipeline(IngestPipeline):
     """Simple RAG ingestion pipeline."""
 
+    EMBEDDING_TIMEOUT = 30  # seconds
+
     def __init__(self, params: SimpleRagIngestParams) -> None:
         """Initialize the ingest pipeline."""
         super().__init__(params)
@@ -49,13 +51,18 @@ class SimpleRagIngestPipeline(IngestPipeline):
 
     def _get_embedding_dimension(self) -> int:
         """Get embedding dimension from the model."""
-        # Generate a test embedding to determine dimension
+        logger.info(
+            f"Getting embedding dimension for model: {self._params.embedding_model}"
+        )
         response = litellm.embedding(
             model=self._params.embedding_model,
             input=["test"],
             api_key=self._params.tracking_api_key,
+            timeout=self.EMBEDDING_TIMEOUT,
         )
-        return len(response.data[0]["embedding"])
+        dimension = len(response.data[0]["embedding"])
+        logger.info(f"Embedding dimension: {dimension}")
+        return dimension
 
     def _convert_document(self, doc: DocumentObject) -> str:
         """Convert DocumentObject to text using Docling."""
@@ -82,12 +89,18 @@ class SimpleRagIngestPipeline(IngestPipeline):
 
     def _generate_embeddings(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings using LiteLLM."""
+        logger.info(
+            f"Generating embeddings for {len(texts)} texts using {self._params.embedding_model}"
+        )
         response = litellm.embedding(
             model=self._params.embedding_model,
             input=texts,
             api_key=self._params.tracking_api_key,
+            timeout=self.EMBEDDING_TIMEOUT,
         )
-        return [item["embedding"] for item in response.data]
+        embeddings = [item["embedding"] for item in response.data]
+        logger.info(f"Generated {len(embeddings)} embeddings")
+        return embeddings
 
     def process(self, data_loader: RagDataLoader) -> list[IngestArtifact]:
         """
