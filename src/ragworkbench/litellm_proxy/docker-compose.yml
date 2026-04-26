@@ -9,12 +9,13 @@ services:
     ports:
       - "5439:5432"  # Local port 5439 maps to container port 5432
     volumes:
-      - ./postgres_data:/var/lib/postgresql/data # Maps to a local folder
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      start_period: 30s
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   litellm:
     build:
@@ -38,3 +39,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
+
+volumes:
+  postgres_data:
