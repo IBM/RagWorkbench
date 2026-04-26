@@ -2,7 +2,6 @@
 
 import hashlib
 import logging
-from io import BytesIO
 
 import litellm
 from docling.chunking import HybridChunker
@@ -68,12 +67,8 @@ class SimpleRagIngestPipeline(IngestPipeline):
         """Convert DocumentObject to text using Docling."""
         converter = DocumentConverter()
 
-        # Convert BytesIO to bytes for Docling
-        doc_bytes = doc.stream.read()
-        doc.stream.seek(0)  # Reset stream position
-
-        # Convert document
-        result = converter.convert(BytesIO(doc_bytes))
+        # DocumentObject extends DocumentStream, so pass it directly
+        result = converter.convert(doc)
         return result.document.export_to_markdown()
 
     def _chunk_text(self, text: str) -> list[str]:
@@ -120,7 +115,6 @@ class SimpleRagIngestPipeline(IngestPipeline):
 
         # Get embedding dimension
         dimension = self._get_embedding_dimension()
-        logger.info(f"Embedding dimension: {dimension}")
 
         # Initialize Milvus ingester
         ingester = MilvusIngester(

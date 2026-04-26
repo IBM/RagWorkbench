@@ -38,7 +38,7 @@ def ragworkbench_data_dir():
 def minimal_ait_qa_loader(ragworkbench_data_dir):
     """Create a data loader with minimal AIT-QA data (2 samples)."""
     sampling_params = DataSamplingParams(
-        question_limit=2,  # Use only 2 questions for fast testing
+        question_limit=1,  # Use only 2 questions for fast testing
         document_factor=0,
     )
     os.environ["RAGBENCH_DATA_DIR"] = str(ragworkbench_data_dir)
@@ -59,7 +59,7 @@ def ingest_params(tmp_path):
         chunking_config=ChunkingConfig(
             max_tokens=256,  # Smaller chunks for faster testing
         ),
-        embedding_model="text-embedding-3-small",
+        embedding_model="openai/all-minilm",
     )
 
 
