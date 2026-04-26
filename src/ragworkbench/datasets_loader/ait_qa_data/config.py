@@ -100,6 +100,3 @@ def get_ait_qa_documents_dir() -> Path:
         PosixPath('/path/to/data/ait_qa_pdf/documents')
     """
     return get_ait_qa_data_dir() / "documents"
-
-
-# Made with Bob

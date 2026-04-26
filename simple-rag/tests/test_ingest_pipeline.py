@@ -181,10 +181,8 @@ class TestSimpleRagIngestPipeline:
         artifact = artifacts[0]
         assert isinstance(artifact, SimpleRagIngestArtifact)
         assert artifact.collection_name.startswith("simple_rag_")
-        assert artifact.milvus_host == "localhost"
-        assert artifact.milvus_port == 19530
+        assert artifact.milvus_uri == "./milvus.db"
         assert artifact.embedding_model == "text-embedding-3-small"
-        assert artifact.dimension == 384
 
         mock_ingester.create_collection.assert_called_once()
         mock_ingester.insert_embeddings.assert_called_once()

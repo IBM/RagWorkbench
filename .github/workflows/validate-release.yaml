@@ -89,5 +89,3 @@ jobs:
             exit 1
           fi
           echo "✓ No version placeholders found"
-
-# Made with Bob

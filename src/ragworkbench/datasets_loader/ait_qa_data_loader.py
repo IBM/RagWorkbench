@@ -333,6 +333,3 @@ class AITQaDataLoader(RagDataLoader):
             self._load_documents()
 
         return self._documents  # type: ignore[return-value]
-
-
-# Made with Bob

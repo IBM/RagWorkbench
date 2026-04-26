@@ -21,10 +21,8 @@ def ingest_artifact():
     """Fixture for ingest artifact."""
     return SimpleRagIngestArtifact(
         collection_name="test_collection",
-        milvus_host="localhost",
-        milvus_port=19530,
+        milvus_uri="http://localhost:19530",
         embedding_model="text-embedding-3-small",
-        dimension=384,
     )
 
 

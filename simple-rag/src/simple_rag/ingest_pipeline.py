@@ -20,22 +20,20 @@ logger = logging.getLogger(__name__)
 
 
 class SimpleRagIngestArtifact(IngestArtifact):
-    """Artifact containing ingestion results and connection details."""
+    """Artifact containing ingestion results and connection details for Milvus Lite."""
 
     collection_name: str = Field(description="Milvus collection name")
-    milvus_host: str = Field(description="Milvus server host")
-    milvus_port: int = Field(description="Milvus server port")
+    milvus_uri: str = Field(description="Milvus Lite URI")
     embedding_model: str = Field(description="Embedding model used")
-    dimension: int = Field(description="Embedding dimension")
 
 
 class SimpleRagIngestPipeline(IngestPipeline):
     """Simple RAG ingestion pipeline."""
 
-    def __init__(self, _params: SimpleRagIngestParams) -> None:
+    def __init__(self, params: SimpleRagIngestParams) -> None:
         """Initialize the ingest pipeline."""
-        super().__init__(_params)
-        self._params: SimpleRagIngestParams = _params
+        super().__init__(params)
+        self._params: SimpleRagIngestParams = params
 
     def _generate_collection_name(self) -> str:
         """Generate collection name from parameters hash."""
@@ -117,7 +115,6 @@ class SimpleRagIngestPipeline(IngestPipeline):
             collection_name=collection_name,
             dimension=dimension,
         )
-        ingester.create_collection()
 
         # Get documents from data loader
         corpus = data_loader.get_corpus()
@@ -166,10 +163,8 @@ class SimpleRagIngestPipeline(IngestPipeline):
         # Create artifact
         artifact = SimpleRagIngestArtifact(
             collection_name=collection_name,
-            milvus_host=self._params.milvus_config.host,
-            milvus_port=self._params.milvus_config.port,
+            milvus_uri=self._params.milvus_config.uri,
             embedding_model=self._params.embedding_model,
-            dimension=dimension,
         )
 
         logger.info("Ingestion complete")

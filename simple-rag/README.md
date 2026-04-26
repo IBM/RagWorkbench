@@ -1,12 +1,12 @@
 # Simple RAG Pipeline
 
-A simple RAG (Retrieval-Augmented Generation) pipeline implementation for RagWorkbench that demonstrates document ingestion, vector storage with Milvus, and LLM-based generation using LiteLLM.
+A simple RAG (Retrieval-Augmented Generation) pipeline implementation for RagWorkbench that demonstrates document ingestion, vector storage with Milvus Lite, and LLM-based generation using LiteLLM.
 
 ## Features
 
 - **Document Processing**: Uses Docling for PDF/DOCX conversion
 - **Chunking**: Docling HybridChunker for intelligent text segmentation
-- **Vector Storage**: Milvus with COSINE similarity
+- **Vector Storage**: Milvus Lite (embedded vector database) with COSINE similarity
 - **Embeddings**: LiteLLM embedding API (supports multiple providers)
 - **Generation**: LiteLLM completion API (supports multiple LLM providers)
 - **Caching**: Integrated with RagWorkbench's GenerationCache
@@ -35,7 +35,8 @@ from simple_rag import (
 
 # Configure ingestion
 ingest_params = SimpleRagIngestParams(
-    milvus_config=MilvusConfig(host="localhost", port=19530),
+    milvus_config=MilvusConfig(uri="./milvus.db"),  # File-based storage
+    # Or use in-memory: MilvusConfig(uri=":memory:")
     chunking_config=ChunkingConfig(max_tokens=512),
     embedding_model="text-embedding-3-small",
 )
@@ -69,8 +70,9 @@ result = experiment.run()
 ## Configuration
 
 ### MilvusConfig
-- `host`: Milvus server host (default: "localhost")
-- `port`: Milvus server port (default: 19530)
+- `uri`: Milvus Lite URI (default: "./milvus.db")
+  - File-based: `"./milvus.db"` or any path
+  - In-memory: `":memory:"`
 
 ### ChunkingConfig
 - `tokenizer`: Tokenizer for chunking (default: "sentence-transformers/all-MiniLM-L6-v2")
@@ -111,7 +113,7 @@ pytest simple-rag/tests/
 ## Requirements
 
 - Python >= 3.11
-- Milvus server running (for integration tests)
+- Milvus Lite (automatically installed with pymilvus)
 - API keys for LiteLLM providers (OpenAI, etc.)
 
 ## License

@@ -67,6 +67,3 @@ class TrackingKeyCache(AbstractFileSystemCache):
         api_key: str,
     ):
         super().add(experiment_id, api_key)
-
-
-# Made with Bob

@@ -49,13 +49,10 @@ class SimpleRagInferencePipeline(InferencePipeline):
             )
 
         # Initialize Milvus retriever from artifact
-        milvus_config = MilvusConfig(
-            host=artifact.milvus_host, port=artifact.milvus_port
-        )
+        milvus_config = MilvusConfig(uri=artifact.milvus_uri)
         self.retriever = MilvusRetriever(
             config=milvus_config,
             collection_name=artifact.collection_name,
-            dimension=artifact.dimension,
         )
         self.embedding_model = artifact.embedding_model
 

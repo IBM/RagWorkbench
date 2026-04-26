@@ -94,7 +94,7 @@ class TestMilvusRetriever:
     def test_initialization(self, mock_connections, milvus_config):
         """Test retriever initialization."""
         retriever = MilvusRetriever(
-            config=milvus_config, collection_name="test_collection", dimension=384
+            config=milvus_config, collection_name="test_collection"
         )
 
         assert retriever.collection_name == "test_collection"
@@ -107,7 +107,7 @@ class TestMilvusRetriever:
     def test_search(self, mock_connections, mock_collection_class, milvus_config):
         """Test vector search."""
         retriever = MilvusRetriever(
-            config=milvus_config, collection_name="test_collection", dimension=384
+            config=milvus_config, collection_name="test_collection"
         )
 
         # Mock search results

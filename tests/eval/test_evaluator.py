@@ -150,6 +150,3 @@ def test_evaluator_runs_single_metric(sample_inference_results):
         # Statistics should include mean, std, etc.
         assert "mean" in metric_stats
         assert isinstance(metric_stats["mean"], (int, float))
-
-
-# Made with Bob

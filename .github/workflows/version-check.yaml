@@ -97,5 +97,3 @@ jobs:
         run: |
           echo "::error::CHANGELOG.md must be updated when version changes"
           exit 1
-
-# Made with Bob

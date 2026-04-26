@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class MilvusIngester:
-    """Handles ingestion operations for Milvus vector database."""
+    """Handles ingestion operations for Milvus Lite vector database."""
 
     def __init__(
         self, config: MilvusConfig, collection_name: str, dimension: int
@@ -20,7 +20,7 @@ class MilvusIngester:
         Initialize Milvus ingester.
 
         Args:
-            config: Milvus connection configuration
+            config: Milvus Lite connection configuration
             collection_name: Name of the collection
             dimension: Embedding dimension
         """
@@ -29,12 +29,14 @@ class MilvusIngester:
         self.dimension = dimension
         self.collection: Collection | None = None
 
-        # Connect to Milvus
-        connections.connect(
-            alias="default", host=self.config.host, port=self.config.port
-        )
+        # Connect to Milvus Lite
+        connections.connect(alias="default", uri=self.config.uri)
+        logger.info(f"Connected to Milvus Lite at {self.config.uri}")
 
-    def create_collection(self) -> None:
+        # Create collection
+        self._create_collection()
+
+    def _create_collection(self) -> None:
         """Create Milvus collection with schema."""
         # Define schema
         fields = [
@@ -99,27 +101,23 @@ class MilvusIngester:
 
 
 class MilvusRetriever:
-    """Handles retrieval operations for Milvus vector database."""
+    """Handles retrieval operations for Milvus Lite vector database."""
 
-    def __init__(
-        self, config: MilvusConfig, collection_name: str, dimension: int
-    ) -> None:
+    def __init__(self, config: MilvusConfig, collection_name: str) -> None:
         """
         Initialize Milvus retriever.
 
         Args:
-            config: Milvus connection configuration
+            config: Milvus Lite connection configuration
             collection_name: Name of the collection
-            dimension: Embedding dimension (unused, kept for API compatibility)
         """
         self.config = config
         self.collection_name = collection_name
         self.collection: Collection | None = None
 
-        # Connect to Milvus
-        connections.connect(
-            alias="default", host=self.config.host, port=self.config.port
-        )
+        # Connect to Milvus Lite
+        connections.connect(alias="default", uri=self.config.uri)
+        logger.info(f"Connected to Milvus Lite at {self.config.uri}")
 
     def search(self, query_embedding: list[float], top_k: int) -> list[dict[str, Any]]:
         """

@@ -7,10 +7,18 @@ from ragworkbench.api.ingest import IngestParams
 
 
 class MilvusConfig(BaseModel):
-    """Milvus connection configuration."""
+    """Milvus Lite connection configuration.
 
-    host: str = Field(default="localhost", description="Milvus server host")
-    port: int = Field(default=19530, description="Milvus server port")
+    Uses Milvus Lite for embedded vector storage.
+    Examples:
+    - File-based: "./milvus_demo.db"
+    - In-memory: ":memory:"
+    """
+
+    uri: str = Field(
+        default="./milvus.db",
+        description="Milvus Lite URI (e.g., './milvus.db' or ':memory:')",
+    )
 
 
 class ChunkingConfig(BaseModel):
