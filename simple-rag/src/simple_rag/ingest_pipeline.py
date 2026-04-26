@@ -14,7 +14,7 @@ from ragworkbench.api.ingest_artifact import IngestArtifact
 from ragworkbench.datasets_loader import RagDataLoader
 from ragworkbench.datasets_loader.data_models import DocumentObject
 from simple_rag.config import SimpleRagIngestParams
-from simple_rag.milvus_client import MilvusVectorStore
+from simple_rag.milvus_client import MilvusIngester
 
 logger = logging.getLogger(__name__)
 
@@ -111,13 +111,13 @@ class SimpleRagIngestPipeline(IngestPipeline):
         dimension = self._get_embedding_dimension()
         logger.info(f"Embedding dimension: {dimension}")
 
-        # Initialize Milvus
-        vector_store = MilvusVectorStore(
+        # Initialize Milvus ingester
+        ingester = MilvusIngester(
             config=self._params.milvus_config,
             collection_name=collection_name,
             dimension=dimension,
         )
-        vector_store.create_collection()
+        ingester.create_collection()
 
         # Get documents from data loader
         corpus = data_loader.get_corpus()
@@ -161,7 +161,7 @@ class SimpleRagIngestPipeline(IngestPipeline):
             logger.info(f"Generated embeddings for batch {i // batch_size + 1}")
 
         # Insert into Milvus
-        vector_store.insert_embeddings(all_chunks, all_embeddings)
+        ingester.insert_embeddings(all_chunks, all_embeddings)
 
         # Create artifact
         artifact = SimpleRagIngestArtifact(

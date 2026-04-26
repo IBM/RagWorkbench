@@ -10,14 +10,14 @@ from simple_rag.config import MilvusConfig
 logger = logging.getLogger(__name__)
 
 
-class MilvusVectorStore:
-    """Wrapper for Milvus vector database operations."""
+class MilvusIngester:
+    """Handles ingestion operations for Milvus vector database."""
 
     def __init__(
         self, config: MilvusConfig, collection_name: str, dimension: int
     ) -> None:
         """
-        Initialize Milvus vector store.
+        Initialize Milvus ingester.
 
         Args:
             config: Milvus connection configuration
@@ -97,6 +97,30 @@ class MilvusVectorStore:
 
         return [chunk["chunk_id"] for chunk in chunks]
 
+
+class MilvusRetriever:
+    """Handles retrieval operations for Milvus vector database."""
+
+    def __init__(
+        self, config: MilvusConfig, collection_name: str, dimension: int
+    ) -> None:
+        """
+        Initialize Milvus retriever.
+
+        Args:
+            config: Milvus connection configuration
+            collection_name: Name of the collection
+            dimension: Embedding dimension (unused, kept for API compatibility)
+        """
+        self.config = config
+        self.collection_name = collection_name
+        self.collection: Collection | None = None
+
+        # Connect to Milvus
+        connections.connect(
+            alias="default", host=self.config.host, port=self.config.port
+        )
+
     def search(self, query_embedding: list[float], top_k: int) -> list[dict[str, Any]]:
         """
         Search for similar chunks.
@@ -139,25 +163,3 @@ class MilvusVectorStore:
                 )
 
         return formatted_results
-
-    def delete_collection(self) -> None:
-        """Delete the collection."""
-        if self.collection is not None:
-            self.collection.drop()
-            logger.info(f"Deleted collection '{self.collection_name}'")
-
-    def get_collection_stats(self) -> dict[str, Any]:
-        """
-        Get collection statistics.
-
-        Returns:
-            Dictionary with collection stats
-        """
-        if self.collection is None:
-            self.collection = Collection(name=self.collection_name)
-
-        return {
-            "name": self.collection_name,
-            "num_entities": self.collection.num_entities,
-            "dimension": self.dimension,
-        }

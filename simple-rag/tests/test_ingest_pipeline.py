@@ -140,7 +140,7 @@ class TestSimpleRagIngestPipeline:
         assert len(embeddings[0]) == 384
         mock_embedding.assert_called_once()
 
-    @patch("simple_rag.ingest_pipeline.MilvusVectorStore")
+    @patch("simple_rag.ingest_pipeline.MilvusIngester")
     @patch("simple_rag.ingest_pipeline.litellm.embedding")
     @patch("simple_rag.ingest_pipeline.HybridChunker")
     @patch("simple_rag.ingest_pipeline.DocumentConverter")
@@ -149,7 +149,7 @@ class TestSimpleRagIngestPipeline:
         mock_converter_class,
         mock_chunker_class,
         mock_embedding,
-        mock_vector_store_class,
+        mock_ingester_class,
         ingest_params,
         mock_data_loader,
     ):
@@ -169,8 +169,8 @@ class TestSimpleRagIngestPipeline:
 
         mock_embedding.return_value = MagicMock(data=[{"embedding": [0.1] * 384}])
 
-        mock_vector_store = MagicMock()
-        mock_vector_store_class.return_value = mock_vector_store
+        mock_ingester = MagicMock()
+        mock_ingester_class.return_value = mock_ingester
 
         # Run process
         pipeline = SimpleRagIngestPipeline(ingest_params)
@@ -186,5 +186,5 @@ class TestSimpleRagIngestPipeline:
         assert artifact.embedding_model == "text-embedding-3-small"
         assert artifact.dimension == 384
 
-        mock_vector_store.create_collection.assert_called_once()
-        mock_vector_store.insert_embeddings.assert_called_once()
+        mock_ingester.create_collection.assert_called_once()
+        mock_ingester.insert_embeddings.assert_called_once()

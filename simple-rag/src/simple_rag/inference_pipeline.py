@@ -1,16 +1,18 @@
 """Inference pipeline for Simple RAG."""
 
 import logging
+from typing import Any, cast
 
 import litellm
 
 from ragworkbench.api.inference import InferencePipeline
 from ragworkbench.api.inference_result import InferenceResult
 from ragworkbench.api.ingest_artifact import IngestArtifact
+from ragworkbench.boards.board_model import CacheMode
 from ragworkbench.datasets_loader.data_models import RagBenchmarkEntry
 from simple_rag.config import MilvusConfig, SimpleRagInferenceParams
 from simple_rag.ingest_pipeline import SimpleRagIngestArtifact
-from simple_rag.milvus_client import MilvusVectorStore
+from simple_rag.milvus_client import MilvusRetriever
 
 logger = logging.getLogger(__name__)
 
@@ -20,14 +22,14 @@ class SimpleRagInferencePipeline(InferencePipeline):
 
     def __init__(
         self,
-        _params: SimpleRagInferenceParams,
+        params: SimpleRagInferenceParams,
         cache_dir: str | None = None,
-        cache_mode: str = "on",
+        cache_mode: CacheMode = CacheMode.ON,
     ) -> None:
         """Initialize the inference pipeline."""
-        super().__init__(_params, cache_dir, cache_mode)
-        self._params: SimpleRagInferenceParams = _params
-        self.vector_store: MilvusVectorStore | None = None
+        super().__init__(params, cache_dir, cache_mode)
+        self._params: SimpleRagInferenceParams = params
+        self.retriever: MilvusRetriever | None = None
         self.embedding_model: str | None = None
 
     def set_ingest_artifacts(self, ingest_artifacts: list[IngestArtifact]) -> None:
@@ -46,11 +48,11 @@ class SimpleRagInferencePipeline(InferencePipeline):
                 f"Expected SimpleRagIngestArtifact, got {type(artifact).__name__}"
             )
 
-        # Initialize Milvus client from artifact
+        # Initialize Milvus retriever from artifact
         milvus_config = MilvusConfig(
             host=artifact.milvus_host, port=artifact.milvus_port
         )
-        self.vector_store = MilvusVectorStore(
+        self.retriever = MilvusRetriever(
             config=milvus_config,
             collection_name=artifact.collection_name,
             dimension=artifact.dimension,
@@ -98,9 +100,9 @@ Answer:"""
         Returns:
             InferenceResult with answer and retrieved contexts
         """
-        if self.vector_store is None:
+        if self.retriever is None:
             raise RuntimeError(
-                "Vector store not initialized. Call set_ingest_artifacts first."
+                "Retriever not initialized. Call set_ingest_artifacts first."
             )
 
         question = benchmark_entry.question
@@ -110,7 +112,7 @@ Answer:"""
         query_embedding = self._generate_query_embedding(question)
 
         # Retrieve relevant chunks
-        search_results = self.vector_store.search(
+        search_results = self.retriever.search(
             query_embedding=query_embedding, top_k=self._params.top_k
         )
 
@@ -122,13 +124,23 @@ Answer:"""
         prompt = self._format_prompt(question, contexts)
 
         # Call LLM
-        response = litellm.completion(
-            model=self._params.llm_model,
-            messages=[{"role": "user", "content": prompt}],
-            api_key=self._params.tracking_api_key,
+        response = cast(
+            dict[str, Any],
+            litellm.completion(
+                model=self._params.llm_model,
+                messages=[{"role": "user", "content": prompt}],
+                api_key=self._params.tracking_api_key,
+            ),
         )
 
-        answer = response.choices[0].message.content
+        choices = response.get("choices")
+        if not choices:
+            raise RuntimeError("LLM returned no choices")
+
+        message = cast(dict[str, Any], choices[0].get("message", {}))
+        answer = message.get("content")
+        if not isinstance(answer, str) or not answer:
+            raise RuntimeError("LLM returned an empty response")
 
         # Create inference result
         result = InferenceResult(

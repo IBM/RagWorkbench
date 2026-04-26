@@ -47,23 +47,23 @@ class TestSimpleRagInferencePipeline:
         """Test pipeline initialization."""
         pipeline = SimpleRagInferencePipeline(inference_params)
         assert pipeline._params == inference_params
-        assert pipeline.vector_store is None
+        assert pipeline.retriever is None
         assert pipeline.embedding_model is None
 
-    @patch("simple_rag.inference_pipeline.MilvusVectorStore")
+    @patch("simple_rag.inference_pipeline.MilvusRetriever")
     def test_set_ingest_artifacts(
-        self, mock_vector_store_class, inference_params, ingest_artifact
+        self, mock_retriever_class, inference_params, ingest_artifact
     ):
         """Test setting ingest artifacts."""
-        mock_vector_store = MagicMock()
-        mock_vector_store_class.return_value = mock_vector_store
+        mock_retriever = MagicMock()
+        mock_retriever_class.return_value = mock_retriever
 
         pipeline = SimpleRagInferencePipeline(inference_params)
         pipeline.set_ingest_artifacts([ingest_artifact])
 
-        assert pipeline.vector_store is not None
+        assert pipeline.retriever is not None
         assert pipeline.embedding_model == "text-embedding-3-small"
-        mock_vector_store_class.assert_called_once()
+        mock_retriever_class.assert_called_once()
 
     def test_set_ingest_artifacts_empty_list(self, inference_params):
         """Test error when no artifacts provided."""
@@ -81,9 +81,9 @@ class TestSimpleRagInferencePipeline:
             pipeline.set_ingest_artifacts([wrong_artifact])
 
     @patch("simple_rag.inference_pipeline.litellm.embedding")
-    @patch("simple_rag.inference_pipeline.MilvusVectorStore")
+    @patch("simple_rag.inference_pipeline.MilvusRetriever")
     def test_generate_query_embedding(
-        self, mock_vector_store_class, mock_embedding, inference_params, ingest_artifact
+        self, mock_retriever_class, mock_embedding, inference_params, ingest_artifact
     ):
         """Test query embedding generation."""
         mock_embedding.return_value = MagicMock(data=[{"embedding": [0.1] * 384}])
@@ -117,10 +117,10 @@ class TestSimpleRagInferencePipeline:
 
     @patch("simple_rag.inference_pipeline.litellm.completion")
     @patch("simple_rag.inference_pipeline.litellm.embedding")
-    @patch("simple_rag.inference_pipeline.MilvusVectorStore")
+    @patch("simple_rag.inference_pipeline.MilvusRetriever")
     def test_process_no_cache(
         self,
-        mock_vector_store_class,
+        mock_retriever_class,
         mock_embedding,
         mock_completion,
         inference_params,
@@ -131,8 +131,8 @@ class TestSimpleRagInferencePipeline:
         # Setup mocks
         mock_embedding.return_value = MagicMock(data=[{"embedding": [0.1] * 384}])
 
-        mock_vector_store = MagicMock()
-        mock_vector_store.search.return_value = [
+        mock_retriever = MagicMock()
+        mock_retriever.search.return_value = [
             {
                 "chunk_id": "doc1_0",
                 "document_id": "doc1",
@@ -141,11 +141,13 @@ class TestSimpleRagInferencePipeline:
                 "distance": 0.95,
             }
         ]
-        mock_vector_store_class.return_value = mock_vector_store
+        mock_retriever_class.return_value = mock_retriever
 
-        mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message.content = "Paris"
+        mock_message = MagicMock()
+        mock_message.get.return_value = "Paris"
+        mock_choice = MagicMock()
+        mock_choice.get.return_value = mock_message
+        mock_response = {"choices": [mock_choice]}
         mock_completion.return_value = mock_response
 
         # Run process
@@ -161,15 +163,15 @@ class TestSimpleRagInferencePipeline:
         assert "Paris is the capital" in result.contexts[0]
         assert result.context_ids == ["doc1"]
 
-        mock_vector_store.search.assert_called_once()
+        mock_retriever.search.assert_called_once()
         mock_completion.assert_called_once()
 
-    @patch("simple_rag.inference_pipeline.MilvusVectorStore")
+    @patch("simple_rag.inference_pipeline.MilvusRetriever")
     def test_process_no_cache_not_initialized(
-        self, mock_vector_store_class, inference_params, benchmark_entry
+        self, mock_retriever_class, inference_params, benchmark_entry
     ):
-        """Test error when vector store not initialized."""
+        """Test error when retriever not initialized."""
         pipeline = SimpleRagInferencePipeline(inference_params)
 
-        with pytest.raises(RuntimeError, match="Vector store not initialized"):
+        with pytest.raises(RuntimeError, match="Retriever not initialized"):
             pipeline.process_no_cache(benchmark_entry)

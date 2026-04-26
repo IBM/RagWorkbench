@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from simple_rag.config import MilvusConfig
-from simple_rag.milvus_client import MilvusVectorStore
+from simple_rag.milvus_client import MilvusIngester, MilvusRetriever
 
 
 @pytest.fixture
@@ -21,18 +21,18 @@ def mock_collection():
     return collection
 
 
-class TestMilvusVectorStore:
-    """Tests for MilvusVectorStore."""
+class TestMilvusIngester:
+    """Tests for MilvusIngester."""
 
     @patch("simple_rag.milvus_client.connections")
     def test_initialization(self, mock_connections, milvus_config):
-        """Test vector store initialization."""
-        store = MilvusVectorStore(
+        """Test ingester initialization."""
+        ingester = MilvusIngester(
             config=milvus_config, collection_name="test_collection", dimension=384
         )
 
-        assert store.collection_name == "test_collection"
-        assert store.dimension == 384
+        assert ingester.collection_name == "test_collection"
+        assert ingester.dimension == 384
         mock_connections.connect.assert_called_once_with(
             alias="default", host="localhost", port=19530
         )
@@ -43,14 +43,14 @@ class TestMilvusVectorStore:
         self, mock_connections, mock_collection_class, milvus_config
     ):
         """Test collection creation."""
-        store = MilvusVectorStore(
+        ingester = MilvusIngester(
             config=milvus_config, collection_name="test_collection", dimension=384
         )
 
         mock_collection = MagicMock()
         mock_collection_class.return_value = mock_collection
 
-        store.create_collection()
+        ingester.create_collection()
 
         # Verify collection was created
         mock_collection_class.assert_called_once()
@@ -62,13 +62,13 @@ class TestMilvusVectorStore:
         self, mock_connections, mock_collection_class, milvus_config
     ):
         """Test embedding insertion."""
-        store = MilvusVectorStore(
+        ingester = MilvusIngester(
             config=milvus_config, collection_name="test_collection", dimension=384
         )
 
         mock_collection = MagicMock()
         mock_collection_class.return_value = mock_collection
-        store.collection = mock_collection
+        ingester.collection = mock_collection
 
         chunks = [
             {
@@ -80,17 +80,33 @@ class TestMilvusVectorStore:
         ]
         embeddings = [[0.1] * 384]
 
-        chunk_ids = store.insert_embeddings(chunks, embeddings)
+        chunk_ids = ingester.insert_embeddings(chunks, embeddings)
 
         assert chunk_ids == ["doc1_0"]
         mock_collection.insert.assert_called_once()
         mock_collection.flush.assert_called_once()
 
+
+class TestMilvusRetriever:
+    """Tests for MilvusRetriever."""
+
+    @patch("simple_rag.milvus_client.connections")
+    def test_initialization(self, mock_connections, milvus_config):
+        """Test retriever initialization."""
+        retriever = MilvusRetriever(
+            config=milvus_config, collection_name="test_collection", dimension=384
+        )
+
+        assert retriever.collection_name == "test_collection"
+        mock_connections.connect.assert_called_once_with(
+            alias="default", host="localhost", port=19530
+        )
+
     @patch("simple_rag.milvus_client.Collection")
     @patch("simple_rag.milvus_client.connections")
     def test_search(self, mock_connections, mock_collection_class, milvus_config):
         """Test vector search."""
-        store = MilvusVectorStore(
+        retriever = MilvusRetriever(
             config=milvus_config, collection_name="test_collection", dimension=384
         )
 
@@ -108,10 +124,10 @@ class TestMilvusVectorStore:
         mock_collection = MagicMock()
         mock_collection.search.return_value = [mock_hits]
         mock_collection_class.return_value = mock_collection
-        store.collection = mock_collection
+        retriever.collection = mock_collection
 
         query_embedding = [0.1] * 384
-        results = store.search(query_embedding, top_k=5)
+        results = retriever.search(query_embedding, top_k=5)
 
         assert len(results) == 1
         assert results[0]["chunk_id"] == "doc1_0"
@@ -119,19 +135,3 @@ class TestMilvusVectorStore:
         assert results[0]["distance"] == 0.95
         mock_collection.load.assert_called_once()
         mock_collection.search.assert_called_once()
-
-    @patch("simple_rag.milvus_client.connections")
-    def test_get_collection_stats(
-        self, mock_connections, milvus_config, mock_collection
-    ):
-        """Test getting collection statistics."""
-        store = MilvusVectorStore(
-            config=milvus_config, collection_name="test_collection", dimension=384
-        )
-        store.collection = mock_collection
-
-        stats = store.get_collection_stats()
-
-        assert stats["name"] == "test_collection"
-        assert stats["num_entities"] == 100
-        assert stats["dimension"] == 384
