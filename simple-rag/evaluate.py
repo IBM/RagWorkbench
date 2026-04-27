@@ -12,9 +12,9 @@ from dotenv import load_dotenv
 # Import pipelines to register them with BoardRegistry
 from simple_rag.inference_pipeline import SimpleRagInferencePipeline  # noqa: F401
 from simple_rag.ingest_pipeline import SimpleRagIngestPipeline  # noqa: F401
-from simple_rag.logging_config import init_logger
 
 from ragworkbench.boards.board_generator import BoardGenerator
+from ragworkbench.logging_config import init_logger
 
 logger = logging.getLogger(__name__)
 

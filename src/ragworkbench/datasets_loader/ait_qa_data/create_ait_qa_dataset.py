@@ -25,13 +25,11 @@ from ragworkbench.datasets_loader.ait_qa_data.config import (
     get_ait_qa_data_dir,
     get_ait_qa_documents_dir,
 )
+from ragworkbench.logging_config import init_logger
 
 # Suppress SSL warnings when verify=False is used
 warnings.filterwarnings("ignore", message="Unverified HTTPS request")
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
 logger = logging.getLogger(__name__)
 
 # Define URL to output filename mapping for all AIT QA dataset PDFs
@@ -180,4 +178,5 @@ def create_ait_qa_dataset() -> None:
 
 
 if __name__ == "__main__":
+    init_logger()
     create_ait_qa_dataset()

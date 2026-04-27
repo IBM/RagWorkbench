@@ -25,3 +25,6 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/simple_rag"]
+
+[tool.uv.sources]
+ragworkbench = { path = "../", editable = true }
