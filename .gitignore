@@ -188,3 +188,6 @@ inference_engine_cache/
 
 # Cache directories
 cache/
+
+# Board output directories
+**/boards/*/output_*/
