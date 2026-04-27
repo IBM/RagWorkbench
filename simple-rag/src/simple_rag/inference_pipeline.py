@@ -33,6 +33,7 @@ class SimpleRagInferencePipeline(InferencePipeline):
         self._params: SimpleRagInferenceParams = params
         self.retriever: MilvusRetriever | None = None
         self.embedding_model: str | None = None
+        self.collection_name: str | None = None
 
     def set_ingest_artifacts(self, ingest_artifacts: list[IngestArtifact]) -> None:
         """
@@ -57,10 +58,25 @@ class SimpleRagInferencePipeline(InferencePipeline):
             collection_name=artifact.collection_name,
         )
         self.embedding_model = artifact.embedding_model
+        self.collection_name = artifact.collection_name
 
         logger.info(
             f"Configured inference pipeline with collection '{artifact.collection_name}'"
         )
+
+    def _get_additional_cache_params(self) -> dict[str, Any] | None:
+        """
+        Get additional parameters to include in the cache key.
+
+        Returns collection_name to ensure cache isolation between different
+        Milvus collections, as they may contain different document sets.
+
+        Returns:
+            Dictionary with collection_name if set, None otherwise
+        """
+        if self.collection_name is not None:
+            return {"collection_name": self.collection_name}
+        return None
 
     def _generate_query_embedding(self, query: str) -> list[float]:
         """Generate embedding for query."""
