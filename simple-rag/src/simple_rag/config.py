@@ -1,9 +1,12 @@
 """Configuration models for Simple RAG Pipeline."""
 
+from pathlib import Path
+
 from pydantic import BaseModel, Field
 
 from ragworkbench.api.inference import InferenceParams
 from ragworkbench.api.ingest import IngestParams
+from ragworkbench.boards.board_model import CacheMode
 
 
 class MilvusConfig(BaseModel):
@@ -34,6 +37,19 @@ class ChunkingConfig(BaseModel):
     )
 
 
+class DoclingCacheConfig(BaseModel):
+    """Configuration for Docling document caching."""
+
+    cache_dir: Path = Field(
+        default=Path("./cache"),
+        description="Directory for Docling document cache",
+    )
+    cache_mode: CacheMode = Field(
+        default=CacheMode.ON,
+        description="Cache operation mode (ON/OFF/REFRESH)",
+    )
+
+
 class SimpleRagIngestParams(IngestParams):
     """Parameters for Simple RAG ingestion pipeline."""
 
@@ -45,6 +61,10 @@ class SimpleRagIngestParams(IngestParams):
     )
     embedding_model: str = Field(
         default="text-embedding-3-small", description="LiteLLM embedding model"
+    )
+    docling_cache_config: DoclingCacheConfig = Field(
+        default_factory=DoclingCacheConfig,
+        description="Docling document cache configuration",
     )
 
 

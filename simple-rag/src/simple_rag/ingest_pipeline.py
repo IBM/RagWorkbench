@@ -10,9 +10,11 @@ from pydantic import Field
 
 from ragworkbench.api.ingest import IngestPipeline
 from ragworkbench.api.ingest_artifact import IngestArtifact
+from ragworkbench.boards.board_model import CacheMode
 from ragworkbench.datasets_loader import RagDataLoader
 from ragworkbench.datasets_loader.data_models import DocumentObject
 from simple_rag.config import SimpleRagIngestParams
+from simple_rag.docling_cache import DoclingCache
 from simple_rag.milvus_client import MilvusIngester
 
 logger = logging.getLogger(__name__)
@@ -35,6 +37,20 @@ class SimpleRagIngestPipeline(IngestPipeline):
         """Initialize the ingest pipeline."""
         super().__init__(params)
         self._params: SimpleRagIngestParams = params
+
+        # Initialize Docling cache if not OFF
+        # Note: DocumentConverter has no configurable parameters that affect conversion,
+        # so we don't need a config_dict for cache subdirectory hashing
+        self._docling_cache = None
+        if self._params.docling_cache_config.cache_mode != CacheMode.OFF:
+            self._docling_cache = DoclingCache(
+                cache_dir=self._params.docling_cache_config.cache_dir,
+                cache_mode=self._params.docling_cache_config.cache_mode,
+            )
+            logger.info(
+                f"Docling cache initialized at {self._docling_cache.cache_path} "
+                f"(mode: {self._params.docling_cache_config.cache_mode.value})"
+            )
 
     def _generate_collection_name(self) -> str:
         """Generate collection name from parameters hash."""
@@ -63,23 +79,41 @@ class SimpleRagIngestPipeline(IngestPipeline):
         logger.info(f"Embedding dimension: {dimension}")
         return dimension
 
-    def _convert_document(self, doc: DocumentObject) -> str:
-        """Convert DocumentObject to text using Docling."""
+    def _convert_document(self, doc: DocumentObject):
+        """
+        Convert DocumentObject to DoclingDocument using Docling.
+
+        Uses cache if enabled to avoid re-converting the same document.
+        """
+        # Check cache first if enabled
+        if self._docling_cache is not None:
+            cached_doc = self._docling_cache.get(doc.name)
+            if cached_doc is not None:
+                logger.debug(f"Cache hit for document: {doc.name}")
+                return cached_doc
+            logger.debug(f"Cache miss for document: {doc.name}")
+
+        # Convert document
         converter = DocumentConverter()
-
-        # DocumentObject extends DocumentStream, so pass it directly
         result = converter.convert(doc)
-        return result.document.export_to_markdown()
+        docling_doc = result.document
 
-    def _chunk_text(self, text: str) -> list[str]:
-        """Chunk text using Docling HybridChunker."""
+        # Store in cache if enabled
+        if self._docling_cache is not None:
+            self._docling_cache.add(doc.name, docling_doc)
+            logger.debug(f"Cached document: {doc.name}")
+
+        return docling_doc
+
+    def _chunk_document(self, docling_doc) -> list[str]:
+        """Chunk DoclingDocument using Docling HybridChunker."""
         chunker = HybridChunker(
             tokenizer=self._params.chunking_config.tokenizer,
             max_tokens=self._params.chunking_config.max_tokens,
             merge_peers=self._params.chunking_config.merge_peers,
         )
 
-        chunks = list(chunker.chunk(text))
+        chunks = list(chunker.chunk(docling_doc))
         return [chunk.text for chunk in chunks]
 
     def _generate_embeddings(self, texts: list[str]) -> list[list[float]]:
@@ -134,11 +168,11 @@ class SimpleRagIngestPipeline(IngestPipeline):
         all_texts = []
 
         for doc in documents:
-            # Convert document to text
-            text = self._convert_document(doc)
+            # Convert document to DoclingDocument
+            docling_doc = self._convert_document(doc)
 
-            # Chunk text
-            chunks = self._chunk_text(text)
+            # Chunk document
+            chunks = self._chunk_document(docling_doc)
 
             # Create chunk metadata
             for idx, chunk_text in enumerate(chunks):
@@ -173,6 +207,15 @@ class SimpleRagIngestPipeline(IngestPipeline):
             milvus_uri=self._params.milvus_config.uri,
             embedding_model=self._params.embedding_model,
         )
+
+        # Log cache statistics if cache is enabled
+        if self._docling_cache is not None:
+            cache_stats = self._docling_cache.get_cache_stats()
+            logger.info(
+                f"Docling cache stats - Hits: {cache_stats['cache_hit']}, "
+                f"Misses: {cache_stats['cache_miss']}, "
+                f"Total entries: {cache_stats['total_entries']}"
+            )
 
         logger.info("Ingestion complete")
         return [artifact]

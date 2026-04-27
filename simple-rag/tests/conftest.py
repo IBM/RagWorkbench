@@ -24,6 +24,3 @@ def pytest_configure(config):
     )
     logger = logging.getLogger(__name__)
     logger.info("Logging configured for simple-rag tests")
-
-
-# Made with Bob
