@@ -68,7 +68,8 @@ class DoclingCache(AbstractFileSystemCache):
         Returns:
             JSON string representation.
         """
-        return json.dumps(docling_doc.model_dump(), indent=4)
+        # Use mode='json' to ensure proper serialization of Path objects
+        return json.dumps(docling_doc.model_dump(mode="json"), indent=4)
 
     def _get_parameters_hash(self, document_name: str) -> str:
         """

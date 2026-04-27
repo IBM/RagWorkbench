@@ -41,6 +41,30 @@ def sample_docling_doc():
     return DoclingDocument(name="sample_doc.pdf")
 
 
+@pytest.fixture
+def docling_doc_with_path(monkeypatch):
+    """Create a DoclingDocument with Path objects (mimics real converter output)."""
+    from pathlib import Path
+
+    # Create a document
+    doc = DoclingDocument(name="test_with_path.pdf")
+
+    # Store original model_dump method
+    original_model_dump = DoclingDocument.model_dump
+
+    # Create a wrapper that adds Path objects to the output
+    def model_dump_with_paths(self, *args, **kwargs):
+        result = original_model_dump(self, *args, **kwargs)
+        # Only add Path if mode is not 'json' (to test the fix)
+        if kwargs.get("mode") != "json":
+            result["_test_path"] = Path("/tmp/test.pdf")
+        return result
+
+    # Monkey patch the class method
+    monkeypatch.setattr(DoclingDocument, "model_dump", model_dump_with_paths)
+    return doc
+
+
 # ============================================================================
 # Minimal Test Suite - DoclingCache-Specific Functionality
 # ============================================================================
@@ -98,6 +122,21 @@ class TestDoclingCacheSpecific:
         # Verify cache file created
         json_files = list(cache_instance.cache_path.glob("*.json"))
         assert len(json_files) == 1
+
+    def test_serialization_with_path_objects(
+        self, cache_instance, docling_doc_with_path
+    ):
+        """Test that DoclingDocument with Path objects can be serialized (regression test)."""
+        # This test would have caught the PosixPath serialization bug
+        doc_name = "doc_with_paths.pdf"
+
+        # This should not raise TypeError about PosixPath not being JSON serializable
+        cache_instance.add(doc_name, docling_doc_with_path)
+
+        # Verify we can retrieve it
+        retrieved = cache_instance.get(doc_name)
+        assert retrieved is not None
+        assert isinstance(retrieved, DoclingDocument)
 
 
 # Made with Bob
