@@ -159,11 +159,38 @@ class SimpleRagIngestPipeline(IngestPipeline):
 
         logger.info(f"Processing {len(documents)} documents")
 
+        # Check which documents are already indexed
+        indexed_documents = ingester.get_indexed_documents()
+        if indexed_documents:
+            logger.info(
+                f"Found {len(indexed_documents)} documents already indexed in collection '{collection_name}'"
+            )
+
+        # Filter out already-indexed documents
+        documents_to_process = [
+            doc for doc in documents if doc.name not in indexed_documents
+        ]
+
+        if not documents_to_process:
+            logger.info("All documents are already indexed. Skipping ingestion.")
+            # Create artifact with existing collection
+            artifact = SimpleRagIngestArtifact(
+                collection_name=collection_name,
+                milvus_uri=self._params.milvus_config.uri,
+                embedding_model=self._params.embedding_model,
+            )
+            return [artifact]
+
+        logger.info(
+            f"Processing {len(documents_to_process)} new documents "
+            f"(skipping {len(indexed_documents)} already indexed)"
+        )
+
         # Process each document
         all_chunks = []
         all_texts = []
 
-        for doc in documents:
+        for doc in documents_to_process:
             # Convert document to DoclingDocument
             docling_doc = self._convert_document(doc)
 

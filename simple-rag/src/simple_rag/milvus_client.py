@@ -3,7 +3,14 @@
 import logging
 from typing import Any
 
-from pymilvus import Collection, CollectionSchema, DataType, FieldSchema, connections
+from pymilvus import (
+    Collection,
+    CollectionSchema,
+    DataType,
+    FieldSchema,
+    connections,
+    utility,
+)
 
 from simple_rag.config import MilvusConfig
 
@@ -37,8 +44,14 @@ class MilvusIngester:
         self._create_collection()
 
     def _create_collection(self) -> None:
-        """Create Milvus collection with schema."""
-        # Define schema
+        """Create or reuse existing Milvus collection."""
+        # Check if collection already exists
+        if utility.has_collection(self.collection_name):
+            logger.info(f"Reusing existing collection '{self.collection_name}'")
+            self.collection = Collection(name=self.collection_name)
+            return
+
+        # Define schema for new collection
         fields = [
             FieldSchema(
                 name="chunk_id", dtype=DataType.VARCHAR, is_primary=True, max_length=255
@@ -66,6 +79,37 @@ class MilvusIngester:
         }
         self.collection.create_index(field_name="embedding", index_params=index_params)
         logger.info(f"Created collection '{self.collection_name}' with COSINE metric")
+
+    def get_indexed_documents(self) -> set[str]:
+        """
+        Get set of document IDs that are already indexed in the collection.
+
+        Returns:
+            Set of document IDs present in the collection
+        """
+        if self.collection is None:
+            self.collection = Collection(name=self.collection_name)
+
+        # Load collection to query it
+        self.collection.load()
+
+        # Query for all unique document IDs
+        # Use a simple query to get all document_ids
+        try:
+            results = self.collection.query(
+                expr="chunk_index >= 0",  # Match all documents
+                output_fields=["document_id"],
+            )
+
+            # Extract unique document IDs
+            document_ids = {result["document_id"] for result in results}  # type: ignore[misc]
+            logger.info(f"Found {len(document_ids)} documents already indexed")
+
+            return document_ids
+        except Exception as e:
+            logger.warning(f"Failed to query indexed documents: {e}")
+            # Return empty set if query fails (e.g., empty collection)
+            return set()
 
     def insert_embeddings(
         self, chunks: list[dict[str, Any]], embeddings: list[list[float]]
@@ -148,7 +192,7 @@ class MilvusRetriever:
 
         # Format results
         formatted_results = []
-        for hits in results:
+        for hits in results:  # type: ignore[misc]
             for hit in hits:
                 formatted_results.append(
                     {
