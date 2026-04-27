@@ -21,7 +21,7 @@ configurations:
         embedding_model:
           - openai/all-minilm
         chunking_config:
-          max_tokens: 512
+          max_tokens: 256
     inference:
       name: simple_rag
       params:

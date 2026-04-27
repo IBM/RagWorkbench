@@ -20,6 +20,11 @@ from simple_rag.config import SimpleRagIngestParams
 from simple_rag.docling_cache import DoclingCache
 from simple_rag.milvus_client import MilvusIngester
 
+# Suppress docling log messages
+logging.getLogger("docling").setLevel(logging.WARNING)
+logging.getLogger("docling.document_converter").setLevel(logging.WARNING)
+logging.getLogger("docling.chunking").setLevel(logging.WARNING)
+
 logger = logging.getLogger(__name__)
 
 
@@ -149,24 +154,23 @@ class SimpleRagIngestPipeline(IngestPipeline):
 
         return text
 
-    def _generate_embedding(self, text: str) -> list[float]:
-        """Generate embedding for a single text using LiteLLM."""
-        # Truncate text to max_tokens
-        truncated_text = self._truncate_text(text)
+    def _generate_embeddings(self, texts: list[str]) -> list[list[float]]:
+        """Generate embeddings using LiteLLM."""
+        # Truncate all texts to max_tokens
+        truncated_texts = [self._truncate_text(text) for text in texts]
 
-        logger.debug(
-            f"Generating embedding with model={self._params.embedding_model}, "
-            f"input_length={len(truncated_text)}, "
-            f"api_key={'***' if self._params.tracking_api_key else None}, "
-            f"timeout={self.EMBEDDING_TIMEOUT}"
+        logger.info(
+            f"Generating embeddings for {len(truncated_texts)} texts using {self._params.embedding_model}"
         )
         response = litellm.embedding(
             model=self._params.embedding_model,
-            input=[truncated_text],
+            input=truncated_texts,
             api_key=self._params.tracking_api_key,
             timeout=self.EMBEDDING_TIMEOUT,
         )
-        return response.data[0]["embedding"]
+        embeddings = [item["embedding"] for item in response.data]
+        logger.info(f"Generated {len(embeddings)} embeddings")
+        return embeddings
 
     def process(self, data_loader: RagDataLoader) -> list[IngestArtifact]:
         """
@@ -253,19 +257,14 @@ class SimpleRagIngestPipeline(IngestPipeline):
 
         logger.info(f"Generated {len(all_chunks)} chunks")
 
-        # Generate embeddings one at a time
+        # Generate embeddings in batches
+        batch_size = 100
         all_embeddings = []
-        logger.info(
-            f"Generating embeddings for {len(all_texts)} texts using {self._params.embedding_model}"
-        )
-
-        for i, text in enumerate(all_texts):
-            embedding = self._generate_embedding(text)
-            all_embeddings.append(embedding)
-
-            # Log progress every 100 embeddings or at the end
-            if (i + 1) % 100 == 0 or (i + 1) == len(all_texts):
-                logger.info(f"Generated {i + 1}/{len(all_texts)} embeddings")
+        for i in range(0, len(all_texts), batch_size):
+            batch = all_texts[i : i + batch_size]
+            embeddings = self._generate_embeddings(batch)
+            all_embeddings.extend(embeddings)
+            logger.info(f"Generated embeddings for batch {i // batch_size + 1}")
 
         # Insert into Milvus
         ingester.insert_embeddings(all_chunks, all_embeddings)
