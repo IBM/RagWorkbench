@@ -75,6 +75,8 @@ class BoardRegistry:
         cls,
         name: str,
         params: dict[str, Any],
+        cache_dir: Path | None = None,
+        cache_mode: CacheMode = CacheMode.ON,
     ):
         if name not in cls._ingest_pipelines:
             raise ValueError(
@@ -84,7 +86,11 @@ class BoardRegistry:
             )
 
         ingest_class, params_class = cls._ingest_pipelines[name]
-        return ingest_class(params_class.model_validate(params))
+        return ingest_class(
+            params_class.model_validate(params),
+            cache_dir=cache_dir,
+            cache_mode=cache_mode,
+        )
 
     @classmethod
     def create_inference_pipeline(

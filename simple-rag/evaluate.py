@@ -7,6 +7,8 @@ to benchmark performance on the AIT-QA dataset.
 import logging
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # Import pipelines to register them with BoardRegistry
 from simple_rag.inference_pipeline import SimpleRagInferencePipeline  # noqa: F401
 from simple_rag.ingest_pipeline import SimpleRagIngestPipeline  # noqa: F401
@@ -19,7 +21,11 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     """Run Simple RAG evaluation with the example board."""
+
     init_logger()
+
+    # Load environment variables from .env file
+    load_dotenv(verbose=True)
 
     # Get the boards directory path
     boards_directory = Path(__file__).parent / "boards"

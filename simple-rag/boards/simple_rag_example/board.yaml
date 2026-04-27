@@ -3,7 +3,7 @@ name: Simple RAG Benchmarking Results
 description: An example of Simple RAG benchmarking results with the AIT-QA dataset.
 
 experiment:
-  usage_tracking: true
+  usage_tracking: false
   cache: "on"
 
 datasets:
@@ -19,20 +19,14 @@ configurations:
       name: simple_rag
       params:
         embedding_model:
-          - provider_id: openai
-            model_id: all-minilm
-          # - provider_id: openai
-          #   model_id: text-embedding-3-small
+          - openai/all-minilm
         chunking_config:
           max_tokens: 512
     inference:
       name: simple_rag
       params:
         llm_model:
-          - provider_id: openai
-            model_id: llama3.2-1b
-          # - provider_id: openai
-          #   model_id: gpt-4o-mini
+          - openai/llama3.2-1b
         top_k: 3
 
 metrics:
@@ -41,7 +35,6 @@ metrics:
   - unitxt.context_correctness.map
   - unitxt.answer_correctness.llmaaj_llama_rits
   - workbench.tool_use_count
-  - workbench.usage
 
 report:
   screens:
@@ -57,17 +50,6 @@ report:
       chart:
         type: bar
         title: Tool Calls
-    - title: Usage & Cost (Avg. per question)
-      columns:
-        workbench.usage.total_tokens_mean: Total Tokens
-        workbench.usage.prompt_tokens_mean: Prompt Tokens
-        workbench.usage.completion_tokens_mean: Completion Tokens
-        workbench.usage.input_cost_mean: Input Cost
-        workbench.usage.output_cost_mean: Output Cost
-        workbench.usage.total_cost_mean: Total Cost
-      chart:
-        type: bar
-        title: Token Usage Statistics
     - title: Match@K
       columns:
         unitxt.context_correctness.retrieval_at_k.match_at_1_mean: M@1

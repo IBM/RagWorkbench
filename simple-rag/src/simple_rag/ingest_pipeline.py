@@ -2,11 +2,13 @@
 
 import hashlib
 import logging
+from pathlib import Path
 
 import litellm
 from docling.chunking import HybridChunker
 from docling.document_converter import DocumentConverter
 from pydantic import Field
+from transformers import AutoTokenizer
 
 from ragworkbench.api.ingest import IngestPipeline
 from ragworkbench.api.ingest_artifact import IngestArtifact
@@ -35,23 +37,34 @@ class SimpleRagIngestPipeline(IngestPipeline):
 
     EMBEDDING_TIMEOUT = 30  # seconds
 
-    def __init__(self, params: SimpleRagIngestParams) -> None:
+    def __init__(
+        self,
+        params: SimpleRagIngestParams,
+        cache_dir: Path | None = None,
+        cache_mode: CacheMode = CacheMode.ON,
+    ) -> None:
         """Initialize the ingest pipeline."""
-        super().__init__(params)
+        super().__init__(_params=params, cache_dir=cache_dir, cache_mode=cache_mode)
         self._params: SimpleRagIngestParams = params
 
-        # Initialize Docling cache if not OFF
+        # Initialize tokenizer for truncation
+        self._tokenizer = AutoTokenizer.from_pretrained(
+            self._params.chunking_config.tokenizer
+        )
+        logger.info(f"Initialized tokenizer: {self._params.chunking_config.tokenizer}")
+
+        # Initialize Docling cache if cache_dir is provided and mode is not OFF
         # Note: DocumentConverter has no configurable parameters that affect conversion,
         # so we don't need a config_dict for cache subdirectory hashing
         self._docling_cache = None
-        if self._params.docling_cache_config.cache_mode != CacheMode.OFF:
+        if cache_dir is not None and cache_mode != CacheMode.OFF:
             self._docling_cache = DoclingCache(
-                cache_dir=self._params.docling_cache_config.cache_dir,
-                cache_mode=self._params.docling_cache_config.cache_mode,
+                cache_dir=cache_dir,
+                cache_mode=cache_mode,
             )
             logger.info(
                 f"Docling cache initialized at {self._docling_cache.cache_path} "
-                f"(mode: {self._params.docling_cache_config.cache_mode.value})"
+                f"(mode: {cache_mode.value})"
             )
 
     def _generate_collection_name(self) -> str:
@@ -70,6 +83,12 @@ class SimpleRagIngestPipeline(IngestPipeline):
         """Get embedding dimension from the model."""
         logger.info(
             f"Getting embedding dimension for model: {self._params.embedding_model}"
+        )
+        logger.info(
+            f"Dimension check params: model={self._params.embedding_model}, "
+            f"input=['test'], "
+            f"api_key={'***' if self._params.tracking_api_key else None}, "
+            f"timeout={self.EMBEDDING_TIMEOUT}"
         )
         response = litellm.embedding(
             model=self._params.embedding_model,
@@ -118,16 +137,36 @@ class SimpleRagIngestPipeline(IngestPipeline):
         chunks = list(chunker.chunk(docling_doc))
         return [chunk.text for chunk in chunks]
 
-    def _generate_embeddings(self, texts: list[str]) -> list[list[float]]:
-        """Generate embeddings using LiteLLM."""
+    def _truncate_text(self, text: str) -> str:
+        """Truncate text to max_tokens using the configured tokenizer."""
+        max_tokens = self._params.chunking_config.max_tokens
+        tokens = self._tokenizer.encode(text, add_special_tokens=False)
+
+        if len(tokens) > max_tokens:
+            logger.warning(f"Text has {len(tokens)} tokens, truncating to {max_tokens}")
+            truncated_tokens = tokens[:max_tokens]
+            return self._tokenizer.decode(truncated_tokens, skip_special_tokens=True)
+
+        return text
+
+    def _generate_embedding(self, text: str) -> list[float]:
+        """Generate embedding for a single text using LiteLLM."""
+        # Truncate text to max_tokens
+        truncated_text = self._truncate_text(text)
+
+        logger.debug(
+            f"Generating embedding with model={self._params.embedding_model}, "
+            f"input_length={len(truncated_text)}, "
+            f"api_key={'***' if self._params.tracking_api_key else None}, "
+            f"timeout={self.EMBEDDING_TIMEOUT}"
+        )
         response = litellm.embedding(
             model=self._params.embedding_model,
-            input=texts,
+            input=[truncated_text],
             api_key=self._params.tracking_api_key,
             timeout=self.EMBEDDING_TIMEOUT,
         )
-        embeddings = [item["embedding"] for item in response.data]
-        return embeddings
+        return response.data[0]["embedding"]
 
     def process(self, data_loader: RagDataLoader) -> list[IngestArtifact]:
         """
@@ -214,25 +253,19 @@ class SimpleRagIngestPipeline(IngestPipeline):
 
         logger.info(f"Generated {len(all_chunks)} chunks")
 
-        # Generate embeddings in batches
-        batch_size = 100
+        # Generate embeddings one at a time
         all_embeddings = []
-        total_batches = (len(all_texts) + batch_size - 1) // batch_size
         logger.info(
-            f"Generating embeddings for {len(all_texts)} texts in {total_batches} batches using {self._params.embedding_model}"
+            f"Generating embeddings for {len(all_texts)} texts using {self._params.embedding_model}"
         )
 
-        for i in range(0, len(all_texts), batch_size):
-            batch = all_texts[i : i + batch_size]
-            embeddings = self._generate_embeddings(batch)
-            all_embeddings.extend(embeddings)
+        for i, text in enumerate(all_texts):
+            embedding = self._generate_embedding(text)
+            all_embeddings.append(embedding)
 
-            batch_num = i // batch_size + 1
-            # Log every 10 batches or the last batch
-            if batch_num % 10 == 0 or batch_num == total_batches:
-                logger.info(
-                    f"Generated embeddings for batch {batch_num} of {total_batches}"
-                )
+            # Log progress every 100 embeddings or at the end
+            if (i + 1) % 100 == 0 or (i + 1) == len(all_texts):
+                logger.info(f"Generated {i + 1}/{len(all_texts)} embeddings")
 
         # Insert into Milvus
         ingester.insert_embeddings(all_chunks, all_embeddings)
