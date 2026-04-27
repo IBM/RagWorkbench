@@ -294,6 +294,3 @@ class TestMilvusEndToEnd:
         assert len(results) == 2
         doc_ids = {result["document_id"] for result in results}
         assert doc_ids == {"doc1", "doc2"}
-
-
-# Made with Bob

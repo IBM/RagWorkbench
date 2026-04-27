@@ -137,6 +137,3 @@ class TestDoclingCacheSpecific:
         retrieved = cache_instance.get(doc_name)
         assert retrieved is not None
         assert isinstance(retrieved, DoclingDocument)
-
-
-# Made with Bob

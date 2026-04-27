@@ -1,0 +1,86 @@
+name: Simple RAG Benchmarking Results
+
+description: An example of Simple RAG benchmarking results with the AIT-QA dataset.
+
+experiment:
+  usage_tracking: true
+  cache: "on"
+
+datasets:
+  - name: ait_qa
+    sampling:
+      question_limit: 1
+      document_factor: 0
+
+configurations:
+  - name: simple_rag
+    description: Simple RAG Pipeline
+    ingest:
+      name: simple_rag
+      params:
+        embedding_model:
+          - provider_id: openai
+            model_id: all-minilm
+          # - provider_id: openai
+          #   model_id: text-embedding-3-small
+        chunking_config:
+          max_tokens: 512
+    inference:
+      name: simple_rag
+      params:
+        llm_model:
+          - provider_id: openai
+            model_id: llama3.2-1b
+          # - provider_id: openai
+          #   model_id: gpt-4o-mini
+        top_k: 3
+
+metrics:
+  - unitxt.context_correctness.retrieval_at_k
+  - unitxt.context_correctness.mrr
+  - unitxt.context_correctness.map
+  - unitxt.answer_correctness.llmaaj_llama_rits
+  - workbench.tool_use_count
+  - workbench.usage
+
+report:
+  screens:
+    - title: Answer-Correctness (Rits)
+      columns:
+        unitxt.answer_correctness.llmaaj_llama_rits_mean: AC
+      chart:
+        type: bar
+        title: Answer-correctness
+    - title: Tool Calls
+      columns:
+        workbench.tool_use_count_mean: Tool Calls
+      chart:
+        type: bar
+        title: Tool Calls
+    - title: Usage & Cost (Avg. per question)
+      columns:
+        workbench.usage.total_tokens_mean: Total Tokens
+        workbench.usage.prompt_tokens_mean: Prompt Tokens
+        workbench.usage.completion_tokens_mean: Completion Tokens
+        workbench.usage.input_cost_mean: Input Cost
+        workbench.usage.output_cost_mean: Output Cost
+        workbench.usage.total_cost_mean: Total Cost
+      chart:
+        type: bar
+        title: Token Usage Statistics
+    - title: Match@K
+      columns:
+        unitxt.context_correctness.retrieval_at_k.match_at_1_mean: M@1
+        unitxt.context_correctness.retrieval_at_k.match_at_3_mean: M@3
+        unitxt.context_correctness.retrieval_at_k.match_at_5_mean: M@5
+        unitxt.context_correctness.retrieval_at_k.match_at_10_mean: M@10
+      chart:
+        type: line
+        title: Match@K
+    - title: MAP & MRR
+      columns:
+        unitxt.context_correctness.mrr_mean: MRR
+        unitxt.context_correctness.map_mean: MAP
+      chart:
+        type: scatter
+        title: MAP & MRR

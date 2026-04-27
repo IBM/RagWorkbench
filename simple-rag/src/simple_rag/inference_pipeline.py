@@ -9,6 +9,7 @@ from ragworkbench.api.inference import InferencePipeline
 from ragworkbench.api.inference_result import InferenceResult
 from ragworkbench.api.ingest_artifact import IngestArtifact
 from ragworkbench.boards.board_model import CacheMode
+from ragworkbench.boards.board_registry import inference_pipeline
 from ragworkbench.datasets_loader.data_models import RagBenchmarkEntry
 from simple_rag.config import MilvusConfig, SimpleRagInferenceParams
 from simple_rag.ingest_pipeline import SimpleRagIngestArtifact
@@ -17,6 +18,7 @@ from simple_rag.milvus_client import MilvusRetriever
 logger = logging.getLogger(__name__)
 
 
+@inference_pipeline(name="simple_rag", params_class=SimpleRagInferenceParams)
 class SimpleRagInferencePipeline(InferencePipeline):
     """Simple RAG inference pipeline."""
 

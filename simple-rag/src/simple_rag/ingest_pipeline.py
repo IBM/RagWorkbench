@@ -11,6 +11,7 @@ from pydantic import Field
 from ragworkbench.api.ingest import IngestPipeline
 from ragworkbench.api.ingest_artifact import IngestArtifact
 from ragworkbench.boards.board_model import CacheMode
+from ragworkbench.boards.board_registry import ingest_pipeline
 from ragworkbench.datasets_loader import RagDataLoader
 from ragworkbench.datasets_loader.data_models import DocumentObject
 from simple_rag.config import SimpleRagIngestParams
@@ -28,6 +29,7 @@ class SimpleRagIngestArtifact(IngestArtifact):
     embedding_model: str = Field(description="Embedding model used")
 
 
+@ingest_pipeline(name="simple_rag", params_class=SimpleRagIngestParams)
 class SimpleRagIngestPipeline(IngestPipeline):
     """Simple RAG ingestion pipeline."""
 

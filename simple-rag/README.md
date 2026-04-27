@@ -103,6 +103,34 @@ result = experiment.run()
    - Retrieved contexts are formatted into a prompt
    - LLM generates answer based on contexts
 
+## Benchmarking
+
+### Quick Start with Example Board
+
+Run the included example board to benchmark Simple RAG on AIT-QA:
+
+```bash
+cd RagWorkbench/simple-rag
+python evaluate.py
+```
+
+This will:
+- Load 100 questions from AIT-QA dataset
+- Test 2 embedding models (text-embedding-3-large, text-embedding-3-small)
+- Test 2 LLM models (gpt-4o, gpt-4o-mini)
+- Generate comprehensive metrics and reports
+
+See [`boards/simple_rag_example/README.md`](boards/simple_rag_example/README.md) for details.
+
+### Custom Boards
+
+Create your own board configuration in `boards/your_board_name/board.yaml` and run the evaluation script:
+
+```bash
+# Edit evaluate.py to point to your board
+python evaluate.py
+```
+
 ## Testing
 
 ```bash
