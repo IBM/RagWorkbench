@@ -67,7 +67,7 @@ def ingest_params(tmp_path):
 def inference_params():
     """Create inference parameters for the test."""
     return SimpleRagInferenceParams(
-        llm_model="llama3.2-1b",
+        llm_model="openai/llama3.2-1b",
         top_k=3,  # Retrieve fewer chunks for faster testing
     )
 

@@ -185,3 +185,6 @@ ragworkbench_data/
 
 # Inference engine cache (unitxt)
 inference_engine_cache/
+
+# Cache directories
+cache/
