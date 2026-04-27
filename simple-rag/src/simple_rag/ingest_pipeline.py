@@ -118,9 +118,6 @@ class SimpleRagIngestPipeline(IngestPipeline):
 
     def _generate_embeddings(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings using LiteLLM."""
-        logger.info(
-            f"Generating embeddings for {len(texts)} texts using {self._params.embedding_model}"
-        )
         response = litellm.embedding(
             model=self._params.embedding_model,
             input=texts,
@@ -128,7 +125,6 @@ class SimpleRagIngestPipeline(IngestPipeline):
             timeout=self.EMBEDDING_TIMEOUT,
         )
         embeddings = [item["embedding"] for item in response.data]
-        logger.info(f"Generated {len(embeddings)} embeddings")
         return embeddings
 
     def process(self, data_loader: RagDataLoader) -> list[IngestArtifact]:
@@ -192,11 +188,22 @@ class SimpleRagIngestPipeline(IngestPipeline):
         # Generate embeddings in batches
         batch_size = 100
         all_embeddings = []
+        total_batches = (len(all_texts) + batch_size - 1) // batch_size
+        logger.info(
+            f"Generating embeddings for {len(all_texts)} texts in {total_batches} batches using {self._params.embedding_model}"
+        )
+
         for i in range(0, len(all_texts), batch_size):
             batch = all_texts[i : i + batch_size]
             embeddings = self._generate_embeddings(batch)
             all_embeddings.extend(embeddings)
-            logger.info(f"Generated embeddings for batch {i // batch_size + 1}")
+
+            batch_num = i // batch_size + 1
+            # Log every 10 batches or the last batch
+            if batch_num % 10 == 0 or batch_num == total_batches:
+                logger.info(
+                    f"Generated embeddings for batch {batch_num} of {total_batches}"
+                )
 
         # Insert into Milvus
         ingester.insert_embeddings(all_chunks, all_embeddings)
