@@ -124,7 +124,6 @@ Answer:"""
             )
 
         question = benchmark_entry.question
-        logger.info(f"Processing question: {question[:100]}...")
 
         # Generate query embedding
         query_embedding = self._generate_query_embedding(question)
@@ -173,5 +172,4 @@ Answer:"""
             contexts=contexts,
         )
 
-        logger.info(f"Generated answer: {answer[:100]}...")
         return result
