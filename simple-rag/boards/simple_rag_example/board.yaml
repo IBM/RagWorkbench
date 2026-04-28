@@ -9,8 +9,8 @@ experiment:
 datasets:
   - name: ait_qa
     sampling:
-      question_limit: 1
-      document_factor: 0
+      question_limit: 100
+      # document_factor: 0
 
 configurations:
   - name: simple_rag
@@ -26,7 +26,7 @@ configurations:
       name: simple_rag
       params:
         llm_model:
-          - ollama/llama3.2:1b
+          - ollama/gemma3:4b
         top_k: 3
 
 metrics:

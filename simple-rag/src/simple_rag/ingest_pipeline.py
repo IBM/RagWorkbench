@@ -76,14 +76,15 @@ class SimpleRagIngestPipeline(IngestPipeline):
                 f"(mode: {cache_mode.value})"
             )
 
-    def _generate_collection_name(self) -> str:
-        """Generate collection name from parameters hash."""
-        # Create hash from key parameters
+    def _generate_collection_name(self, document_names: list[str]) -> str:
+        """Generate collection name from parameters and document names hash."""
+        sorted_names = sorted(document_names)
         params_str = (
             f"{self._params.embedding_model}"
             f"{self._params.chunking_config.tokenizer}"
             f"{self._params.chunking_config.max_tokens}"
             f"{self._params.chunking_config.merge_peers}"
+            f"{'|'.join(sorted_names)}"
         )
         hash_obj = hashlib.md5(params_str.encode())
         return f"simple_rag_{hash_obj.hexdigest()[:16]}"
@@ -184,8 +185,13 @@ class SimpleRagIngestPipeline(IngestPipeline):
         """
         logger.info("Starting Simple RAG ingestion")
 
-        # Generate collection name
-        collection_name = self._generate_collection_name()
+        # Get documents from data loader
+        corpus = data_loader.get_corpus()
+        documents = corpus.documents
+
+        # Generate collection name (depends on document names)
+        document_names = [doc.name for doc in documents]
+        collection_name = self._generate_collection_name(document_names)
         logger.info(f"Using collection name: {collection_name}")
 
         # Get embedding dimension
@@ -197,10 +203,6 @@ class SimpleRagIngestPipeline(IngestPipeline):
             collection_name=collection_name,
             dimension=dimension,
         )
-
-        # Get documents from data loader
-        corpus = data_loader.get_corpus()
-        documents = corpus.documents
 
         logger.info(f"Processing {len(documents)} documents")
 
