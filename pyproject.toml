@@ -148,7 +148,7 @@ strict_equality = true
 
 # Per-module overrides for untyped libraries
 [[tool.mypy.overrides]]
-module = ["mlflow.*", "nicegui.*"]
+module = ["mlflow.*", "nicegui.*", "dotenv"]
 ignore_missing_imports = true
 
 [tool.black]
