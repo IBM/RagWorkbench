@@ -1,8 +1,9 @@
+---
 name: Version Check
 
-on:
+"on":
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'pyproject.toml'
       - 'CHANGELOG.md'
@@ -26,7 +27,8 @@ jobs:
         id: base-version
         run: |
           git fetch origin main
-          BASE_VERSION=$(git show origin/main:pyproject.toml | grep -m 1 'version = ' | cut -d'"' -f2)
+          BASE_VERSION=$(git show origin/main:pyproject.toml | \
+            grep -m 1 'version = ' | cut -d'"' -f2)
           echo "version=$BASE_VERSION" >> $GITHUB_OUTPUT
           echo "Base version: $BASE_VERSION"
 
@@ -40,24 +42,28 @@ jobs:
       - name: Check if version changed
         id: version-changed
         run: |
-          if [ "${{ steps.base-version.outputs.version }}" != "${{ steps.pr-version.outputs.version }}" ]; then
+          BASE="${{ steps.base-version.outputs.version }}"
+          PR="${{ steps.pr-version.outputs.version }}"
+          if [ "$BASE" != "$PR" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
-            echo "✅ Version changed from ${{ steps.base-version.outputs.version }} to ${{ steps.pr-version.outputs.version }}"
+            echo "✅ Version changed from $BASE to $PR"
           else
             echo "changed=false" >> $GITHUB_OUTPUT
-            echo "⚠️ Version not changed (still ${{ steps.base-version.outputs.version }})"
+            echo "⚠️ Version not changed (still $BASE)"
           fi
 
       - name: Check CHANGELOG updated
         id: changelog-check
         if: steps.version-changed.outputs.changed == 'true'
         run: |
-          if git diff origin/main...HEAD -- CHANGELOG.md | grep -q "^+.*\[${{ steps.pr-version.outputs.version }}\]"; then
+          PR_VER="${{ steps.pr-version.outputs.version }}"
+          if git diff origin/main...HEAD -- CHANGELOG.md | \
+            grep -q "^+.*\[$PR_VER\]"; then
             echo "updated=true" >> $GITHUB_OUTPUT
-            echo "✅ CHANGELOG.md updated for version ${{ steps.pr-version.outputs.version }}"
+            echo "✅ CHANGELOG.md updated for version $PR_VER"
           else
             echo "updated=false" >> $GITHUB_OUTPUT
-            echo "⚠️ CHANGELOG.md not updated for version ${{ steps.pr-version.outputs.version }}"
+            echo "⚠️ CHANGELOG.md not updated for version $PR_VER"
           fi
 
       - name: Comment on PR
@@ -65,24 +71,36 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const versionChanged = '${{ steps.version-changed.outputs.changed }}' === 'true';
-            const changelogUpdated = '${{ steps.changelog-check.outputs.updated }}' === 'true';
-            const baseVersion = '${{ steps.base-version.outputs.version }}';
-            const prVersion = '${{ steps.pr-version.outputs.version }}';
+            const versionChanged =
+              '${{ steps.version-changed.outputs.changed }}' === 'true';
+            const changelogUpdated =
+              '${{ steps.changelog-check.outputs.updated }}' === 'true';
+            const baseVersion =
+              '${{ steps.base-version.outputs.version }}';
+            const prVersion =
+              '${{ steps.pr-version.outputs.version }}';
 
             let message = '## 📦 Version Update Detected\n\n';
-            message += `Version changed from \`${baseVersion}\` to \`${prVersion}\`\n\n`;
+            message += `Version changed from \`${baseVersion}\` `;
+            message += `to \`${prVersion}\`\n\n`;
 
             if (changelogUpdated) {
               message += '✅ CHANGELOG.md has been updated\n\n';
               message += '### Next Steps\n';
               message += '1. Merge this PR to main\n';
-              message += `2. Create and push a tag: \`git tag -a v${prVersion} -m "Release version ${prVersion}"\`\n`;
-              message += `3. Push the tag: \`git push origin v${prVersion}\`\n`;
-              message += '4. The release workflow will automatically publish to PyPI and create a GitHub release\n';
+              message += `2. Create and push a tag: `;
+              message += `\`git tag -a v${prVersion} `;
+              message += `-m "Release version ${prVersion}"\`\n`;
+              message += `3. Push the tag: `;
+              message += `\`git push origin v${prVersion}\`\n`;
+              message += '4. The release workflow will ';
+              message += 'automatically publish to PyPI and ';
+              message += 'create a GitHub release\n';
             } else {
-              message += '⚠️ **CHANGELOG.md needs to be updated**\n\n';
-              message += `Please add release notes for version \`${prVersion}\` to CHANGELOG.md\n`;
+              message += '⚠️ **CHANGELOG.md needs to be ';
+              message += 'updated**\n\n';
+              message += `Please add release notes for version `;
+              message += `\`${prVersion}\` to CHANGELOG.md\n`;
             }
 
             github.rest.issues.createComment({
@@ -93,7 +111,9 @@ jobs:
             });
 
       - name: Fail if CHANGELOG not updated
-        if: steps.version-changed.outputs.changed == 'true' && steps.changelog-check.outputs.updated == 'false'
+        if: >-
+          steps.version-changed.outputs.changed == 'true' &&
+          steps.changelog-check.outputs.updated == 'false'
         run: |
           echo "::error::CHANGELOG.md must be updated when version changes"
           exit 1
