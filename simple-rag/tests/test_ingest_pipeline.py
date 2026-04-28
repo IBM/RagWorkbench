@@ -49,10 +49,11 @@ class TestSimpleRagIngestPipeline:
     def test_generate_collection_name(self, ingest_params):
         """Test collection name generation."""
         pipeline = SimpleRagIngestPipeline(ingest_params)
-        name1 = pipeline._generate_collection_name()
-        name2 = pipeline._generate_collection_name()
+        document_names = ["doc1.pdf", "doc2.pdf"]
+        name1 = pipeline._generate_collection_name(document_names)
+        name2 = pipeline._generate_collection_name(document_names)
 
-        # Same params should generate same name
+        # Same params and documents should generate same name
         assert name1 == name2
         assert name1.startswith("simple_rag_")
         assert len(name1) == 27  # "simple_rag_" + 16 hex chars
@@ -65,8 +66,9 @@ class TestSimpleRagIngestPipeline:
         pipeline1 = SimpleRagIngestPipeline(params1)
         pipeline2 = SimpleRagIngestPipeline(params2)
 
-        name1 = pipeline1._generate_collection_name()
-        name2 = pipeline2._generate_collection_name()
+        document_names = ["doc1.pdf"]
+        name1 = pipeline1._generate_collection_name(document_names)
+        name2 = pipeline2._generate_collection_name(document_names)
 
         assert name1 != name2
 
@@ -84,10 +86,9 @@ class TestSimpleRagIngestPipeline:
     @patch("simple_rag.ingest_pipeline.DocumentConverter")
     def test_convert_document(self, mock_converter_class, ingest_params):
         """Test document conversion."""
+        mock_docling_doc = MagicMock()
         mock_result = MagicMock()
-        mock_result.document.export_to_markdown.return_value = (
-            "# Test Document\n\nTest content"
-        )
+        mock_result.document = mock_docling_doc
 
         mock_converter = MagicMock()
         mock_converter.convert.return_value = mock_result
@@ -100,14 +101,14 @@ class TestSimpleRagIngestPipeline:
             mime_type="application/pdf",
         )
 
-        text = pipeline._convert_document(doc)
+        result = pipeline._convert_document(doc)
 
-        assert text == "# Test Document\n\nTest content"
+        assert result == mock_docling_doc
         mock_converter.convert.assert_called_once()
 
     @patch("simple_rag.ingest_pipeline.HybridChunker")
-    def test_chunk_text(self, mock_chunker_class, ingest_params):
-        """Test text chunking."""
+    def test_chunk_document(self, mock_chunker_class, ingest_params):
+        """Test document chunking."""
         mock_chunk1 = MagicMock()
         mock_chunk1.text = "Chunk 1"
         mock_chunk2 = MagicMock()
@@ -118,10 +119,11 @@ class TestSimpleRagIngestPipeline:
         mock_chunker_class.return_value = mock_chunker
 
         pipeline = SimpleRagIngestPipeline(ingest_params)
-        chunks = pipeline._chunk_text("Test text")
+        mock_docling_doc = MagicMock()
+        chunks = pipeline._chunk_document(mock_docling_doc)
 
         assert chunks == ["Chunk 1", "Chunk 2"]
-        mock_chunker.chunk.assert_called_once_with("Test text")
+        mock_chunker.chunk.assert_called_once_with(mock_docling_doc)
 
     @patch("simple_rag.ingest_pipeline.litellm.embedding")
     def test_generate_embeddings(self, mock_embedding, ingest_params):
@@ -155,8 +157,9 @@ class TestSimpleRagIngestPipeline:
     ):
         """Test full ingestion process."""
         # Setup mocks
+        mock_docling_doc = MagicMock()
         mock_result = MagicMock()
-        mock_result.document.export_to_markdown.return_value = "Test content"
+        mock_result.document = mock_docling_doc
         mock_converter = MagicMock()
         mock_converter.convert.return_value = mock_result
         mock_converter_class.return_value = mock_converter
@@ -170,6 +173,9 @@ class TestSimpleRagIngestPipeline:
         mock_embedding.return_value = MagicMock(data=[{"embedding": [0.1] * 384}])
 
         mock_ingester = MagicMock()
+        mock_ingester.get_indexed_documents.return_value = (
+            set()
+        )  # No documents indexed yet
         mock_ingester_class.return_value = mock_ingester
 
         # Run process
@@ -184,5 +190,6 @@ class TestSimpleRagIngestPipeline:
         assert artifact.milvus_uri == "./milvus.db"
         assert artifact.embedding_model == "text-embedding-3-small"
 
-        mock_ingester.create_collection.assert_called_once()
+        # Verify ingester methods were called
+        mock_ingester.get_indexed_documents.assert_called_once()
         mock_ingester.insert_embeddings.assert_called_once()

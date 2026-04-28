@@ -16,14 +16,12 @@ class TestMilvusConfig:
     def test_default_values(self):
         """Test default configuration values."""
         config = MilvusConfig()
-        assert config.host == "localhost"
-        assert config.port == 19530
+        assert config.uri == "./milvus.db"
 
     def test_custom_values(self):
         """Test custom configuration values."""
-        config = MilvusConfig(host="milvus-server", port=9091)
-        assert config.host == "milvus-server"
-        assert config.port == 9091
+        config = MilvusConfig(uri=":memory:")
+        assert config.uri == ":memory:"
 
 
 class TestChunkingConfig:
@@ -52,18 +50,18 @@ class TestSimpleRagIngestParams:
     def test_default_values(self):
         """Test default parameter values."""
         params = SimpleRagIngestParams()
-        assert params.milvus_config.host == "localhost"
+        assert params.milvus_config.uri == "./milvus.db"
         assert params.chunking_config.max_tokens == 512
         assert params.embedding_model == "text-embedding-3-small"
 
     def test_custom_values(self):
         """Test custom parameter values."""
         params = SimpleRagIngestParams(
-            milvus_config=MilvusConfig(host="custom-host"),
+            milvus_config=MilvusConfig(uri=":memory:"),
             chunking_config=ChunkingConfig(max_tokens=1024),
             embedding_model="custom-model",
         )
-        assert params.milvus_config.host == "custom-host"
+        assert params.milvus_config.uri == ":memory:"
         assert params.chunking_config.max_tokens == 1024
         assert params.embedding_model == "custom-model"
 
