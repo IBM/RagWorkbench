@@ -84,7 +84,7 @@ jobs:
       - name: Check for version placeholders
         run: |
           # Check if any files still have placeholder versions
-          if grep -r "yourusername" .github/ pyproject.toml README.md 2>/dev/null; then
+          if grep -r "yourusername" .github/ pyproject.toml README.md 2>/dev/null | grep -v "validate-release.yaml"; then
             echo "✗ Found placeholder 'yourusername' in files"
             exit 1
           fi
