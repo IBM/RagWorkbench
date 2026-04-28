@@ -1,0 +1,137 @@
+name: simple-rag tests
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'simple-rag/**'
+      - '.github/workflows/simple-rag-tests.yaml'
+  push:
+    branches: [ main ]
+    paths:
+      - 'simple-rag/**'
+      - '.github/workflows/simple-rag-tests.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel previous in-progress runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+    working-directory: simple-rag
+
+jobs:
+  unit-tests:
+    name: Unit Tests (Python 3.11)
+    runs-on: ubuntu-latest
+
+    # Skip CI for draft PRs
+    if: ${{ github.event.pull_request.draft == false || github.event_name != 'pull_request' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Environment info
+        run: |
+          python --version
+          which python
+          pip --version
+          uname -a
+
+      - name: Install uv
+        run: |
+          pip install --upgrade pip
+          pip install uv
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('simple-rag/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Create venv
+        run: |
+          uv venv .venv
+          source .venv/bin/activate
+
+      - name: Install dependencies
+        run: |
+          source .venv/bin/activate
+          # Use uv sync to properly install all dependencies including extras
+          uv sync --all-extras
+
+      - name: Run unit tests
+        run: |
+          source .venv/bin/activate
+          pytest tests/ -m "not integration" -v --cov=src/simple_rag --cov-report=term-missing
+
+  integration-tests:
+    name: Integration Tests (Python 3.11)
+    runs-on: ubuntu-latest
+
+    # Only run integration tests on push to main or when OPENAI_API_KEY is available
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Environment info
+        run: |
+          python --version
+          which python
+          pip --version
+          uname -a
+
+      - name: Install uv
+        run: |
+          pip install --upgrade pip
+          pip install uv
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('simple-rag/uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Create venv
+        run: |
+          uv venv .venv
+          source .venv/bin/activate
+
+      - name: Install dependencies
+        run: |
+          source .venv/bin/activate
+          # Use uv sync to properly install all dependencies including extras
+          uv sync --all-extras
+
+      - name: Run integration tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          source .venv/bin/activate
+          pytest tests/test_integration_simple_rag.py -v -s

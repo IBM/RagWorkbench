@@ -97,6 +97,3 @@ class TestDatasetModel:
         # Check that sampling info is included
         assert "q-10" in dataset_id
         assert "seed-42" in dataset_id
-
-
-# Made with Bob

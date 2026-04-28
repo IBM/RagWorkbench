@@ -1,0 +1,68 @@
+name: Simple RAG Benchmarking Results
+
+description: An example of Simple RAG benchmarking results with the AIT-QA dataset.
+
+experiment:
+  usage_tracking: false
+  cache: "on"
+
+datasets:
+  - name: ait_qa
+    sampling:
+      question_limit: 100
+      # document_factor: 0
+
+configurations:
+  - name: simple_rag
+    description: Simple RAG Pipeline
+    ingest:
+      name: simple_rag
+      params:
+        embedding_model:
+          - ollama/nomic-embed-text
+        chunking_config:
+          max_tokens: 512
+    inference:
+      name: simple_rag
+      params:
+        llm_model:
+          - ollama/gemma3:4b
+        top_k: 3
+
+metrics:
+  - unitxt.context_correctness.retrieval_at_k
+  - unitxt.context_correctness.mrr
+  - unitxt.context_correctness.map
+  - unitxt.answer_correctness.llmaaj_llama_rits
+  - workbench.tool_use_count
+
+report:
+  screens:
+    - title: Answer-Correctness (Rits)
+      columns:
+        unitxt.answer_correctness.llmaaj_llama_rits_mean: AC
+      chart:
+        type: bar
+        title: Answer-correctness
+    - title: Tool Calls
+      columns:
+        workbench.tool_use_count_mean: Tool Calls
+      chart:
+        type: bar
+        title: Tool Calls
+    - title: Match@K
+      columns:
+        unitxt.context_correctness.retrieval_at_k.match_at_1_mean: M@1
+        unitxt.context_correctness.retrieval_at_k.match_at_3_mean: M@3
+        unitxt.context_correctness.retrieval_at_k.match_at_5_mean: M@5
+        unitxt.context_correctness.retrieval_at_k.match_at_10_mean: M@10
+      chart:
+        type: line
+        title: Match@K
+    - title: MAP & MRR
+      columns:
+        unitxt.context_correctness.mrr_mean: MRR
+        unitxt.context_correctness.map_mean: MAP
+      chart:
+        type: scatter
+        title: MAP & MRR

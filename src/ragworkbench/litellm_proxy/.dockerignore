@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.log
+.env
+.git
+.gitignore
+
+# Exclude local database data (critical!)
+postgres_data/
+
+# Exclude Python environment and caches
+__pycache__/
+*.pyc
+venv/
+.venv/
+.env
+
+# Exclude version control
+.git
+.gitignore
+
+# Exclude Docker files (no need to copy the yaml into the image)
+docker-compose.yml
+.dockerignore

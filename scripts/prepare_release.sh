@@ -199,5 +199,3 @@ echo "   - Create a GitHub release"
 echo ""
 echo "4. Monitor the release workflow at:"
 echo "   https://github.com/IBM/RagWorkbench/actions"
-
-# Made with Bob

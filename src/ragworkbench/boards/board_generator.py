@@ -56,7 +56,10 @@ class BoardGenerator:
         for config in self.board.configurations:
             # create the ingest instance
             ingest_pipeline = BoardRegistry.create_ingest_pipeline(
-                name=config.ingest.name, params=config.ingest.params
+                name=config.ingest.name,
+                params=config.ingest.params,
+                cache_dir=self.cache_dir,
+                cache_mode=self.board.experiment.cache,
             )
             # create the inference instance
             inference_pipeline = BoardRegistry.create_inference_pipeline(

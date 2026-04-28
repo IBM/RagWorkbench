@@ -998,6 +998,3 @@ class TestErrorHandling:
 
         assert len(cache_instance.cache_dict) == 0
         assert cache_instance.get(sample_inference_result) is None
-
-
-# Made with Bob

@@ -33,7 +33,7 @@ Example:
 import os
 from pathlib import Path
 
-from dotenv import load_dotenv  # type: ignore[import-not-found]
+from dotenv import load_dotenv
 
 # Load environment variables from .env file if it exists
 # This will not override existing environment variables
@@ -100,6 +100,3 @@ def get_ait_qa_documents_dir() -> Path:
         PosixPath('/path/to/data/ait_qa_pdf/documents')
     """
     return get_ait_qa_data_dir() / "documents"
-
-
-# Made with Bob

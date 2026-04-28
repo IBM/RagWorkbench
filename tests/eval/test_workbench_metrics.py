@@ -322,6 +322,3 @@ class TestUsageMetric:
         results = evaluator.run_metrics([])
 
         assert results == {}
-
-
-# Made with Bob

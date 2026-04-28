@@ -94,6 +94,8 @@ packages = ["src/ragworkbench"]
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+
+[tool.ruff.lint]
 select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
@@ -146,7 +148,7 @@ strict_equality = true
 
 # Per-module overrides for untyped libraries
 [[tool.mypy.overrides]]
-module = ["mlflow.*", "nicegui.*"]
+module = ["mlflow.*", "nicegui.*", "dotenv"]
 ignore_missing_imports = true
 
 [tool.black]
