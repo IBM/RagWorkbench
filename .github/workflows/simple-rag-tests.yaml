@@ -72,7 +72,8 @@ jobs:
       - name: Install dependencies
         run: |
           source .venv/bin/activate
-          UV_LINK_MODE=copy uv pip install -e ".[dev]"
+          # Use uv sync to properly install all dependencies including extras
+          uv sync --all-extras
 
       - name: Run unit tests
         run: |
@@ -125,7 +126,8 @@ jobs:
       - name: Install dependencies
         run: |
           source .venv/bin/activate
-          UV_LINK_MODE=copy uv pip install -e ".[dev]"
+          # Use uv sync to properly install all dependencies including extras
+          uv sync --all-extras
 
       - name: Run integration tests
         env:
