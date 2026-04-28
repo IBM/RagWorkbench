@@ -5,8 +5,8 @@ import logging
 from pathlib import Path
 
 import litellm
-from docling.chunking import HybridChunker
 from docling.document_converter import DocumentConverter
+from docling_core.transforms.chunker.hybrid_chunker import HybridChunker
 from pydantic import Field
 from transformers import AutoTokenizer
 
@@ -24,6 +24,10 @@ from simple_rag.milvus_client import MilvusIngester
 logging.getLogger("docling").setLevel(logging.WARNING)
 logging.getLogger("docling.document_converter").setLevel(logging.WARNING)
 logging.getLogger("docling.chunking").setLevel(logging.WARNING)
+
+# Suppress LiteLLM log messages
+logging.getLogger("LiteLLM").setLevel(logging.WARNING)
+logging.getLogger("litellm").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -159,9 +163,6 @@ class SimpleRagIngestPipeline(IngestPipeline):
         # Truncate all texts to max_tokens
         truncated_texts = [self._truncate_text(text) for text in texts]
 
-        logger.info(
-            f"Generating embeddings for {len(truncated_texts)} texts using {self._params.embedding_model}"
-        )
         response = litellm.embedding(
             model=self._params.embedding_model,
             input=truncated_texts,
@@ -169,7 +170,6 @@ class SimpleRagIngestPipeline(IngestPipeline):
             timeout=self.EMBEDDING_TIMEOUT,
         )
         embeddings = [item["embedding"] for item in response.data]
-        logger.info(f"Generated {len(embeddings)} embeddings")
         return embeddings
 
     def process(self, data_loader: RagDataLoader) -> list[IngestArtifact]:
@@ -260,11 +260,16 @@ class SimpleRagIngestPipeline(IngestPipeline):
         # Generate embeddings in batches
         batch_size = 100
         all_embeddings = []
+        total_batches = (len(all_texts) + batch_size - 1) // batch_size
         for i in range(0, len(all_texts), batch_size):
             batch = all_texts[i : i + batch_size]
+            batch_num = i // batch_size + 1
             embeddings = self._generate_embeddings(batch)
             all_embeddings.extend(embeddings)
-            logger.info(f"Generated embeddings for batch {i // batch_size + 1}")
+            logger.info(
+                f"Generated embeddings for batch {batch_num}/{total_batches} "
+                f"({len(batch)} texts, {len(all_embeddings)}/{len(all_texts)} total)"
+            )
 
         # Insert into Milvus
         ingester.insert_embeddings(all_chunks, all_embeddings)

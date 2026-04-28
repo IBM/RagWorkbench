@@ -19,14 +19,14 @@ configurations:
       name: simple_rag
       params:
         embedding_model:
-          - openai/all-minilm
+          - ollama/nomic-embed-text
         chunking_config:
-          max_tokens: 256
+          max_tokens: 512
     inference:
       name: simple_rag
       params:
         llm_model:
-          - openai/llama3.2-1b
+          - ollama/llama3.2:1b
         top_k: 3
 
 metrics:
